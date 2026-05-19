@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "42856190078",
+    "project_id": "fitora-03",
+    "storage_bucket": "fitora-03.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:42856190078:android:945ea43bff22e8eebbc82f",
+        "android_client_info": {
+          "package_name": "com.example.fitora"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "42856190078-84qhb8frbf64rmkremsdqdvjtcluoqan.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.fitora",
+            "certificate_hash": "4821686564ccf3dd59c2470ff62e09284531531e"
+          }
+        },
+        {
+          "client_id": "42856190078-jrnu3av6iuodp4glo0aggvl1d81ichob.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCnhEWutAnjGr18cHHcpHHNo41DkYKa8CA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "42856190078-jrnu3av6iuodp4glo0aggvl1d81ichob.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "42856190078-bbd1j3hqgcr8jv8ge2ekagd4j84sosbj.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.fitora"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
