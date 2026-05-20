@@ -19,14 +19,14 @@ class AppTheme {
     required TextTheme textTheme,
   }) {
     final baseButtonStyle = ButtonStyle(
-      padding: MaterialStateProperty.all(
+      padding: WidgetStateProperty.all(
         const EdgeInsets.symmetric(
           horizontal: FitoraSpacing.lg,
           vertical: FitoraSpacing.sm,
         ),
       ),
-      minimumSize: MaterialStateProperty.all(const Size.fromHeight(48)),
-      shape: MaterialStateProperty.all(
+      minimumSize: WidgetStateProperty.all(const Size.fromHeight(48)),
+      shape: WidgetStateProperty.all(
         RoundedRectangleBorder(borderRadius: FitoraSpacing.cardRadius),
       ),
     );
@@ -39,44 +39,48 @@ class AppTheme {
         displayColor: colorScheme.onSurface,
       ),
       filledButtonTheme: FilledButtonThemeData(style: baseButtonStyle),
+      elevatedButtonTheme: ElevatedButtonThemeData(style: baseButtonStyle),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: baseButtonStyle.copyWith(
-          side: MaterialStateProperty.all(
+          side: WidgetStateProperty.all(
             BorderSide(color: colorScheme.outline),
           ),
         ),
       ),
       textButtonTheme: TextButtonThemeData(style: baseButtonStyle),
-      scaffoldBackgroundColor: colorScheme.background,
+      scaffoldBackgroundColor: colorScheme.surface,
       appBarTheme: AppBarTheme(
-        backgroundColor: colorScheme.background,
-        foregroundColor: colorScheme.onBackground,
+        backgroundColor: colorScheme.surface,
+        foregroundColor: colorScheme.onSurface,
         elevation: 0,
+        scrolledUnderElevation: 0,
         centerTitle: false,
         titleTextStyle: textTheme.titleLarge?.copyWith(
-          color: colorScheme.onBackground,
+          color: colorScheme.onSurface,
+          fontWeight: FontWeight.w600,
         ),
       ),
       cardTheme: CardThemeData(
         color: colorScheme.surface,
-        surfaceTintColor: colorScheme.surfaceTint,
+        surfaceTintColor: Colors.transparent,
         elevation: 0,
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
           borderRadius: FitoraSpacing.cardRadius,
+          side: BorderSide(color: colorScheme.outlineVariant, width: 0.8),
         ),
       ),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: colorScheme.surface,
         indicatorColor: colorScheme.secondaryContainer,
-        labelTextStyle: MaterialStateProperty.all(
+        labelTextStyle: WidgetStateProperty.all(
           textTheme.labelMedium?.copyWith(
             color: colorScheme.onSurfaceVariant,
           ),
         ),
-        iconTheme: MaterialStateProperty.resolveWith(
+        iconTheme: WidgetStateProperty.resolveWith(
           (states) {
-            final color = states.contains(MaterialState.selected)
+            final color = states.contains(WidgetState.selected)
                 ? colorScheme.primary
                 : colorScheme.onSurfaceVariant;
             return IconThemeData(color: color);
@@ -86,11 +90,11 @@ class AppTheme {
       dividerTheme: DividerThemeData(
         color: colorScheme.outlineVariant,
         space: 1,
-        thickness: 1,
+        thickness: 0.8,
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: colorScheme.surfaceVariant,
+        fillColor: colorScheme.surfaceContainerHighest,
         border: OutlineInputBorder(
           borderRadius: FitoraSpacing.cardRadius,
           borderSide: BorderSide(color: colorScheme.outline),
@@ -103,7 +107,7 @@ class AppTheme {
           borderRadius: FitoraSpacing.cardRadius,
           borderSide: BorderSide(
             color: colorScheme.primary,
-            width: 1.4,
+            width: 1.5,
           ),
         ),
       ),

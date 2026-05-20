@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fitora/core/constants/spacing.dart';
+import 'package:fitora/shared/widgets/glow_container.dart';
 
 class WorkoutSectionHeader extends StatelessWidget {
   final String title;
@@ -21,6 +22,13 @@ class WorkoutSectionHeader extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
+        GlowContainer(
+          glowColor: colorScheme.primary.withOpacity(0.12),
+          padding: const EdgeInsets.all(FitoraSpacing.xs),
+          borderRadius: BorderRadius.circular(12),
+          child: Icon(Icons.auto_awesome_rounded, size: 16, color: colorScheme.primary),
+        ),
+        const SizedBox(width: FitoraSpacing.sm),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

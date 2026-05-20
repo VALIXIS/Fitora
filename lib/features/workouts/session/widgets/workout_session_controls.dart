@@ -6,22 +6,26 @@ class WorkoutSessionControls extends StatelessWidget {
   final bool canGoBack;
   final bool canGoNext;
   final bool isPaused;
+  final bool isResting;
   final VoidCallback onBack;
   final VoidCallback onNext;
   final VoidCallback onPause;
   final VoidCallback onResume;
   final VoidCallback onEnd;
+  final VoidCallback? onSkipRest;
 
   const WorkoutSessionControls({
     super.key,
     required this.canGoBack,
     required this.canGoNext,
     required this.isPaused,
+    required this.isResting,
     required this.onBack,
     required this.onNext,
     required this.onPause,
     required this.onResume,
     required this.onEnd,
+    this.onSkipRest,
   });
 
   @override
@@ -47,6 +51,14 @@ class WorkoutSessionControls extends StatelessWidget {
                 onPressed: canGoNext ? onNext : null,
               ),
             ),
+            if (isResting) ...[
+              const SizedBox(width: FitoraSpacing.md),
+              FitoraButton(
+                label: 'Skip rest',
+                variant: FitoraButtonVariant.ghost,
+                onPressed: onSkipRest,
+              ),
+            ],
           ],
         ),
         const SizedBox(height: FitoraSpacing.md),

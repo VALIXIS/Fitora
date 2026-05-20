@@ -37,7 +37,6 @@ class OnboardingScreen extends HookConsumerWidget {
     }
 
     final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
     final icons = [
       Icons.auto_awesome_rounded,
       Icons.dashboard_rounded,
@@ -61,94 +60,202 @@ class OnboardingScreen extends HookConsumerWidget {
       context.go(AppRoutes.home);
     }
 
-    void handleNext() {
+    Future<void> handleNext() async {
       final nextIndex =
           (state.pageIndex + 1).clamp(0, state.pages.length - 1).toInt();
-      pageController.jumpToPage(nextIndex);
-      controller.setPage(nextIndex);
+      await pageController.animateToPage(
+        nextIndex,
+        duration: const Duration(milliseconds: 280),
+        curve: Curves.easeOutCubic,
+      );
     }
 
-    void handleSkip() {
+    Future<void> handleBack() async {
+      final prevIndex =
+          (state.pageIndex - 1).clamp(0, state.pages.length - 1).toInt();
+      await pageController.animateToPage(
+        prevIndex,
+        duration: const Duration(milliseconds: 260),
+        curve: Curves.easeOutCubic,
+      );
+    }
+
+    Future<void> handleSkip() async {
       final lastIndex = state.pages.length - 1;
-      pageController.jumpToPage(lastIndex);
-      controller.skipToLastPage();
+      await pageController.animateToPage(
+        lastIndex,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOutCubic,
+      );
     }
 
     return Scaffold(
       body: SafeArea(
-        child: Column(
+        child: Stack(
           children: [
-            // Temporary debug background to validate layout bounds.
-            Expanded(
-              child: Container(
-                color: colorScheme.surfaceVariant.withOpacity(0.18),
-                child: PageView.builder(
-                  controller: pageController,
-                  itemCount: state.pages.length,
-                  physics: const BouncingScrollPhysics(),
-                  onPageChanged: controller.setPage,
-                  itemBuilder: (context, index) {
-                    final page = state.pages[index];
-                    final icon = icons[index % icons.length];
-                    final accent = accents[index % accents.length];
+            const _OnboardingBackground(),
+            Column(
+              children: [
+                Expanded(
+                  child: PageView.builder(
+                    controller: pageController,
+                    itemCount: state.pages.length,
+                    physics: const BouncingScrollPhysics(),
+                    onPageChanged: controller.setPage,
+                    itemBuilder: (context, index) {
+                      final page = state.pages[index];
+                      final icon = icons[index % icons.length];
+                      final accent = accents[index % accents.length];
 
-                    return Padding(
-                      padding: FitoraSpacing.pagePadding,
-                      child: OnboardingPage(
-                        data: page,
-                        icon: icon,
-                        accentColor: accent,
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ),
-            Container(
-              color: colorScheme.secondaryContainer.withOpacity(0.18),
-              padding: const EdgeInsets.fromLTRB(
-                FitoraSpacing.md,
-                FitoraSpacing.sm,
-                FitoraSpacing.md,
-                FitoraSpacing.lg,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text('Onboarding controls', style: textTheme.labelLarge),
-                  const SizedBox(height: FitoraSpacing.md),
-                  TextButton(
-                    onPressed: state.isLastPage ? handleStart : handleNext,
-                    child: const Text('Next'),
-                  ),
-                  const SizedBox(height: FitoraSpacing.md),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(state.pages.length, (dotIndex) {
-                      final isActive = dotIndex == state.pageIndex;
-                      return Container(
-                        margin: const EdgeInsets.symmetric(
-                          horizontal: FitoraSpacing.xs,
-                        ),
-                        width: isActive ? 18 : 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: isActive
-                              ? colorScheme.primary
-                              : colorScheme.outlineVariant,
-                          borderRadius: BorderRadius.circular(24),
-                        ),
+                      return LayoutBuilder(
+                        builder: (context, constraints) {
+                          return SingleChildScrollView(
+                            physics: const BouncingScrollPhysics(),
+                            padding: FitoraSpacing.pagePadding,
+                            child: ConstrainedBox(
+                              constraints: BoxConstraints(
+                                minHeight: constraints.maxHeight,
+                              ),
+                              child: Center(
+                                child: ConstrainedBox(
+                                  constraints:
+                                      const BoxConstraints(maxWidth: 420),
+                                  child: OnboardingPage(
+                                    data: page,
+                                    icon: icon,
+                                    accentColor: accent,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        },
                       );
-                    }),
+                    },
                   ),
-                  const SizedBox(height: FitoraSpacing.md),
-                  TextButton(
-                    onPressed: handleSkip,
-                    child: const Text('Skip'),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    FitoraSpacing.md,
+                    FitoraSpacing.sm,
+                    FitoraSpacing.md,
+                    FitoraSpacing.lg,
                   ),
-                ],
-              ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _OnboardingIndicator(
+                        total: state.pages.length,
+                        currentIndex: state.pageIndex,
+                      ),
+                      const SizedBox(height: FitoraSpacing.sm),
+                      _OnboardingControlsRow(
+                        isLastPage: state.isLastPage,
+                        onBack: handleBack,
+                        onNext: handleNext,
+                        onSkip: handleSkip,
+                        onStart: handleStart,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _OnboardingControlsRow extends StatelessWidget {
+  final bool isLastPage;
+  final VoidCallback onBack;
+  final VoidCallback onNext;
+  final VoidCallback onSkip;
+  final VoidCallback onStart;
+
+  const _OnboardingControlsRow({
+    required this.isLastPage,
+    required this.onBack,
+    required this.onNext,
+    required this.onSkip,
+    required this.onStart,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final backLabel = isLastPage ? 'Back' : 'Skip';
+    final nextLabel = isLastPage ? 'Get started' : 'Next';
+
+    return Row(
+      children: [
+        Expanded(
+          child: TextButton(
+            onPressed: isLastPage ? onBack : onSkip,
+            child: Text(backLabel),
+          ),
+        ),
+        const SizedBox(width: FitoraSpacing.md),
+        Expanded(
+          child: FilledButton(
+            onPressed: isLastPage ? onStart : onNext,
+            child: Text(nextLabel),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _OnboardingIndicator extends StatelessWidget {
+  final int total;
+  final int currentIndex;
+
+  const _OnboardingIndicator({
+    required this.total,
+    required this.currentIndex,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(total, (index) {
+        final isActive = index == currentIndex;
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOutCubic,
+          margin: const EdgeInsets.symmetric(horizontal: FitoraSpacing.xs),
+          width: isActive ? 18 : 6,
+          height: 6,
+          decoration: BoxDecoration(
+            color: isActive ? colorScheme.primary : colorScheme.outlineVariant,
+            borderRadius: BorderRadius.circular(999),
+          ),
+        );
+      }),
+    );
+  }
+}
+
+class _OnboardingBackground extends StatelessWidget {
+  const _OnboardingBackground();
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            colorScheme.background,
+            colorScheme.surfaceVariant.withOpacity(0.6),
           ],
         ),
       ),

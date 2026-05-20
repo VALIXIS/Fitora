@@ -20,8 +20,8 @@ class GlowContainer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final background = color ?? colorScheme.surfaceVariant;
-    final glow = glowColor ?? colorScheme.primary.withOpacity(0.18);
+    final background = color ?? colorScheme.surfaceContainerHighest;
+    final glow = glowColor ?? colorScheme.primary.withValues(alpha: 0.18);
 
     return Container(
       padding: padding ?? FitoraSpacing.cardPadding,

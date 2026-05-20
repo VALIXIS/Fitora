@@ -21,7 +21,7 @@ class WorkoutCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
-    final spacing = compact ? FitoraSpacing.sm : FitoraSpacing.md;
+    final spacing = compact ? FitoraSpacing.xs : FitoraSpacing.xs;
     final tagLimit = compact ? 2 : 3;
 
     return FitoraCard(
@@ -44,7 +44,7 @@ class WorkoutCard extends StatelessWidget {
           if (workout.tags.isNotEmpty) ...[
             SizedBox(height: spacing),
             Wrap(
-              spacing: FitoraSpacing.xs,
+              spacing: FitoraSpacing.sm,
               runSpacing: FitoraSpacing.xs,
               children: workout.tags
                   .take(tagLimit)

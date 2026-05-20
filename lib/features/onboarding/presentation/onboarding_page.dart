@@ -33,13 +33,24 @@ class OnboardingPage extends StatelessWidget {
     );
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         hero,
-        const SizedBox(height: FitoraSpacing.lg),
-        Text(data.title, style: textTheme.headlineSmall),
+        const SizedBox(height: FitoraSpacing.md),
+        Text(
+          data.title,
+          style: textTheme.headlineSmall,
+          textAlign: TextAlign.center,
+        ),
         const SizedBox(height: FitoraSpacing.sm),
-        Text(data.subtitle, style: textTheme.bodyLarge),
+        Text(
+          data.subtitle,
+          style: textTheme.bodyLarge?.copyWith(
+            color: colorScheme.onSurfaceVariant,
+          ),
+          textAlign: TextAlign.center,
+        ),
       ],
     );
   }

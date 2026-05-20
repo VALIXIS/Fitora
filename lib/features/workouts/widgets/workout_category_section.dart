@@ -22,12 +22,13 @@ class WorkoutCategorySection extends StatelessWidget {
       builder: (context, constraints) {
         final isNarrow = constraints.maxWidth < 520;
         final textScale = MediaQuery.textScaleFactorOf(context);
-        final cardHeight = 205 * (textScale < 1 ? 1 : textScale);
+        final cardHeight = 176 * (textScale < 1 ? 1 : textScale);
 
         Widget content;
 
         if (isNarrow) {
           content = Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               for (final workout in workouts) ...[
                 WorkoutCard(
@@ -49,7 +50,7 @@ class WorkoutCategorySection extends StatelessWidget {
               itemBuilder: (context, index) {
                 final workout = workouts[index];
                 return SizedBox(
-                  width: 280,
+                  width: 260,
                   child: WorkoutCard(
                     workout: workout,
                     compact: true,

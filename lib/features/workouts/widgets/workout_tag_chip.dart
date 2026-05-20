@@ -16,13 +16,13 @@ class WorkoutTagChip extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.symmetric(
-        horizontal: FitoraSpacing.sm,
-        vertical: FitoraSpacing.xs,
+        horizontal: FitoraSpacing.md,
+        vertical: 10,
       ),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceVariant,
+        color: colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: colorScheme.outlineVariant),
+        border: Border.all(color: colorScheme.outline),
       ),
       child: Text(
         label,

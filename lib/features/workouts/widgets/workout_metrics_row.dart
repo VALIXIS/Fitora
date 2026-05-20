@@ -77,7 +77,7 @@ class _MetricPill extends StatelessWidget {
         vertical: FitoraSpacing.xs,
       ),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceVariant,
+        color: colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(999),
       ),
       child: Row(
