@@ -1,23 +1,24 @@
+import 'dart:async';
+import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:fitora/core/constants/spacing.dart';
+import 'package:fitora/core/theme/fitora_colors.dart';
+import 'package:fitora/core/theme/fitora_gradients.dart';
 import 'package:fitora/core/responsive/responsive_builder.dart';
 import 'package:fitora/features/progress/providers/progress_controller.dart';
+import 'package:fitora/features/personalization/providers/personalization_controller.dart';
 import 'package:fitora/features/workouts/domain/workout_models.dart';
+import 'package:fitora/features/workouts/widgets/exercise_media.dart';
 import 'package:fitora/features/workouts/providers/workout_providers.dart';
 import 'package:fitora/features/workouts/session/domain/workout_session_models.dart';
 import 'package:fitora/features/workouts/session/providers/workout_session_controller.dart';
-import 'package:fitora/features/workouts/session/widgets/workout_session_controls.dart';
-import 'package:fitora/features/workouts/session/widgets/workout_session_exercise_card.dart';
-import 'package:fitora/features/workouts/session/widgets/workout_session_stats_grid.dart';
-import 'package:fitora/features/workouts/widgets/workout_metrics_row.dart';
 import 'package:fitora/shared/widgets/empty_state_widget.dart';
-import 'package:fitora/shared/widgets/fitora_card.dart';
 import 'package:fitora/shared/widgets/loading_widget.dart';
 
-// ── Root screen ───────────────────────────────────────────────────────────────
+// ── Root Screen ───────────────────────────────────────────────────────────────
 
 class WorkoutSessionScreen extends ConsumerWidget {
   final String workoutId;
@@ -30,9 +31,11 @@ class WorkoutSessionScreen extends ConsumerWidget {
 
     return workoutAsync.when(
       loading: () => const Scaffold(
+        backgroundColor: FitoraColors.darkBg,
         body: SafeArea(child: LoadingWidget(message: 'Preparing session…')),
       ),
       error: (e, _) => const Scaffold(
+        backgroundColor: FitoraColors.darkBg,
         body: SafeArea(
           child: EmptyStateWidget(
             icon: Icons.fitness_center_outlined,
@@ -44,6 +47,7 @@ class WorkoutSessionScreen extends ConsumerWidget {
       data: (workout) {
         if (workout == null) {
           return const Scaffold(
+            backgroundColor: FitoraColors.darkBg,
             body: SafeArea(
               child: EmptyStateWidget(
                 icon: Icons.fitness_center_outlined,
@@ -59,83 +63,133 @@ class WorkoutSessionScreen extends ConsumerWidget {
   }
 }
 
-// ── Session content shell ─────────────────────────────────────────────────────
+// ── Session Content Shell ─────────────────────────────────────────────────────
 
-class _WorkoutSessionContent extends ConsumerWidget {
+class _WorkoutSessionContent extends ConsumerStatefulWidget {
   final Workout workout;
 
   const _WorkoutSessionContent({required this.workout});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final controller =
-        ref.read(workoutSessionControllerProvider(workout).notifier);
-    final status = ref.watch(
-      workoutSessionControllerProvider(workout).select((s) => s.status),
-    );
-    final isEnded = status == WorkoutSessionStatus.ended;
+  ConsumerState<_WorkoutSessionContent> createState() => _WorkoutSessionContentState();
+}
 
-    void handleEnd() {
-      controller.endSession();
-      // Don't pop — let the user see the completion screen.
-    }
+class _WorkoutSessionContentState extends ConsumerState<_WorkoutSessionContent> {
+  bool _isImmersiveMode = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = ref.read(workoutSessionControllerProvider(widget.workout).notifier);
+    final sessionState = ref.watch(workoutSessionControllerProvider(widget.workout));
+    final isEnded = sessionState.status == WorkoutSessionStatus.ended;
+
+    // Precise audio cues and haptic feedback
+    ref.listen<WorkoutSessionState>(
+      workoutSessionControllerProvider(widget.workout),
+      (previous, next) {
+        final prevSec = previous?.currentRemainingSeconds;
+        final nextSec = next.currentRemainingSeconds;
+        final prevRest = previous?.restRemainingSeconds;
+        final nextRest = next.restRemainingSeconds;
+
+        if (nextSec != null && nextSec != prevSec) {
+          if (nextSec <= 3 && nextSec > 0) {
+            SystemSound.play(SystemSoundType.click);
+            HapticFeedback.mediumImpact();
+          } else if (nextSec <= 5) {
+            HapticFeedback.lightImpact();
+          }
+        }
+
+        if (nextRest != null && nextRest != prevRest) {
+          if (nextRest <= 3 && nextRest > 0) {
+            SystemSound.play(SystemSoundType.click);
+            HapticFeedback.mediumImpact();
+          } else if (nextRest <= 5) {
+            HapticFeedback.lightImpact();
+          }
+        }
+
+        if (next.isResting != previous?.isResting || next.currentIndex != previous?.currentIndex) {
+          HapticFeedback.heavyImpact();
+          SystemSound.play(SystemSoundType.click);
+          Future.delayed(const Duration(milliseconds: 120), () {
+            SystemSound.play(SystemSoundType.click);
+          });
+        }
+      },
+    );
 
     return Scaffold(
-      // Hide AppBar on completion to give full celebration focus
-      appBar: isEnded
-          ? null
-          : AppBar(
-              title: Text(
-                workout.title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              leading: IconButton(
-                icon: const Icon(Icons.close),
-                onPressed: () {
-                  controller.endSession();
-                  context.pop();
-                },
-              ),
-              automaticallyImplyLeading: false,
-            ),
+      backgroundColor: FitoraColors.darkBg,
       body: SafeArea(
         child: Stack(
           fit: StackFit.expand,
           children: [
             const _SessionBackground(),
-            ResponsiveBuilder(
-              mobile: (_) => _SessionLayout(
-                workout: workout,
-                maxWidth: 560,
+            if (isEnded)
+              SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
+                child: _CompletionScreen(workout: widget.workout)
+                    .animate()
+                    .fadeIn(duration: 600.ms)
+                    .scale(
+                      begin: const Offset(0.95, 0.95),
+                      end: const Offset(1, 1),
+                      duration: 500.ms,
+                      curve: Curves.easeOutBack,
+                    ),
+              )
+            else if (_isImmersiveMode)
+              _ImmersiveCoachingView(
+                workout: widget.workout,
+                session: sessionState,
+                onExit: () => setState(() => _isImmersiveMode = false),
                 onBack: controller.previousExercise,
                 onNext: controller.nextExercise,
                 onPause: controller.pauseSession,
                 onResume: controller.resumeSession,
-                onEnd: handleEnd,
                 onSkipRest: controller.skipRest,
+              )
+            else
+              ResponsiveBuilder(
+                mobile: (_) => _SessionLayout(
+                  workout: widget.workout,
+                  sessionState: sessionState,
+                  maxWidth: 500,
+                  onBack: controller.previousExercise,
+                  onNext: controller.nextExercise,
+                  onPause: controller.pauseSession,
+                  onResume: controller.resumeSession,
+                  onEnd: controller.endSession,
+                  onSkipRest: controller.skipRest,
+                  onToggleImmersive: () => setState(() => _isImmersiveMode = true),
+                ),
+                tablet: (_) => _SessionLayout(
+                  workout: widget.workout,
+                  sessionState: sessionState,
+                  maxWidth: 720,
+                  onBack: controller.previousExercise,
+                  onNext: controller.nextExercise,
+                  onPause: controller.pauseSession,
+                  onResume: controller.resumeSession,
+                  onEnd: controller.endSession,
+                  onSkipRest: controller.skipRest,
+                  onToggleImmersive: () => setState(() => _isImmersiveMode = true),
+                ),
+                desktop: (_) => _SessionLayout(
+                  workout: widget.workout,
+                  sessionState: sessionState,
+                  maxWidth: 880,
+                  onBack: controller.previousExercise,
+                  onNext: controller.nextExercise,
+                  onPause: controller.pauseSession,
+                  onResume: controller.resumeSession,
+                  onEnd: controller.endSession,
+                  onSkipRest: controller.skipRest,
+                  onToggleImmersive: () => setState(() => _isImmersiveMode = true),
+                ),
               ),
-              tablet: (_) => _SessionLayout(
-                workout: workout,
-                maxWidth: 820,
-                onBack: controller.previousExercise,
-                onNext: controller.nextExercise,
-                onPause: controller.pauseSession,
-                onResume: controller.resumeSession,
-                onEnd: handleEnd,
-                onSkipRest: controller.skipRest,
-              ),
-              desktop: (_) => _SessionLayout(
-                workout: workout,
-                maxWidth: 1040,
-                onBack: controller.previousExercise,
-                onNext: controller.nextExercise,
-                onPause: controller.pauseSession,
-                onResume: controller.resumeSession,
-                onEnd: handleEnd,
-                onSkipRest: controller.skipRest,
-              ),
-            ),
           ],
         ),
       ),
@@ -143,10 +197,11 @@ class _WorkoutSessionContent extends ConsumerWidget {
   }
 }
 
-// ── Layout ────────────────────────────────────────────────────────────────────
+// ── Standard Session Layout (Redesigned & Minimal) ────────────────────────────
 
 class _SessionLayout extends StatelessWidget {
   final Workout workout;
+  final WorkoutSessionState sessionState;
   final double maxWidth;
   final VoidCallback onBack;
   final VoidCallback onNext;
@@ -154,9 +209,11 @@ class _SessionLayout extends StatelessWidget {
   final VoidCallback onResume;
   final VoidCallback onEnd;
   final VoidCallback? onSkipRest;
+  final VoidCallback onToggleImmersive;
 
   const _SessionLayout({
     required this.workout,
+    required this.sessionState,
     required this.maxWidth,
     required this.onBack,
     required this.onNext,
@@ -164,126 +221,935 @@ class _SessionLayout extends StatelessWidget {
     required this.onResume,
     required this.onEnd,
     this.onSkipRest,
+    required this.onToggleImmersive,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment.topCenter,
+    final textTheme = Theme.of(context).textTheme;
+    final isResting = sessionState.isResting;
+    final progress = sessionState.progress;
+
+    return Center(
       child: ConstrainedBox(
         constraints: BoxConstraints(maxWidth: maxWidth),
-        child: SingleChildScrollView(
-          padding: FitoraSpacing.pagePadding,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // ── Status bar ────────────────────────────────────────────
-              Consumer(builder: (context, ref, _) {
-                final status = ref.watch(workoutSessionControllerProvider(workout)
-                    .select((s) => s.status));
-                if (status == WorkoutSessionStatus.ended) {
-                  return const SizedBox.shrink();
-                }
-                final elapsed = ref.watch(workoutSessionControllerProvider(workout)
-                    .select((s) => s.totalElapsedLabel));
-                final completed = ref.watch(workoutSessionControllerProvider(workout)
-                    .select((s) => s.completedExercises));
-                final total = ref.watch(workoutSessionControllerProvider(workout)
-                    .select((s) => s.totalExercises));
-                final isPaused = ref.watch(workoutSessionControllerProvider(workout)
-                    .select((s) => s.isPaused));
-                return _TopBar(
-                  elapsedLabel: elapsed,
-                  completed: completed,
-                  total: total,
-                  isPaused: isPaused,
-                );
-              }),
+              // ── Header & Overall Progress Indicator ─────────────────────────
+              Row(
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'ELAPSED TIME',
+                        style: textTheme.labelSmall?.copyWith(
+                          color: FitoraColors.darkTextSecondary.withOpacity(0.5),
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        sessionState.totalElapsedLabel,
+                        style: textTheme.titleLarge?.copyWith(
+                          color: FitoraColors.darkTextPrimary,
+                          fontWeight: FontWeight.bold,
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Spacer(),
+                  // Immersive Toggle button
+                  IconButton(
+                    icon: const Icon(Icons.fullscreen_rounded, color: FitoraColors.mintGreen, size: 28),
+                    tooltip: 'Guided Immersive Mode',
+                    onPressed: onToggleImmersive,
+                  ),
+                  const SizedBox(width: 8),
+                  // Sleek exit button
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded, color: FitoraColors.darkTextSecondary, size: 26),
+                    onPressed: onEnd,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              
+              // Progress Bar
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: TweenAnimationBuilder<double>(
+                  tween: Tween(begin: 0, end: progress),
+                  duration: const Duration(milliseconds: 400),
+                  curve: Curves.easeOut,
+                  builder: (context, v, _) => LinearProgressIndicator(
+                    value: v,
+                    minHeight: 4,
+                    backgroundColor: FitoraColors.darkBorder,
+                    valueColor: const AlwaysStoppedAnimation(FitoraColors.mintGreen),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
 
-              // ── Center card (exercise / rest / completion) ─────────────
-              Consumer(builder: (context, ref, _) {
-                final status = ref.watch(workoutSessionControllerProvider(workout)
-                    .select((s) => s.status));
-                final isResting = ref.watch(workoutSessionControllerProvider(workout)
-                    .select((s) => s.isResting));
+              // ── Main Exercise / Rest Content Area ──────────────────────────
+              Expanded(
+                child: isResting
+                    ? _buildRestContent(context)
+                        .animate()
+                        .fadeIn(duration: 400.ms)
+                        .slideY(begin: 0.05, end: 0, duration: 400.ms)
+                    : _buildWorkoutContent(context)
+                        .animate()
+                        .fadeIn(duration: 400.ms)
+                        .slideY(begin: 0.05, end: 0, duration: 400.ms),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
-                if (status == WorkoutSessionStatus.ended) {
-                  return _CompletionScreen(workout: workout)
-                      .animate()
-                      .fadeIn(duration: 600.ms)
-                      .scale(
-                        begin: const Offset(0.92, 0.92),
-                        end: const Offset(1, 1),
-                        duration: 500.ms,
-                        curve: Curves.easeOutBack,
-                      );
-                }
+  // Rest Phase UI
+  Widget _buildRestContent(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final restSeconds = sessionState.restRemainingSeconds ?? 0;
+    final totalRest = sessionState.currentExercise.dose.rest?.inSeconds ?? 30;
+    final progress = totalRest > 0 ? (restSeconds / totalRest).clamp(0.0, 1.0) : 1.0;
 
-                if (isResting) {
-                  return Column(children: [
-                    const SizedBox(height: FitoraSpacing.lg),
-                    _RestCard(workout: workout),
-                  ]);
-                }
+    final nextIndex = sessionState.currentIndex + 1;
+    final hasNext = nextIndex < sessionState.totalExercises;
+    final nextExercise = hasNext ? workout.exercises[nextIndex] : null;
 
-                final exercise = ref.watch(workoutSessionControllerProvider(workout)
-                    .select((s) => s.currentExercise));
-                final remaining = ref.watch(workoutSessionControllerProvider(workout)
-                    .select((s) => s.currentRemainingSeconds));
-
-                return Column(children: [
-                  const SizedBox(height: FitoraSpacing.lg),
-                  WorkoutSessionExerciseCard(exercise: exercise),
-                  const SizedBox(height: FitoraSpacing.md),
-                  Center(
-                    child: _TimerRing(
-                      remainingSeconds: remaining,
-                      totalSeconds: exercise.dose.duration?.inSeconds,
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          'REST PERIOD',
+          style: textTheme.labelMedium?.copyWith(
+            color: FitoraColors.lavender,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 2.0,
+          ),
+        ),
+        const SizedBox(height: 16),
+        
+        // Large elegant countdown timer
+        SizedBox(
+          width: 140,
+          height: 140,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              CircularProgressIndicator(
+                value: progress,
+                strokeWidth: 8,
+                backgroundColor: FitoraColors.darkBorder,
+                valueColor: const AlwaysStoppedAnimation(FitoraColors.lavender),
+              ),
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '$restSeconds',
+                    style: textTheme.displayMedium?.copyWith(
+                      color: FitoraColors.darkTextPrimary,
+                      fontWeight: FontWeight.bold,
+                      fontFeatures: const [FontFeature.tabularFigures()],
                     ),
                   ),
-                  const SizedBox(height: FitoraSpacing.md),
-                  WorkoutSessionStatsGrid(dose: exercise.dose),
-                ]);
-              }),
+                  Text(
+                    'seconds',
+                    style: textTheme.labelSmall?.copyWith(color: FitoraColors.darkTextSecondary),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        const Spacer(),
 
-              // ── Overview + controls (hide on completion) ──────────────
-              Consumer(builder: (context, ref, _) {
-                final status = ref.watch(workoutSessionControllerProvider(workout)
-                    .select((s) => s.status));
-                if (status == WorkoutSessionStatus.ended) {
-                  return const SizedBox.shrink();
-                }
-                return Column(children: [
-                  const SizedBox(height: FitoraSpacing.lg),
-                  _OverviewCard(workout: workout),
-                  const SizedBox(height: FitoraSpacing.md),
-                  Consumer(builder: (context, ref, _) {
-                    final canGoBack = ref.watch(workoutSessionControllerProvider(workout)
-                        .select((s) => s.hasPrevious));
-                    final canGoNext = ref.watch(workoutSessionControllerProvider(workout)
-                        .select((s) => s.hasNext));
-                    final isPaused = ref.watch(workoutSessionControllerProvider(workout)
-                        .select((s) => s.isPaused));
-                    final isResting = ref.watch(workoutSessionControllerProvider(workout)
-                        .select((s) => s.isResting));
-                    return FitoraCard(
-                      child: WorkoutSessionControls(
-                        canGoBack: canGoBack,
-                        canGoNext: canGoNext,
-                        isPaused: isPaused,
-                        isResting: isResting,
-                        onBack: onBack,
-                        onNext: onNext,
-                        onPause: onPause,
-                        onResume: onResume,
-                        onEnd: onEnd,
-                        onSkipRest: onSkipRest,
+        // Next Exercise Preview Card (minimal, clean)
+        if (nextExercise != null) ...[
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: FitoraColors.darkSurface,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: FitoraColors.darkBorder),
+            ),
+            child: Row(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: SizedBox(
+                    width: 72,
+                    height: 72,
+                    child: ExerciseMedia(
+                      gifPath: nextExercise.gifPath,
+                      targetMuscle: nextExercise.targetMuscle,
+                      height: 72,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'UP NEXT',
+                        style: textTheme.labelSmall?.copyWith(
+                          color: FitoraColors.lavender,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.0,
+                        ),
                       ),
-                    );
-                  }),
-                  const SizedBox(height: FitoraSpacing.xl),
-                ]);
-              }),
+                      const SizedBox(height: 2),
+                      Text(
+                        nextExercise.title,
+                        style: textTheme.titleMedium?.copyWith(
+                          color: FitoraColors.darkTextPrimary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      Text(
+                        nextExercise.dose.summary,
+                        style: textTheme.bodySmall?.copyWith(color: FitoraColors.darkTextSecondary),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Spacer(),
+        ],
+
+        // Rest controls
+        _buildControlsDock(context, isResting: true),
+      ],
+    );
+  }
+
+  // Work Phase UI
+  Widget _buildWorkoutContent(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final exercise = sessionState.currentExercise;
+    final remaining = sessionState.currentRemainingSeconds;
+    final total = exercise.dose.duration?.inSeconds ?? 30;
+    
+    final hasTimer = remaining != null;
+    final progress = hasTimer && total > 0 ? (1.0 - (remaining / total)).clamp(0.0, 1.0) : 0.0;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Exercise Name & Coaching Cue (Top of block)
+        Center(
+          child: Column(
+            children: [
+              Text(
+                exercise.title.toUpperCase(),
+                style: textTheme.headlineMedium?.copyWith(
+                  color: FitoraColors.darkTextPrimary,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: -0.5,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              if (exercise.instructions.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(
+                  exercise.instructions.first,
+                  style: textTheme.bodyMedium?.copyWith(
+                    color: FitoraColors.darkTextSecondary,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // Large Animated Exercise Visual
+        Expanded(
+          child: Container(
+            decoration: BoxDecoration(
+              color: FitoraColors.darkSurface,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: FitoraColors.darkBorder, width: 1.5),
+              boxShadow: [
+                BoxShadow(
+                  color: FitoraColors.mintGreen.withOpacity(0.04),
+                  blurRadius: 20,
+                  spreadRadius: 2,
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(22),
+              child: ExerciseMedia(
+                gifPath: exercise.gifPath,
+                targetMuscle: exercise.targetMuscle,
+                height: double.infinity,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // Combined Timer and Media Controls Row (Apple Fitness Inspired)
+        _buildBottomInteractiveDock(context, hasTimer, remaining, progress),
+      ],
+    );
+  }
+
+  // Bottom interactive row combining digital timer and media controls
+  Widget _buildBottomInteractiveDock(BuildContext context, bool hasTimer, int? remaining, double progress) {
+    final textTheme = Theme.of(context).textTheme;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+      decoration: BoxDecoration(
+        color: FitoraColors.darkSurface,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: FitoraColors.darkBorder),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          // Timer Widget
+          Row(
+            children: [
+              SizedBox(
+                width: 48,
+                height: 48,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    CircularProgressIndicator(
+                      value: hasTimer ? progress : 0.0,
+                      strokeWidth: 4.5,
+                      backgroundColor: FitoraColors.darkBorder,
+                      valueColor: const AlwaysStoppedAnimation(FitoraColors.mintGreen),
+                    ),
+                    Icon(
+                      hasTimer ? Icons.timer_outlined : Icons.repeat_rounded,
+                      size: 20,
+                      color: FitoraColors.mintGreen,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    hasTimer ? '${remaining}s' : 'Reps',
+                    style: textTheme.titleLarge?.copyWith(
+                      color: FitoraColors.darkTextPrimary,
+                      fontWeight: FontWeight.bold,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
+                  ),
+                  Text(
+                    hasTimer ? 'remaining' : sessionState.currentExercise.dose.summary,
+                    style: textTheme.labelSmall?.copyWith(color: FitoraColors.darkTextSecondary),
+                  ),
+                ],
+              ),
+            ],
+          ),
+
+          // Action Controls
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.skip_previous_rounded, size: 28),
+                color: FitoraColors.darkTextPrimary,
+                disabledColor: FitoraColors.darkBorder,
+                onPressed: sessionState.hasPrevious ? onBack : null,
+              ),
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: sessionState.isPaused ? onResume : onPause,
+                child: Container(
+                  width: 56,
+                  height: 56,
+                  decoration: const BoxDecoration(
+                    color: FitoraColors.mintGreen,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: FitoraColors.mintGreen,
+                        blurRadius: 12,
+                        offset: Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Icon(
+                    sessionState.isPaused ? Icons.play_arrow_rounded : Icons.pause_rounded,
+                    color: Colors.white,
+                    size: 32,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              IconButton(
+                icon: const Icon(Icons.skip_next_rounded, size: 28),
+                color: FitoraColors.darkTextPrimary,
+                disabledColor: FitoraColors.darkBorder,
+                onPressed: sessionState.hasNext ? onNext : onEnd,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Classic rest control dock
+  Widget _buildControlsDock(BuildContext context, {required bool isResting}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      decoration: BoxDecoration(
+        color: FitoraColors.darkSurface,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: FitoraColors.darkBorder),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          IconButton(
+            icon: const Icon(Icons.skip_previous_rounded, size: 28),
+            color: FitoraColors.darkTextPrimary,
+            disabledColor: FitoraColors.darkBorder,
+            onPressed: sessionState.hasPrevious ? onBack : null,
+          ),
+          const SizedBox(width: 12),
+          GestureDetector(
+            onTap: sessionState.isPaused ? onResume : onPause,
+            child: Container(
+              width: 56,
+              height: 56,
+              decoration: const BoxDecoration(
+                color: FitoraColors.lavender,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: FitoraColors.lavender,
+                    blurRadius: 12,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Icon(
+                sessionState.isPaused ? Icons.play_arrow_rounded : Icons.pause_rounded,
+                color: Colors.white,
+                size: 32,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          if (isResting && onSkipRest != null)
+            TextButton.icon(
+              style: TextButton.styleFrom(
+                foregroundColor: FitoraColors.lavender,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              ),
+              icon: const Icon(Icons.flash_on_rounded, size: 18),
+              label: const Text('Skip Rest', style: TextStyle(fontWeight: FontWeight.bold)),
+              onPressed: onSkipRest,
+            )
+          else
+            IconButton(
+              icon: const Icon(Icons.skip_next_rounded, size: 28),
+              color: FitoraColors.darkTextPrimary,
+              disabledColor: FitoraColors.darkBorder,
+              onPressed: sessionState.hasNext ? onNext : onEnd,
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Immersive Coaching Full Screen Mode UI ───────────────────────────────────
+
+class _ImmersiveCoachingView extends StatefulWidget {
+  final Workout workout;
+  final WorkoutSessionState session;
+  final VoidCallback onExit;
+  final VoidCallback onBack;
+  final VoidCallback onNext;
+  final VoidCallback onPause;
+  final VoidCallback onResume;
+  final VoidCallback onSkipRest;
+
+  const _ImmersiveCoachingView({
+    required this.workout,
+    required this.session,
+    required this.onExit,
+    required this.onBack,
+    required this.onNext,
+    required this.onPause,
+    required this.onResume,
+    required this.onSkipRest,
+  });
+
+  @override
+  State<_ImmersiveCoachingView> createState() => _ImmersiveCoachingViewState();
+}
+
+class _ImmersiveCoachingViewState extends State<_ImmersiveCoachingView> with SingleTickerProviderStateMixin {
+  late final AnimationController _breathController;
+  late final Animation<double> _breathAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    // 5-second complete slow breath cycle (inhale 2.5s, exhale 2.5s)
+    _breathController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2500),
+    )..repeat(reverse: true);
+
+    _breathAnimation = Tween<double>(begin: 0.9, end: 1.1).animate(
+      CurvedAnimation(
+        parent: _breathController,
+        curve: Curves.easeInOut,
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _breathController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final exercise = widget.session.currentExercise;
+    final isResting = widget.session.isResting;
+    final glowColor = isResting ? FitoraColors.lavender : FitoraColors.mintGreen;
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onHorizontalDragEnd: (details) {
+        if (details.primaryVelocity == null) return;
+        // Swipe left -> next, Swipe right -> previous
+        if (details.primaryVelocity! < -300) {
+          if (widget.session.hasNext) {
+            widget.onNext();
+          }
+        } else if (details.primaryVelocity! > 300) {
+          if (widget.session.hasPrevious) {
+            widget.onBack();
+          }
+        }
+      },
+      child: Container(
+        color: Colors.black,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            // ── Immersive Dark Background with Breathing Pulse Glow ──
+            AnimatedBuilder(
+              animation: _breathAnimation,
+              builder: (context, _) {
+                final scale = _breathAnimation.value;
+                return Container(
+                  decoration: BoxDecoration(
+                    gradient: RadialGradient(
+                      center: Alignment.center,
+                      radius: 1.3 * scale,
+                      colors: [
+                        glowColor.withValues(alpha: 0.12 * scale),
+                        const Color(0xFF040606),
+                        Colors.black,
+                      ],
+                      stops: const [0.0, 0.7, 1.0],
+                    ),
+                  ),
+                );
+              },
+            ),
+
+            // ── Prioritized Exercise Demonstration (Primary Hero Focus) ──
+            if (!isResting)
+              Positioned.fill(
+                top: 80,
+                bottom: 210, // Generous spacing for coaching overlay & dock
+                left: 20,
+                right: 20,
+                child: Center(
+                  child: AnimatedBuilder(
+                    animation: _breathAnimation,
+                    builder: (context, child) {
+                      final scale = _breathAnimation.value;
+                      return Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(32),
+                          boxShadow: [
+                            BoxShadow(
+                              color: glowColor.withValues(alpha: 0.08 * scale),
+                              blurRadius: 40 * scale,
+                              spreadRadius: 2 * scale,
+                            ),
+                          ],
+                        ),
+                        child: child,
+                      );
+                    },
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(28),
+                      child: ExerciseMedia(
+                        gifPath: exercise.gifPath,
+                        targetMuscle: exercise.targetMuscle,
+                        height: double.infinity,
+                      ),
+                    ),
+                  ),
+                ),
+              )
+            else
+              // Rest content layout
+              Positioned.fill(
+                child: _buildImmersiveRest(context),
+              ),
+
+            // ── Bottom Dark Scrim for Readability ──────────────────────────────
+            if (!isResting)
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                height: 260,
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        Colors.black.withValues(alpha: 0.7),
+                        Colors.black,
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+            // ── Floating Exit Button (Top Left) ────────────────────────────────
+            Positioned(
+              top: 20,
+              left: 20,
+              child: ClipOval(
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                  child: Container(
+                    color: Colors.white.withValues(alpha: 0.1),
+                    child: IconButton(
+                      icon: const Icon(Icons.fullscreen_exit_rounded, color: Colors.white, size: 28),
+                      onPressed: widget.onExit,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
+            // ── Floating Timer Widget (Top Right - Subtle Overlay) ────────────
+            if (!isResting)
+              Positioned(
+                top: 20,
+                right: 20,
+                child: _buildImmersiveFloatingTimer(context),
+              ),
+
+            // ── Bottom Immersive Overlay (Title, Minimal Coaching Text & Controls) ──
+            if (!isResting)
+              Positioned(
+                left: 24,
+                right: 24,
+                bottom: 24,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Progress Indicator
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: LinearProgressIndicator(
+                        value: widget.session.progress,
+                        minHeight: 3.0,
+                        backgroundColor: Colors.white12,
+                        valueColor: AlwaysStoppedAnimation(glowColor),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    
+                    // Centered Exercise Name
+                    Text(
+                      exercise.title.toUpperCase(),
+                      style: textTheme.headlineSmall?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 6),
+
+                    // Minimal Coaching Text
+                    if (exercise.instructions.isNotEmpty)
+                      Text(
+                        exercise.instructions.first,
+                        style: textTheme.bodyMedium?.copyWith(
+                          color: Colors.white.withValues(alpha: 0.7),
+                          fontWeight: FontWeight.w500,
+                        ),
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    const SizedBox(height: 20),
+
+                    // Translucent Glass Controls Bar
+                    _buildImmersiveControlsDock(context, isResting: false),
+                  ],
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Floating glassy timer overlay for full screen mode
+  Widget _buildImmersiveFloatingTimer(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final remaining = widget.session.currentRemainingSeconds;
+    final total = widget.session.currentExercise.dose.duration?.inSeconds ?? 30;
+    final hasTimer = remaining != null;
+    final progress = hasTimer && total > 0 ? (remaining / total).clamp(0.0, 1.0) : 0.0;
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: Colors.black.withValues(alpha: 0.35),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  value: hasTimer ? progress : 0.0,
+                  strokeWidth: 2.5,
+                  backgroundColor: Colors.white24,
+                  valueColor: const AlwaysStoppedAnimation(FitoraColors.mintGreen),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                hasTimer ? '${remaining}s' : 'Reps',
+                style: textTheme.titleSmall?.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Custom Full Screen Rest layout
+  Widget _buildImmersiveRest(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final restSeconds = widget.session.restRemainingSeconds ?? 0;
+    final nextIndex = widget.session.currentIndex + 1;
+    final hasNext = nextIndex < widget.session.totalExercises;
+    final nextExercise = hasNext ? widget.workout.exercises[nextIndex] : null;
+
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Spacer(),
+            Text(
+              'REST PERIOD',
+              style: textTheme.labelLarge?.copyWith(
+                color: FitoraColors.lavender,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 3.0,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              '$restSeconds',
+              style: textTheme.displayLarge?.copyWith(
+                color: Colors.white,
+                fontSize: 88,
+                fontWeight: FontWeight.bold,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+            ).animate().scale(duration: 300.ms, curve: Curves.bounceOut),
+            Text(
+              'seconds left',
+              style: textTheme.bodyLarge?.copyWith(color: Colors.white60),
+            ),
+            const Spacer(),
+
+            // Next Up glassmorphic preview during rest
+            if (nextExercise != null) ...[
+              ClipRRect(
+                borderRadius: BorderRadius.circular(24),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.06),
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                    ),
+                    child: Row(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: SizedBox(
+                            width: 64,
+                            height: 64,
+                            child: ExerciseMedia(
+                              gifPath: nextExercise.gifPath,
+                              targetMuscle: nextExercise.targetMuscle,
+                              height: 64,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'COMING UP NEXT',
+                                style: TextStyle(
+                                  color: FitoraColors.lavender,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 1.5,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                nextExercise.title,
+                                style: textTheme.titleMedium?.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              Text(
+                                nextExercise.dose.summary,
+                                style: const TextStyle(color: Colors.white54, fontSize: 12),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const Spacer(),
+            ],
+
+            // Translucent glass controls dock
+            _buildImmersiveControlsDock(context, isResting: true),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Shared glassmorphic controls deck for immersive mode
+  Widget _buildImmersiveControlsDock(BuildContext context, {required bool isResting}) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(32),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(32),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.skip_previous_rounded, size: 28, color: Colors.white),
+                onPressed: widget.session.hasPrevious ? widget.onBack : null,
+              ),
+              GestureDetector(
+                onTap: widget.session.isPaused ? widget.onResume : widget.onPause,
+                child: Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    color: isResting ? FitoraColors.lavender : FitoraColors.mintGreen,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    widget.session.isPaused ? Icons.play_arrow_rounded : Icons.pause_rounded,
+                    color: Colors.black,
+                    size: 30,
+                  ),
+                ),
+              ),
+              if (isResting)
+                TextButton.icon(
+                  style: TextButton.styleFrom(foregroundColor: FitoraColors.lavender),
+                  icon: const Icon(Icons.flash_on_rounded, size: 16),
+                  label: const Text('Skip', style: TextStyle(fontWeight: FontWeight.bold)),
+                  onPressed: widget.onSkipRest,
+                )
+              else
+                IconButton(
+                  icon: const Icon(Icons.skip_next_rounded, size: 28, color: Colors.white),
+                  onPressed: widget.session.hasNext ? widget.onNext : widget.onPause,
+                ),
             ],
           ),
         ),
@@ -292,247 +1158,7 @@ class _SessionLayout extends StatelessWidget {
   }
 }
 
-// ── Top bar ───────────────────────────────────────────────────────────────────
-
-class _TopBar extends StatelessWidget {
-  final String elapsedLabel;
-  final int completed;
-  final int total;
-  final bool isPaused;
-
-  const _TopBar({
-    required this.elapsedLabel,
-    required this.completed,
-    required this.total,
-    required this.isPaused,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    final colorScheme = Theme.of(context).colorScheme;
-    final progress = total == 0 ? 0.0 : completed / total;
-
-    return FitoraCard(
-      child: Column(
-        children: [
-          Row(
-            children: [
-              // Elapsed
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Elapsed', style: textTheme.labelSmall),
-                  const SizedBox(height: 2),
-                  Text(elapsedLabel,
-                      style: textTheme.titleMedium?.copyWith(
-                        fontFeatures: const [FontFeature.tabularFigures()],
-                      )),
-                ],
-              ),
-              const Spacer(),
-              // Exercises count
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: FitoraSpacing.sm,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: isPaused
-                      ? colorScheme.secondaryContainer
-                      : colorScheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Text(
-                  isPaused ? 'Paused' : '$completed / $total',
-                  style: textTheme.labelMedium?.copyWith(
-                    color: isPaused
-                        ? colorScheme.onSecondaryContainer
-                        : colorScheme.onPrimaryContainer,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: FitoraSpacing.sm),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: TweenAnimationBuilder<double>(
-              tween: Tween(begin: 0, end: progress),
-              duration: const Duration(milliseconds: 500),
-              curve: Curves.easeOut,
-              builder: (context, v, _) => LinearProgressIndicator(
-                value: v,
-                minHeight: 4,
-                backgroundColor: colorScheme.surfaceContainerHighest,
-                valueColor: AlwaysStoppedAnimation(colorScheme.primary),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Timer ring ────────────────────────────────────────────────────────────────
-
-class _TimerRing extends StatelessWidget {
-  final int? remainingSeconds;
-  final int? totalSeconds;
-
-  const _TimerRing({this.remainingSeconds, this.totalSeconds});
-
-  String _fmt(int? s) {
-    if (s == null) return '--:--';
-    final m = s ~/ 60;
-    final sec = s % 60;
-    return '${m.toString().padLeft(2, '0')}:${sec.toString().padLeft(2, '0')}';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-    final hasTimer = remainingSeconds != null && totalSeconds != null && totalSeconds! > 0;
-    final progress = hasTimer ? 1.0 - (remainingSeconds! / totalSeconds!) : 0.0;
-
-    // Warning color when < 10 seconds remain
-    final isUrgent = hasTimer && remainingSeconds! < 10;
-    final ringColor = isUrgent ? colorScheme.error : colorScheme.primary;
-
-    return SizedBox(
-      width: 110,
-      height: 110,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          TweenAnimationBuilder<double>(
-            tween: Tween(begin: 0, end: progress),
-            duration: const Duration(milliseconds: 400),
-            builder: (context, v, _) => CircularProgressIndicator(
-              value: v,
-              strokeWidth: 9,
-              backgroundColor: colorScheme.surfaceContainerHighest,
-              valueColor: AlwaysStoppedAnimation(ringColor),
-            ),
-          ),
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                _fmt(remainingSeconds),
-                style: textTheme.titleLarge?.copyWith(
-                  fontFeatures: const [FontFeature.tabularFigures()],
-                  color: isUrgent ? colorScheme.error : null,
-                ),
-              ),
-              Text(
-                hasTimer ? 'remaining' : 'reps',
-                style: textTheme.labelSmall,
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Rest card ─────────────────────────────────────────────────────────────────
-
-class _RestCard extends ConsumerWidget {
-  final Workout workout;
-
-  const _RestCard({required this.workout});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final textTheme = Theme.of(context).textTheme;
-    final colorScheme = Theme.of(context).colorScheme;
-
-    final restRemaining = ref.watch(
-      workoutSessionControllerProvider(workout).select((s) => s.restRemainingSeconds),
-    );
-    final currentIndex = ref.watch(
-      workoutSessionControllerProvider(workout).select((s) => s.currentIndex),
-    );
-    final totalExercises = ref.watch(
-      workoutSessionControllerProvider(workout).select((s) => s.totalExercises),
-    );
-
-    final restSeconds = restRemaining ?? 0;
-    final nextIndex = currentIndex + 1;
-    final preview =
-        nextIndex < totalExercises ? workout.exercises[nextIndex] : null;
-
-    return FitoraCard(
-      child: Column(
-        children: [
-          // Header
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.self_improvement_outlined,
-                  color: colorScheme.secondary, size: 20),
-              const SizedBox(width: FitoraSpacing.xs),
-              Text('Rest', style: textTheme.titleMedium),
-            ],
-          ),
-          const SizedBox(height: FitoraSpacing.lg),
-
-          // Countdown ring
-          SizedBox(
-            width: 100,
-            height: 100,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                CircularProgressIndicator(
-                  value: 1.0, // full ring as backdrop
-                  strokeWidth: 8,
-                  backgroundColor: colorScheme.surfaceContainerHighest,
-                  valueColor:
-                      AlwaysStoppedAnimation(colorScheme.secondary.withValues(alpha: 0.25)),
-                ),
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      '$restSeconds',
-                      style: textTheme.headlineMedium?.copyWith(
-                        color: colorScheme.secondary,
-                        fontWeight: FontWeight.bold,
-                        fontFeatures: const [FontFeature.tabularFigures()],
-                      ),
-                    ),
-                    Text('sec', style: textTheme.labelSmall),
-                  ],
-                ),
-              ],
-            ),
-          ),
-
-          if (preview != null) ...[
-            const SizedBox(height: FitoraSpacing.lg),
-            const Divider(height: 1),
-            const SizedBox(height: FitoraSpacing.md),
-            Text('Up next', style: textTheme.labelSmall),
-            const SizedBox(height: FitoraSpacing.xs),
-            Text(
-              preview.title,
-              style: textTheme.titleSmall,
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-// ── Completion screen ─────────────────────────────────────────────────────────
+// ── Completion Screen (Calm & Elegant Glassmorphic) ──────────────────────────
 
 class _CompletionScreen extends ConsumerWidget {
   final Workout workout;
@@ -542,100 +1168,87 @@ class _CompletionScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final textTheme = Theme.of(context).textTheme;
-    final colorScheme = Theme.of(context).colorScheme;
 
     final session = ref.watch(workoutSessionControllerProvider(workout));
     final progressState = ref.watch(progressControllerProvider);
     final streak = progressState.streak;
 
-    final completionRatio = session.totalExercises == 0
-        ? 0.0
-        : session.completedExercises / session.totalExercises;
-    final estimatedCalories = (workout.calories * completionRatio).round();
-    final isFullCompletion = completionRatio >= 1.0;
+    // Fetch Personalized weight metrics for dynamic calories formulas
+    final profile = ref.watch(personalizationControllerProvider.select((state) => state.profile));
+    final userWeight = profile.weightKg ?? 70.0;
 
-    final motivational = isFullCompletion
-        ? 'You crushed it! Every rep counts. 💪'
-        : 'Great effort! Progress, not perfection.';
+    // MET calculations based on category
+    double met = 6.0;
+    if (workout.category == WorkoutCategory.wellness) met = 3.5;
+    if (workout.category == WorkoutCategory.gym) met = 7.5;
+
+    final completionRatio = session.totalExercises == 0 ? 0.0 : session.completedExercises / session.totalExercises;
+
+    // Calories: hours * MET * weightKg * 1.05
+    final activeHours = session.totalElapsedSeconds / 3600.0;
+    final estimatedCalories = (activeHours * met * userWeight * 1.05).round();
+    
+    final isFullCompletion = completionRatio >= 1.0;
+    final motivational = isFullCompletion ? 'You crushed it! Every rep counts. 💪' : 'Great effort! Progress, not perfection.';
 
     return Column(
       children: [
-        // Hero celebration area
+        // Trophy celebration header
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(FitoraSpacing.xl),
+          padding: const EdgeInsets.all(32.0),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                colorScheme.primaryContainer,
-                colorScheme.secondaryContainer,
-              ],
-            ),
-            borderRadius: FitoraSpacing.cardRadius,
+            gradient: FitoraGradients.calm,
+            borderRadius: BorderRadius.circular(28),
+            boxShadow: [
+              BoxShadow(
+                color: FitoraColors.mintGreen.withOpacity(0.2),
+                blurRadius: 30,
+                spreadRadius: 2,
+                offset: const Offset(0, 10),
+              ),
+            ],
           ),
           child: Column(
             children: [
-              // Trophy / medal icon
               Container(
                 width: 72,
                 height: 72,
                 decoration: BoxDecoration(
-                  color: colorScheme.primary,
+                  color: Colors.white.withOpacity(0.2),
                   shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: colorScheme.primary.withValues(alpha: 0.35),
-                      blurRadius: 24,
-                      spreadRadius: 4,
-                    ),
-                  ],
+                  border: Border.all(color: Colors.white.withOpacity(0.4), width: 1.5),
                 ),
-                child: Icon(
-                  isFullCompletion ? Icons.emoji_events : Icons.check_rounded,
-                  color: colorScheme.onPrimary,
-                  size: 38,
-                ),
-              )
-                  .animate()
-                  .scale(
-                    begin: const Offset(0.4, 0.4),
-                    end: const Offset(1, 1),
-                    delay: 200.ms,
-                    duration: 600.ms,
-                    curve: Curves.elasticOut,
-                  ),
-              const SizedBox(height: FitoraSpacing.md),
+                child: const Icon(Icons.emoji_events_rounded, color: Colors.white, size: 34),
+              ).animate().scale(delay: 200.ms, duration: 600.ms, curve: Curves.elasticOut),
+              const SizedBox(height: 16),
               Text(
-                isFullCompletion ? 'Workout complete!' : 'Session ended',
+                isFullCompletion ? 'Workout Complete!' : 'Session Ended',
                 style: textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: colorScheme.onPrimaryContainer,
+                  color: Colors.white,
                 ),
                 textAlign: TextAlign.center,
-              )
-                  .animate()
-                  .fadeIn(delay: 350.ms, duration: 400.ms)
-                  .slideY(begin: 0.2, end: 0, duration: 400.ms),
-              const SizedBox(height: FitoraSpacing.xs),
+              ),
+              const SizedBox(height: 4),
               Text(
                 motivational,
-                style: textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.onPrimaryContainer.withValues(alpha: 0.8),
-                ),
+                style: TextStyle(color: Colors.white.withValues(alpha: 0.9)),
                 textAlign: TextAlign.center,
-              )
-                  .animate()
-                  .fadeIn(delay: 450.ms, duration: 400.ms),
+              ),
             ],
           ),
         ),
+        const SizedBox(height: 24),
 
-        const SizedBox(height: FitoraSpacing.lg),
-
-        // Stats card
-        FitoraCard(
+        // Statistics Summary
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: FitoraColors.darkSurface,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: FitoraColors.darkBorder),
+          ),
           child: Column(
             children: [
               _StatRow(
@@ -643,53 +1256,48 @@ class _CompletionScreen extends ConsumerWidget {
                 label: 'Duration',
                 value: session.totalElapsedLabel,
               ),
-              const Divider(height: FitoraSpacing.lg),
+              const Divider(height: 24, color: FitoraColors.darkBorder),
               _StatRow(
                 icon: Icons.fitness_center_outlined,
                 label: 'Exercises',
-                value:
-                    '${session.completedExercises} / ${session.totalExercises}',
+                value: '${session.completedExercises} / ${session.totalExercises}',
               ),
-              const Divider(height: FitoraSpacing.lg),
+              const Divider(height: 24, color: FitoraColors.darkBorder),
               _StatRow(
                 icon: Icons.local_fire_department_outlined,
-                label: 'Calories',
+                label: 'Est. Cal Burn',
                 value: '$estimatedCalories kcal',
-                accent: true,
-                accentColor: colorScheme.tertiary,
+                accentColor: FitoraColors.mintGreen,
               ),
               if (streak.currentStreak > 0) ...[
-                const Divider(height: FitoraSpacing.lg),
+                const Divider(height: 24, color: FitoraColors.darkBorder),
                 _StatRow(
                   icon: Icons.whatshot_outlined,
                   label: 'Streak',
                   value: '${streak.currentStreak} day${streak.currentStreak == 1 ? '' : 's'} 🔥',
-                  accent: true,
-                  accentColor: colorScheme.secondary,
+                  accentColor: FitoraColors.lavender,
                 ),
               ],
             ],
           ),
-        )
-            .animate()
-            .fadeIn(delay: 300.ms, duration: 400.ms)
-            .slideY(begin: 0.1, end: 0, duration: 400.ms),
+        ).animate().fadeIn(delay: 300.ms, duration: 400.ms),
+        const SizedBox(height: 32),
 
-        const SizedBox(height: FitoraSpacing.lg),
-
-        // Done button
+        // Complete Button
         SizedBox(
           width: double.infinity,
+          height: 56,
           child: FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: FitoraColors.mintGreen,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              elevation: 4,
+            ),
             onPressed: () => context.pop(),
-            child: const Text('Done'),
+            child: const Text('Return to Home', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
           ),
-        )
-            .animate()
-            .fadeIn(delay: 500.ms, duration: 400.ms)
-            .slideY(begin: 0.15, end: 0, duration: 400.ms),
-
-        const SizedBox(height: FitoraSpacing.xl),
+        ).animate().fadeIn(delay: 450.ms, duration: 400.ms),
       ],
     );
   }
@@ -699,39 +1307,33 @@ class _StatRow extends StatelessWidget {
   final IconData icon;
   final String label;
   final String value;
-  final bool accent;
   final Color? accentColor;
 
   const _StatRow({
     required this.icon,
     required this.label,
     required this.value,
-    this.accent = false,
     this.accentColor,
   });
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
-    final color = accent ? (accentColor ?? colorScheme.primary) : colorScheme.onSurfaceVariant;
 
     return Row(
       children: [
-        Icon(icon, size: 20, color: color),
-        const SizedBox(width: FitoraSpacing.sm),
+        Icon(icon, size: 20, color: accentColor ?? FitoraColors.darkTextSecondary),
+        const SizedBox(width: 12),
         Text(
           label,
-          style: textTheme.bodyMedium?.copyWith(
-            color: colorScheme.onSurfaceVariant,
-          ),
+          style: textTheme.bodyMedium?.copyWith(color: FitoraColors.darkTextSecondary),
         ),
         const Spacer(),
         Text(
           value,
           style: textTheme.titleSmall?.copyWith(
-            color: accent ? color : null,
-            fontWeight: accent ? FontWeight.bold : FontWeight.w600,
+            color: accentColor ?? FitoraColors.darkTextPrimary,
+            fontWeight: FontWeight.bold,
           ),
         ),
       ],
@@ -739,58 +1341,21 @@ class _StatRow extends StatelessWidget {
   }
 }
 
-// ── Overview card ─────────────────────────────────────────────────────────────
-
-class _OverviewCard extends StatelessWidget {
-  final Workout workout;
-
-  const _OverviewCard({required this.workout});
-
-  @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return FitoraCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Workout overview', style: textTheme.titleSmall),
-          const SizedBox(height: FitoraSpacing.xs),
-          Text(
-            workout.subtitle,
-            style: textTheme.bodySmall?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(height: FitoraSpacing.sm),
-          WorkoutMetricsRow(
-            workout: workout,
-            accentColor: colorScheme.secondary,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Background ────────────────────────────────────────────────────────────────
+// ── Gradient Session Background ───────────────────────────────────────────────
 
 class _SessionBackground extends StatelessWidget {
   const _SessionBackground();
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
+    return Container(
+      decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            colorScheme.surface,
-            colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+            FitoraColors.darkBg,
+            Color(0xFF070B0B),
           ],
         ),
       ),

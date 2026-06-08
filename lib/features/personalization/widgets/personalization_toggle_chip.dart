@@ -23,7 +23,7 @@ class PersonalizationToggleChip extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
     final background = isSelected
         ? accentColor.withOpacity(0.16)
-        : colorScheme.surfaceVariant;
+        : colorScheme.surfaceContainerHighest;
     final borderColor = isSelected ? accentColor : colorScheme.outlineVariant;
 
     return AnimatedContainer(

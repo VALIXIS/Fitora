@@ -35,12 +35,7 @@ class FitoraNavItems {
       icon: Icons.show_chart_outlined,
       selectedIcon: Icons.show_chart,
     ),
-    FitoraNavItem(
-      label: 'Wellness',
-      route: AppRoutes.wellness,
-      icon: Icons.spa_outlined,
-      selectedIcon: Icons.spa,
-    ),
+
     FitoraNavItem(
       label: 'Profile',
       route: AppRoutes.profile,

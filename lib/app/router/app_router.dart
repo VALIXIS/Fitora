@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:fitora/app/navigation/app_shell.dart';
 import 'package:fitora/app/router/app_routes.dart';
+import 'package:fitora/app/router/startup_route_resolver.dart';
 import 'package:fitora/features/auth/models/auth_status.dart';
 import 'package:fitora/features/auth/presentation/auth_email_screen.dart';
 import 'package:fitora/features/auth/presentation/auth_screen.dart';
@@ -15,11 +16,16 @@ import 'package:fitora/features/personalization/providers/personalization_contro
 import 'package:fitora/features/personalization/screens/personalization_flow_screen.dart';
 import 'package:fitora/features/profile/screens/profile_screen.dart';
 import 'package:fitora/features/progress/screens/progress_screen.dart';
-import 'package:fitora/features/splash/screens/splash_screen.dart';
-import 'package:fitora/features/wellness/screens/wellness_screen.dart';
 import 'package:fitora/features/workouts/screens/workout_detail_screen.dart';
 import 'package:fitora/features/workouts/session/screens/workout_session_screen.dart';
 import 'package:fitora/features/workouts/screens/workouts_screen.dart';
+import 'package:fitora/features/health_sync/screens/health_sync_screen.dart';
+import 'package:fitora/features/settings/screens/settings_screen.dart';
+import 'package:fitora/features/settings/screens/about_screen.dart';
+import 'package:fitora/features/settings/screens/privacy_policy_screen.dart';
+import 'package:fitora/features/settings/screens/terms_of_service_screen.dart';
+import 'package:fitora/features/profile/screens/edit_profile_screen.dart';
+import 'package:fitora/features/ai_coach/screens/ai_coach_screen.dart';
 import 'package:fitora/shared/screens/not_found_screen.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -27,106 +33,174 @@ final _shellNavigatorKeys = [
   GlobalKey<NavigatorState>(debugLabel: 'home'),
   GlobalKey<NavigatorState>(debugLabel: 'workouts'),
   GlobalKey<NavigatorState>(debugLabel: 'progress'),
-  GlobalKey<NavigatorState>(debugLabel: 'wellness'),
   GlobalKey<NavigatorState>(debugLabel: 'profile'),
 ];
 
+CustomTransitionPage<T> fadeThroughTransitionPage<T>({
+  required BuildContext context,
+  required GoRouterState state,
+  required Widget child,
+}) {
+  return CustomTransitionPage<T>(
+    key: state.pageKey,
+    child: child,
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      return FadeTransition(
+        opacity: CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeInOut,
+        ),
+        child: child,
+      );
+    },
+    transitionDuration: const Duration(milliseconds: 240),
+  );
+}
+
+CustomTransitionPage<T> slideUpTransitionPage<T>({
+  required BuildContext context,
+  required GoRouterState state,
+  required Widget child,
+}) {
+  return CustomTransitionPage<T>(
+    key: state.pageKey,
+    child: child,
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      final slide = Tween<Offset>(
+        begin: const Offset(0.0, 0.04),
+        end: Offset.zero,
+      ).animate(
+        CurvedAnimation(
+          parent: animation,
+          curve: const Cubic(0.23, 1.0, 0.32, 1.0), // Smooth premium iOS cubic-bezier
+        ),
+      );
+      final fade = Tween<double>(
+        begin: 0.0,
+        end: 1.0,
+      ).animate(
+        CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeInOut,
+        ),
+      );
+      return FadeTransition(
+        opacity: fade,
+        child: SlideTransition(
+          position: slide,
+          child: child,
+        ),
+      );
+    },
+    transitionDuration: const Duration(milliseconds: 320),
+  );
+}
+
+class _RouterRefreshNotifier extends ChangeNotifier {
+  _RouterRefreshNotifier(Ref ref) {
+    ref.listen(authStateProvider, (_, _) => notifyListeners());
+    ref.listen(onboardingControllerProvider, (_, _) => notifyListeners());
+    ref.listen(personalizationControllerProvider, (_, _) => notifyListeners());
+  }
+}
+
 final appRouterProvider = Provider<GoRouter>(
   (ref) {
-    final authStatus =
-        ref.watch(authStateProvider.select((state) => state.status));
-    final onboardingIsLoading = ref.watch(
-      onboardingControllerProvider.select((state) => state.isLoading),
-    );
-    final onboardingIsCompleted = ref.watch(
-      onboardingControllerProvider.select((state) => state.isCompleted),
-    );
-    final personalizationIsLoading = ref.watch(
-      personalizationControllerProvider.select((state) => state.isLoading),
-    );
-    final personalizationIsCompleted = ref.watch(
-      personalizationControllerProvider.select((state) => state.isCompleted),
-    );
+    final routerRefreshNotifier = _RouterRefreshNotifier(ref);
+    ref.onDispose(routerRefreshNotifier.dispose);
 
     return GoRouter(
       navigatorKey: _rootNavigatorKey,
-      initialLocation: AppRoutes.splash,
+      initialLocation: AppRoutes.home,
       debugLogDiagnostics: kDebugMode,
+      refreshListenable: routerRefreshNotifier,
       redirect: (context, state) {
         final location = state.matchedLocation;
         final isAuthFlow =
             location == AppRoutes.auth || location == AppRoutes.authEmail;
         final isProfileSetup = location == AppRoutes.profileSetup;
+        final onboardingState = ref.read(onboardingControllerProvider);
+        final personalizationState = ref.read(personalizationControllerProvider);
+        final authSession = ref.read(authStateProvider);
 
-        if (location == AppRoutes.splash) {
+        if (onboardingState.isLoading ||
+            personalizationState.isLoading ||
+            authSession.isLoading) {
           return null;
         }
 
-        if (onboardingIsLoading ||
-            personalizationIsLoading ||
-            authStatus == AuthStatus.loading) {
+        if (location == AppRoutes.onboarding && !onboardingState.isCompleted) {
           return null;
         }
 
-        if (!onboardingIsCompleted) {
-          return location == AppRoutes.onboarding
-              ? null
-              : AppRoutes.onboarding;
+        if (!onboardingState.isCompleted) {
+          return AppRoutes.onboarding;
         }
 
-        if (authStatus == AuthStatus.unauthenticated) {
-          if (isAuthFlow) {
+        final startupRoute = resolveStartupRoute(
+          onboardingComplete: onboardingState.isCompleted,
+          authComplete: authSession.status == AuthStatus.authenticated ||
+              authSession.status == AuthStatus.guest,
+          personalizationComplete: personalizationState.isCompleted,
+          authStatus: authSession.status,
+        );
+
+        if (startupRoute != AppRoutes.home) {
+          if (location == startupRoute ||
+              (isAuthFlow && startupRoute == AppRoutes.auth) ||
+              (isProfileSetup && startupRoute == AppRoutes.profileSetup)) {
             return null;
           }
-          if (isProfileSetup) {
-            return AppRoutes.auth;
-          }
-          return AppRoutes.auth;
-        }
-
-        if (authStatus == AuthStatus.error) {
-          return isAuthFlow ? null : AppRoutes.auth;
-        }
-
-        final isAllowed = authStatus == AuthStatus.authenticated ||
-            authStatus == AuthStatus.guest;
-
-        if (isAllowed && !personalizationIsCompleted) {
-          return isProfileSetup ? null : AppRoutes.profileSetup;
-        }
-
-        if (isAllowed &&
-            (isAuthFlow || location == AppRoutes.onboarding || isProfileSetup)) {
-          return AppRoutes.home;
+          return startupRoute;
         }
 
         return null;
       },
       routes: [
         GoRoute(
-          path: AppRoutes.splash,
-          name: AppRouteNames.splash,
-          builder: (context, state) => const SplashScreen(),
-        ),
-        GoRoute(
           path: AppRoutes.onboarding,
           name: AppRouteNames.onboarding,
-          builder: (context, state) => const OnboardingScreen(),
+          pageBuilder: (context, state) => slideUpTransitionPage(
+            context: context,
+            state: state,
+            child: const OnboardingScreen(),
+          ),
         ),
         GoRoute(
           path: AppRoutes.auth,
           name: AppRouteNames.auth,
-          builder: (context, state) => const AuthScreen(),
+          pageBuilder: (context, state) => slideUpTransitionPage(
+            context: context,
+            state: state,
+            child: const AuthScreen(),
+          ),
         ),
         GoRoute(
           path: AppRoutes.authEmail,
           name: AppRouteNames.authEmail,
-          builder: (context, state) => const AuthEmailScreen(),
+          pageBuilder: (context, state) => slideUpTransitionPage(
+            context: context,
+            state: state,
+            child: const AuthEmailScreen(),
+          ),
         ),
         GoRoute(
           path: AppRoutes.profileSetup,
           name: AppRouteNames.profileSetup,
-          builder: (context, state) => const PersonalizationFlowScreen(),
+          pageBuilder: (context, state) => slideUpTransitionPage(
+            context: context,
+            state: state,
+            child: const PersonalizationFlowScreen(),
+          ),
+        ),
+        GoRoute(
+          path: AppRoutes.aiCoach,
+          name: AppRouteNames.aiCoach,
+          pageBuilder: (context, state) => slideUpTransitionPage(
+            context: context,
+            state: state,
+            child: const AICoachScreen(),
+          ),
         ),
         StatefulShellRoute.indexedStack(
           builder: (context, state, navigationShell) => AppShell(
@@ -139,8 +213,10 @@ final appRouterProvider = Provider<GoRouter>(
                 GoRoute(
                   path: AppRoutes.home,
                   name: AppRouteNames.home,
-                  pageBuilder: (context, state) => const NoTransitionPage(
-                    child: HomeScreen(),
+                  pageBuilder: (context, state) => fadeThroughTransitionPage(
+                    context: context,
+                    state: state,
+                    child: const HomeScreen(),
                   ),
                 ),
               ],
@@ -151,24 +227,34 @@ final appRouterProvider = Provider<GoRouter>(
                 GoRoute(
                   path: AppRoutes.workouts,
                   name: AppRouteNames.workouts,
-                  pageBuilder: (context, state) => const NoTransitionPage(
-                    child: WorkoutsScreen(),
+                  pageBuilder: (context, state) => fadeThroughTransitionPage(
+                    context: context,
+                    state: state,
+                    child: const WorkoutsScreen(),
                   ),
                   routes: [
                     GoRoute(
                       path: AppRoutes.workoutDetail,
                       name: AppRouteNames.workoutDetail,
-                      builder: (context, state) {
+                      pageBuilder: (context, state) {
                         final id = state.pathParameters['id'] ?? '';
-                        return WorkoutDetailScreen(workoutId: id);
+                        return slideUpTransitionPage(
+                          context: context,
+                          state: state,
+                          child: WorkoutDetailScreen(workoutId: id),
+                        );
                       },
                     ),
                     GoRoute(
                       path: AppRoutes.workoutSession,
                       name: AppRouteNames.workoutSession,
-                      builder: (context, state) {
+                      pageBuilder: (context, state) {
                         final id = state.pathParameters['id'] ?? '';
-                        return WorkoutSessionScreen(workoutId: id);
+                        return slideUpTransitionPage(
+                          context: context,
+                          state: state,
+                          child: WorkoutSessionScreen(workoutId: id),
+                        );
                       },
                     ),
                   ],
@@ -181,8 +267,10 @@ final appRouterProvider = Provider<GoRouter>(
                 GoRoute(
                   path: AppRoutes.progress,
                   name: AppRouteNames.progress,
-                  pageBuilder: (context, state) => const NoTransitionPage(
-                    child: ProgressScreen(),
+                  pageBuilder: (context, state) => fadeThroughTransitionPage(
+                    context: context,
+                    state: state,
+                    child: const ProgressScreen(),
                   ),
                 ),
               ],
@@ -191,23 +279,67 @@ final appRouterProvider = Provider<GoRouter>(
               navigatorKey: _shellNavigatorKeys[3],
               routes: [
                 GoRoute(
-                  path: AppRoutes.wellness,
-                  name: AppRouteNames.wellness,
-                  pageBuilder: (context, state) => const NoTransitionPage(
-                    child: WellnessScreen(),
-                  ),
-                ),
-              ],
-            ),
-            StatefulShellBranch(
-              navigatorKey: _shellNavigatorKeys[4],
-              routes: [
-                GoRoute(
                   path: AppRoutes.profile,
                   name: AppRouteNames.profile,
-                  pageBuilder: (context, state) => const NoTransitionPage(
-                    child: ProfileScreen(),
-                  ),
+                  builder: (context, state) => const ProfileScreen(),
+                  routes: [
+                    GoRoute(
+                      path: AppRoutes.healthSync,
+                      name: AppRouteNames.healthSync,
+                      pageBuilder: (context, state) => slideUpTransitionPage(
+                        context: context,
+                        state: state,
+                        child: const HealthSyncScreen(),
+                      ),
+                    ),
+                    GoRoute(
+                      path: AppRoutes.editProfile,
+                      name: AppRouteNames.editProfile,
+                      pageBuilder: (context, state) => slideUpTransitionPage(
+                        context: context,
+                        state: state,
+                        child: const EditProfileScreen(),
+                      ),
+                    ),
+                    GoRoute(
+                      path: AppRoutes.settings,
+                      name: AppRouteNames.settings,
+                      pageBuilder: (context, state) => slideUpTransitionPage(
+                        context: context,
+                        state: state,
+                        child: const SettingsScreen(),
+                      ),
+                      routes: [
+                        GoRoute(
+                          path: AppRoutes.about,
+                          name: AppRouteNames.about,
+                          pageBuilder: (context, state) => slideUpTransitionPage(
+                            context: context,
+                            state: state,
+                            child: const AboutScreen(),
+                          ),
+                        ),
+                        GoRoute(
+                          path: AppRoutes.privacyPolicy,
+                          name: AppRouteNames.privacyPolicy,
+                          pageBuilder: (context, state) => slideUpTransitionPage(
+                            context: context,
+                            state: state,
+                            child: const PrivacyPolicyScreen(),
+                          ),
+                        ),
+                        GoRoute(
+                          path: AppRoutes.termsOfService,
+                          name: AppRouteNames.termsOfService,
+                          pageBuilder: (context, state) => slideUpTransitionPage(
+                            context: context,
+                            state: state,
+                            child: const TermsOfServiceScreen(),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ],
             ),

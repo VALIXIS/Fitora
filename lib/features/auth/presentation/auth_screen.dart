@@ -218,8 +218,8 @@ class _AuthBackground extends StatelessWidget {
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  colorScheme.background,
-                  colorScheme.surfaceVariant.withOpacity(0.7),
+                  colorScheme.surface,
+                  colorScheme.surfaceContainerHighest.withOpacity(0.7),
                 ],
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,

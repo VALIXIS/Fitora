@@ -7,7 +7,13 @@ class AppPreferences {
     _instance = await SharedPreferences.getInstance();
   }
 
+  static SharedPreferences get prefs => _instance!;
+
   static Future<SharedPreferences> instance() async {
     return _instance ??= await SharedPreferences.getInstance();
+  }
+
+  static void resetForTests() {
+    _instance = null;
   }
 }

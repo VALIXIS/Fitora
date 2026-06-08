@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -6,14 +7,17 @@ import 'package:fitora/app/router/app_routes.dart';
 import 'package:fitora/core/constants/spacing.dart';
 import 'package:fitora/core/responsive/breakpoints.dart';
 import 'package:fitora/core/responsive/responsive_builder.dart';
+import 'package:fitora/core/theme/fitora_colors.dart';
 import 'package:fitora/features/personalization/domain/personalization_models.dart';
 import 'package:fitora/features/personalization/providers/personalization_controller.dart';
-import 'package:fitora/features/personalization/widgets/personalization_metric_field.dart';
 import 'package:fitora/features/personalization/widgets/personalization_option_card.dart';
 import 'package:fitora/features/personalization/widgets/personalization_step_header.dart';
 import 'package:fitora/features/personalization/widgets/personalization_toggle_chip.dart';
+import 'package:fitora/features/personalization/widgets/personalization_wheel_picker.dart';
+import 'package:fitora/features/personalization/widgets/personalization_slider.dart';
 import 'package:fitora/shared/widgets/fitora_button.dart';
 import 'package:fitora/shared/widgets/loading_widget.dart';
+import 'package:fitora/features/auth/providers/auth_providers.dart';
 
 class PersonalizationFlowScreen extends HookConsumerWidget {
   const PersonalizationFlowScreen({super.key});
@@ -23,11 +27,13 @@ class PersonalizationFlowScreen extends HookConsumerWidget {
     final state = ref.watch(personalizationControllerProvider);
     final controller = ref.read(personalizationControllerProvider.notifier);
     final pageController = usePageController(initialPage: state.stepIndex);
+    
+    final authSession = ref.watch(authStateProvider);
+    final initialName = useMemoized(() => state.profile.name ?? authSession.user?.displayName ?? '');
+    final nameController = useTextEditingController(text: initialName);
 
     useEffect(() {
-      if (!pageController.hasClients) {
-        return null;
-      }
+      if (!pageController.hasClients) return null;
       final currentPage = pageController.page?.round();
       if (currentPage != null && currentPage != state.stepIndex) {
         pageController.jumpToPage(state.stepIndex);
@@ -35,381 +41,44 @@ class PersonalizationFlowScreen extends HookConsumerWidget {
       return null;
     }, [state.stepIndex]);
 
-    final ageController =
-        useTextEditingController(text: _formatInt(state.profile.age));
-    final heightController =
-        useTextEditingController(text: _formatDouble(state.profile.heightCm));
-    final weightController =
-        useTextEditingController(text: _formatDouble(state.profile.weightKg));
-
-    useEffect(() {
-      _syncController(ageController, _formatInt(state.profile.age));
-      _syncController(heightController, _formatDouble(state.profile.heightCm));
-      _syncController(weightController, _formatDouble(state.profile.weightKg));
-      return null;
-    }, [state.profile.age, state.profile.heightCm, state.profile.weightKg]);
-
     if (state.isLoading) {
       return const Scaffold(
+        backgroundColor: Color(0xFF0E1312),
         body: SafeArea(
-          child: LoadingWidget(message: 'Preparing your plan'),
+          child: LoadingWidget(message: 'Preparing your luxury AI setup...'),
         ),
       );
     }
 
     Future<void> handleNext() async {
-      if (!state.canProceed) {
-        return;
-      }
-
+      if (!state.canProceed) return;
       if (state.isLastStep) {
         await controller.completePersonalization();
-        if (!context.mounted) {
-          return;
-        }
+        if (!context.mounted) return;
         context.go(AppRoutes.home);
         return;
       }
-
-      final nextIndex =
-          (state.stepIndex + 1).clamp(0, state.totalSteps - 1).toInt();
+      final nextIndex = (state.stepIndex + 1).clamp(0, state.totalSteps - 1).toInt();
       await pageController.animateToPage(
         nextIndex,
-        duration: const Duration(milliseconds: 280),
+        duration: const Duration(milliseconds: 400),
         curve: Curves.easeOutCubic,
       );
       controller.setStep(nextIndex);
     }
 
     void handleBack() {
-      if (!state.canGoBack) {
-        return;
-      }
-
-      final prevIndex =
-          (state.stepIndex - 1).clamp(0, state.totalSteps - 1).toInt();
+      if (!state.canGoBack) return;
+      final prevIndex = (state.stepIndex - 1).clamp(0, state.totalSteps - 1).toInt();
       pageController.animateToPage(
         prevIndex,
-        duration: const Duration(milliseconds: 260),
+        duration: const Duration(milliseconds: 400),
         curve: Curves.easeOutCubic,
       );
       controller.setStep(prevIndex);
     }
 
-    Widget buildOptionGrid<T>({
-      required List<_OptionDefinition<T>> options,
-      required bool Function(T value) isSelected,
-      required ValueChanged<T> onSelected,
-    }) {
-      return LayoutBuilder(
-        builder: (context, constraints) {
-          final isTwoColumn = constraints.maxWidth >= FitoraBreakpoints.tablet;
-          return GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: isTwoColumn ? 2 : 1,
-              crossAxisSpacing: FitoraSpacing.md,
-              mainAxisSpacing: FitoraSpacing.md,
-              childAspectRatio: isTwoColumn ? 2.7 : 2.9,
-            ),
-            itemCount: options.length,
-            itemBuilder: (context, index) {
-              final option = options[index];
-              return PersonalizationOptionCard(
-                title: option.title,
-                subtitle: option.subtitle,
-                icon: option.icon,
-                accentColor: option.accentColor,
-                isSelected: isSelected(option.value),
-                onTap: () => onSelected(option.value),
-              );
-            },
-          );
-        },
-      );
-    }
-
-    Widget buildStepContent(Widget child) {
-      return SingleChildScrollView(
-        padding: const EdgeInsets.only(bottom: FitoraSpacing.lg),
-        child: child,
-      );
-    }
-
-    Widget buildGoalStep(ColorScheme colorScheme) {
-      final options = [
-        _OptionDefinition(
-          value: PersonalizationGoal.loseWeight,
-          title: PersonalizationGoal.loseWeight.label,
-          subtitle: PersonalizationGoal.loseWeight.description,
-          icon: Icons.local_fire_department_rounded,
-          accentColor: colorScheme.tertiary,
-        ),
-        _OptionDefinition(
-          value: PersonalizationGoal.gainMuscle,
-          title: PersonalizationGoal.gainMuscle.label,
-          subtitle: PersonalizationGoal.gainMuscle.description,
-          icon: Icons.fitness_center_rounded,
-          accentColor: colorScheme.primary,
-        ),
-        _OptionDefinition(
-          value: PersonalizationGoal.stayFit,
-          title: PersonalizationGoal.stayFit.label,
-          subtitle: PersonalizationGoal.stayFit.description,
-          icon: Icons.favorite_rounded,
-          accentColor: colorScheme.secondary,
-        ),
-        _OptionDefinition(
-          value: PersonalizationGoal.improveWellness,
-          title: PersonalizationGoal.improveWellness.label,
-          subtitle: PersonalizationGoal.improveWellness.description,
-          icon: Icons.spa_rounded,
-          accentColor: colorScheme.primaryContainer,
-        ),
-        _OptionDefinition(
-          value: PersonalizationGoal.buildHabits,
-          title: PersonalizationGoal.buildHabits.label,
-          subtitle: PersonalizationGoal.buildHabits.description,
-          icon: Icons.auto_awesome_rounded,
-          accentColor: colorScheme.secondaryContainer,
-        ),
-        _OptionDefinition(
-          value: PersonalizationGoal.reduceStress,
-          title: PersonalizationGoal.reduceStress.label,
-          subtitle: PersonalizationGoal.reduceStress.description,
-          icon: Icons.self_improvement_rounded,
-          accentColor: colorScheme.tertiaryContainer,
-        ),
-      ];
-
-      return buildStepContent(
-        buildOptionGrid<PersonalizationGoal>(
-          options: options,
-          isSelected: (value) => state.profile.goal == value,
-          onSelected: controller.setGoal,
-        ),
-      );
-    }
-
-    Widget buildWorkoutStep(ColorScheme colorScheme) {
-      final options = [
-        _OptionDefinition(
-          value: WorkoutPreference.home,
-          title: WorkoutPreference.home.label,
-          subtitle: WorkoutPreference.home.description,
-          icon: Icons.home_rounded,
-          accentColor: colorScheme.primary,
-        ),
-        _OptionDefinition(
-          value: WorkoutPreference.gym,
-          title: WorkoutPreference.gym.label,
-          subtitle: WorkoutPreference.gym.description,
-          icon: Icons.fitness_center_rounded,
-          accentColor: colorScheme.secondary,
-        ),
-        _OptionDefinition(
-          value: WorkoutPreference.mixed,
-          title: WorkoutPreference.mixed.label,
-          subtitle: WorkoutPreference.mixed.description,
-          icon: Icons.shuffle_rounded,
-          accentColor: colorScheme.tertiary,
-        ),
-      ];
-
-      return buildStepContent(
-        buildOptionGrid<WorkoutPreference>(
-          options: options,
-          isSelected: (value) => state.profile.workoutPreference == value,
-          onSelected: controller.setWorkoutPreference,
-        ),
-      );
-    }
-
-    Widget buildExperienceStep(ColorScheme colorScheme) {
-      final options = [
-        _OptionDefinition(
-          value: ExperienceLevel.beginner,
-          title: ExperienceLevel.beginner.label,
-          subtitle: ExperienceLevel.beginner.description,
-          icon: Icons.emoji_nature_rounded,
-          accentColor: colorScheme.primaryContainer,
-        ),
-        _OptionDefinition(
-          value: ExperienceLevel.intermediate,
-          title: ExperienceLevel.intermediate.label,
-          subtitle: ExperienceLevel.intermediate.description,
-          icon: Icons.trending_up_rounded,
-          accentColor: colorScheme.primary,
-        ),
-        _OptionDefinition(
-          value: ExperienceLevel.advanced,
-          title: ExperienceLevel.advanced.label,
-          subtitle: ExperienceLevel.advanced.description,
-          icon: Icons.bolt_rounded,
-          accentColor: colorScheme.secondary,
-        ),
-      ];
-
-      return buildStepContent(
-        buildOptionGrid<ExperienceLevel>(
-          options: options,
-          isSelected: (value) => state.profile.experienceLevel == value,
-          onSelected: controller.setExperienceLevel,
-        ),
-      );
-    }
-
-    Widget buildMetricsStep(ColorScheme colorScheme, TextTheme textTheme) {
-      return buildStepContent(
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              'We use metric units. You can update these later in settings.',
-              style: textTheme.bodySmall?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: FitoraSpacing.lg),
-            PersonalizationMetricField(
-              label: 'Age',
-              hint: 'e.g. 28',
-              suffix: 'years',
-              controller: ageController,
-              keyboardType: TextInputType.number,
-              onChanged: (value) =>
-                  controller.setAge(_parseInt(value)),
-            ),
-            const SizedBox(height: FitoraSpacing.md),
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final isWide =
-                    constraints.maxWidth >= FitoraBreakpoints.tablet;
-                final heightField = PersonalizationMetricField(
-                  label: 'Height',
-                  hint: 'e.g. 170',
-                  suffix: 'cm',
-                  controller: heightController,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  onChanged: (value) =>
-                      controller.setHeight(_parseDouble(value)),
-                );
-                final weightField = PersonalizationMetricField(
-                  label: 'Weight',
-                  hint: 'e.g. 68',
-                  suffix: 'kg',
-                  controller: weightController,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  onChanged: (value) =>
-                      controller.setWeight(_parseDouble(value)),
-                );
-
-                if (isWide) {
-                  return Row(
-                    children: [
-                      Expanded(child: heightField),
-                      const SizedBox(width: FitoraSpacing.md),
-                      Expanded(child: weightField),
-                    ],
-                  );
-                }
-
-                return Column(
-                  children: [
-                    heightField,
-                    const SizedBox(height: FitoraSpacing.md),
-                    weightField,
-                  ],
-                );
-              },
-            ),
-          ],
-        ),
-      );
-    }
-
-    Widget buildWellnessStep(ColorScheme colorScheme, TextTheme textTheme) {
-      final options = [
-        _ChipDefinition(
-          value: WellnessInterest.sleepTracking,
-          label: WellnessInterest.sleepTracking.label,
-          icon: Icons.nights_stay_rounded,
-          accentColor: colorScheme.primary,
-        ),
-        _ChipDefinition(
-          value: WellnessInterest.hydrationReminders,
-          label: WellnessInterest.hydrationReminders.label,
-          icon: Icons.water_drop_rounded,
-          accentColor: colorScheme.secondary,
-        ),
-        _ChipDefinition(
-          value: WellnessInterest.cycleTracking,
-          label: WellnessInterest.cycleTracking.label,
-          icon: Icons.timelapse_rounded,
-          accentColor: colorScheme.tertiary,
-        ),
-        _ChipDefinition(
-          value: WellnessInterest.mindfulness,
-          label: WellnessInterest.mindfulness.label,
-          icon: Icons.self_improvement_rounded,
-          accentColor: colorScheme.primaryContainer,
-        ),
-        _ChipDefinition(
-          value: WellnessInterest.stepTracking,
-          label: WellnessInterest.stepTracking.label,
-          icon: Icons.directions_walk_rounded,
-          accentColor: colorScheme.secondaryContainer,
-        ),
-      ];
-
-      return buildStepContent(
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              'Optional. Choose as many as you like.',
-              style: textTheme.bodySmall?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: FitoraSpacing.md),
-            Wrap(
-              spacing: FitoraSpacing.sm,
-              runSpacing: FitoraSpacing.sm,
-              children: options
-                  .map(
-                    (option) => PersonalizationToggleChip(
-                      label: option.label,
-                      icon: option.icon,
-                      accentColor: option.accentColor,
-                      isSelected:
-                          state.profile.interests.contains(option.value),
-                      onTap: () => controller.toggleInterest(option.value),
-                    ),
-                  )
-                  .toList(),
-            ),
-            const SizedBox(height: FitoraSpacing.md),
-            Text(
-              'You can fine-tune these any time from your profile.',
-              style: textTheme.bodySmall?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
     Widget buildLayout(double maxWidth) {
-      final colorScheme = Theme.of(context).colorScheme;
-      final textTheme = Theme.of(context).textTheme;
-
       return Align(
         alignment: Alignment.topCenter,
         child: ConstrainedBox(
@@ -419,32 +88,37 @@ class PersonalizationFlowScreen extends HookConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                PersonalizationStepHeader(
-                  step: state.currentStep,
-                  stepIndex: state.stepIndex,
-                  totalSteps: state.totalSteps,
-                  progress: state.progress,
-                ),
+                if (state.currentStep != PersonalizationStep.welcome && state.currentStep != PersonalizationStep.complete)
+                  PersonalizationStepHeader(
+                    step: state.currentStep,
+                    stepIndex: state.stepIndex - 1, // Offset for welcome
+                    totalSteps: state.totalSteps - 2, // Offset for welcome/complete
+                    progress: (state.stepIndex) / (state.totalSteps - 2).clamp(1, 9),
+                  ),
                 const SizedBox(height: FitoraSpacing.lg),
                 Expanded(
                   child: PageView(
                     controller: pageController,
-                    physics: const BouncingScrollPhysics(),
-                    onPageChanged: controller.setStep,
+                    physics: const NeverScrollableScrollPhysics(), // Managed by buttons
                     children: [
-                      buildGoalStep(colorScheme),
-                      buildWorkoutStep(colorScheme),
-                      buildExperienceStep(colorScheme),
-                      buildMetricsStep(colorScheme, textTheme),
-                      buildWellnessStep(colorScheme, textTheme),
+                      _buildWelcomeStep(nameController, controller, state),
+                      _buildGoalStep(context, state, controller),
+                      _buildActivityStep(context, state, controller),
+                      _buildWorkoutStep(context, state, controller),
+                      _buildWellnessStep(context, state, controller),
+                      _buildBodyStep(context, state, controller),
+                      _buildLifestyleStep(context, state, controller),
+                      _buildAiPreviewStep(context),
+                      _buildCompleteStep(),
                     ],
                   ),
                 ),
                 const SizedBox(height: FitoraSpacing.md),
                 _PersonalizationActionBar(
-                  canGoBack: state.canGoBack,
+                  canGoBack: state.canGoBack && state.currentStep != PersonalizationStep.welcome && state.currentStep != PersonalizationStep.complete,
                   canProceed: state.canProceed,
                   isLastStep: state.isLastStep,
+                  isWelcome: state.currentStep == PersonalizationStep.welcome,
                   onBack: handleBack,
                   onNext: handleNext,
                 ),
@@ -457,17 +131,422 @@ class PersonalizationFlowScreen extends HookConsumerWidget {
     }
 
     return Scaffold(
+      backgroundColor: const Color(0xFF0E1312),
       body: SafeArea(
-        child: Stack(
-          children: [
-            const _PersonalizationBackground(),
-            ResponsiveBuilder(
-              mobile: (_) => buildLayout(560),
-              tablet: (_) => buildLayout(760),
-              desktop: (_) => buildLayout(920),
-            ),
-          ],
+        child: ResponsiveBuilder(
+          mobile: (_) => buildLayout(560),
+          tablet: (_) => buildLayout(760),
+          desktop: (_) => buildLayout(920),
         ),
+      ),
+    );
+  }
+
+  Widget _buildStepContent(Widget child) {
+    return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.only(bottom: FitoraSpacing.lg),
+      child: child,
+    );
+  }
+
+  // STEP 1: Welcome
+  Widget _buildWelcomeStep(TextEditingController nameController, PersonalizationController controller, PersonalizationViewState state) {
+    return _buildStepContent(
+      Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const SizedBox(height: 60),
+          Container(
+            width: 200,
+            height: 200,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(color: FitoraColors.mintGreen.withValues(alpha: 0.15), blurRadius: 40, spreadRadius: 10),
+              ],
+            ),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                SizedBox(
+                  width: 200,
+                  height: 200,
+                  child: CircularProgressIndicator(
+                    value: 0.2,
+                    strokeWidth: 4,
+                    color: FitoraColors.mintGreen.withValues(alpha: 0.3),
+                  ),
+                ).animate(onPlay: (c) => c.repeat()).rotate(duration: 10.seconds),
+                SizedBox(
+                  width: 170,
+                  height: 170,
+                  child: CircularProgressIndicator(
+                    value: 0.8,
+                    strokeWidth: 8,
+                    color: FitoraColors.calmCyan.withValues(alpha: 0.5),
+                  ),
+                ).animate(onPlay: (c) => c.repeat(reverse: true)).rotate(duration: 8.seconds),
+                const Icon(Icons.auto_awesome_rounded, size: 60, color: Colors.white),
+              ],
+            ),
+          ).animate().fadeIn(duration: 1.seconds).scale(curve: Curves.easeOutBack),
+          const SizedBox(height: 60),
+          Text(
+            "Let's build your wellness blueprint",
+            style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: Colors.white, height: 1.2),
+            textAlign: TextAlign.center,
+          ).animate().fadeIn(delay: 500.ms).slideY(begin: 0.2, end: 0),
+          const SizedBox(height: 20),
+          Text(
+            "Your AI coach will create a plan tailored specifically for you.",
+            style: TextStyle(fontSize: 18, color: Colors.white.withValues(alpha: 0.7)),
+            textAlign: TextAlign.center,
+          ).animate().fadeIn(delay: 800.ms).slideY(begin: 0.2, end: 0),
+          const SizedBox(height: 40),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: FitoraSpacing.lg),
+            child: TextFormField(
+              controller: nameController,
+              style: const TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                labelText: 'What should we call you?',
+                labelStyle: const TextStyle(color: Colors.white54),
+                filled: true,
+                fillColor: Colors.white.withValues(alpha: 0.05),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
+                prefixIcon: const Icon(Icons.person_outline, color: Colors.white54),
+              ),
+              onChanged: (val) {
+                controller.updateProfile(state.profile.copyWith(name: val.trim()));
+              },
+            ),
+          ).animate().fadeIn(delay: 1000.ms).slideY(begin: 0.2, end: 0),
+        ],
+      ),
+    );
+  }
+
+  // STEP 2: Goal
+  Widget _buildGoalStep(BuildContext context, PersonalizationViewState state, PersonalizationController controller) {
+    return _buildStepContent(
+      GridView.count(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        crossAxisCount: MediaQuery.of(context).size.width > FitoraBreakpoints.tablet ? 2 : 1,
+        childAspectRatio: 3.0,
+        mainAxisSpacing: FitoraSpacing.md,
+        crossAxisSpacing: FitoraSpacing.md,
+        children: [
+          _buildOption(state, controller, PersonalizationGoal.loseWeight, Icons.local_fire_department_rounded, FitoraColors.warningOrange),
+          _buildOption(state, controller, PersonalizationGoal.gainMuscle, Icons.fitness_center_rounded, FitoraColors.mintGreen),
+          _buildOption(state, controller, PersonalizationGoal.stayFit, Icons.favorite_rounded, FitoraColors.softPink),
+          _buildOption(state, controller, PersonalizationGoal.improveWellness, Icons.spa_rounded, FitoraColors.calmCyan),
+          _buildOption(state, controller, PersonalizationGoal.buildHabits, Icons.check_circle_rounded, FitoraColors.lavender),
+          _buildOption(state, controller, PersonalizationGoal.reduceStress, Icons.self_improvement_rounded, Colors.teal),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOption(PersonalizationViewState state, PersonalizationController controller, PersonalizationGoal goal, IconData icon, Color color) {
+    return PersonalizationOptionCard(
+      title: goal.label,
+      subtitle: goal.description,
+      icon: icon,
+      accentColor: color,
+      isSelected: state.profile.goal == goal,
+      onTap: () => controller.setGoal(goal),
+    );
+  }
+
+  // STEP 3: Activity Level
+  Widget _buildActivityStep(BuildContext context, PersonalizationViewState state, PersonalizationController controller) {
+    return _buildStepContent(
+      Column(
+        children: [
+          _buildActivityOption(state, controller, ExperienceLevel.beginner, Icons.emoji_nature_rounded, FitoraColors.calmCyan),
+          const SizedBox(height: FitoraSpacing.md),
+          _buildActivityOption(state, controller, ExperienceLevel.intermediate, Icons.trending_up_rounded, FitoraColors.mintGreen),
+          const SizedBox(height: FitoraSpacing.md),
+          _buildActivityOption(state, controller, ExperienceLevel.advanced, Icons.bolt_rounded, FitoraColors.warningOrange),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActivityOption(PersonalizationViewState state, PersonalizationController controller, ExperienceLevel level, IconData icon, Color color) {
+    return PersonalizationOptionCard(
+      title: level.label,
+      subtitle: level.description,
+      icon: icon,
+      accentColor: color,
+      isSelected: state.profile.experienceLevel == level,
+      onTap: () => controller.setExperienceLevel(level),
+    );
+  }
+
+  // STEP 4: Workout Preference
+  Widget _buildWorkoutStep(BuildContext context, PersonalizationViewState state, PersonalizationController controller) {
+    return _buildStepContent(
+      Column(
+        children: [
+          _buildWorkoutOption(state, controller, WorkoutPreference.home, Icons.home_rounded, FitoraColors.softPink),
+          const SizedBox(height: FitoraSpacing.md),
+          _buildWorkoutOption(state, controller, WorkoutPreference.gym, Icons.fitness_center_rounded, FitoraColors.lavender),
+          const SizedBox(height: FitoraSpacing.md),
+          _buildWorkoutOption(state, controller, WorkoutPreference.mixed, Icons.shuffle_rounded, FitoraColors.calmCyan),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWorkoutOption(PersonalizationViewState state, PersonalizationController controller, WorkoutPreference pref, IconData icon, Color color) {
+    return PersonalizationOptionCard(
+      title: pref.label,
+      subtitle: pref.description,
+      icon: icon,
+      accentColor: color,
+      isSelected: state.profile.workoutPreference == pref,
+      onTap: () => controller.setWorkoutPreference(pref),
+    );
+  }
+
+  // STEP 5: Wellness Focus
+  Widget _buildWellnessStep(BuildContext context, PersonalizationViewState state, PersonalizationController controller) {
+    return _buildStepContent(
+      Wrap(
+        spacing: FitoraSpacing.md,
+        runSpacing: FitoraSpacing.md,
+        children: WellnessInterest.values.map((interest) {
+          return PersonalizationToggleChip(
+            label: interest.label,
+            icon: _getWellnessIcon(interest),
+            accentColor: _getWellnessColor(interest),
+            isSelected: state.profile.interests.contains(interest),
+            onTap: () => controller.toggleInterest(interest),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  IconData _getWellnessIcon(WellnessInterest interest) {
+    switch (interest) {
+      case WellnessInterest.sleepTracking: return Icons.nights_stay_rounded;
+      case WellnessInterest.hydrationReminders: return Icons.water_drop_rounded;
+      case WellnessInterest.cycleTracking: return Icons.timelapse_rounded;
+      case WellnessInterest.mindfulness: return Icons.self_improvement_rounded;
+      case WellnessInterest.stepTracking: return Icons.directions_walk_rounded;
+    }
+  }
+
+  Color _getWellnessColor(WellnessInterest interest) {
+    switch (interest) {
+      case WellnessInterest.sleepTracking: return FitoraColors.lavender;
+      case WellnessInterest.hydrationReminders: return FitoraColors.calmCyan;
+      case WellnessInterest.cycleTracking: return FitoraColors.softPink;
+      case WellnessInterest.mindfulness: return FitoraColors.mintGreen;
+      case WellnessInterest.stepTracking: return FitoraColors.warningOrange;
+    }
+  }
+
+  // STEP 6: Body Information
+  Widget _buildBodyStep(BuildContext context, PersonalizationViewState state, PersonalizationController controller) {
+    final ages = List.generate(80, (index) => (16 + index).toString());
+    final heights = List.generate(100, (index) => (120 + index).toString());
+    final weights = List.generate(150, (index) => (40 + index).toString());
+
+    int ageIndex = state.profile.age != null ? ages.indexOf(state.profile.age.toString()) : 14; // Default 30
+    int heightIndex = state.profile.heightCm != null ? heights.indexOf(state.profile.heightCm!.toInt().toString()) : 50; // Default 170
+    int weightIndex = state.profile.weightKg != null ? weights.indexOf(state.profile.weightKg!.toInt().toString()) : 30; // Default 70
+
+    if (ageIndex == -1) ageIndex = 14;
+    if (heightIndex == -1) heightIndex = 50;
+    if (weightIndex == -1) weightIndex = 30;
+
+    return _buildStepContent(
+      Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          Expanded(
+            child: PersonalizationWheelPicker(
+              label: 'Age',
+              items: ages,
+              initialIndex: ageIndex,
+              accentColor: FitoraColors.mintGreen,
+              onSelectedItemChanged: (index) => controller.setAge(int.parse(ages[index])),
+            ),
+          ),
+          const SizedBox(width: FitoraSpacing.sm),
+          Expanded(
+            child: PersonalizationWheelPicker(
+              label: 'Height (cm)',
+              items: heights,
+              initialIndex: heightIndex,
+              accentColor: FitoraColors.calmCyan,
+              onSelectedItemChanged: (index) => controller.setHeight(double.parse(heights[index])),
+            ),
+          ),
+          const SizedBox(width: FitoraSpacing.sm),
+          Expanded(
+            child: PersonalizationWheelPicker(
+              label: 'Weight (kg)',
+              items: weights,
+              initialIndex: weightIndex,
+              accentColor: FitoraColors.lavender,
+              onSelectedItemChanged: (index) => controller.setWeight(double.parse(weights[index])),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // STEP 7: Lifestyle Assessment
+  Widget _buildLifestyleStep(BuildContext context, PersonalizationViewState state, PersonalizationController controller) {
+    return _buildStepContent(
+      Column(
+        children: [
+          PersonalizationSlider(
+            label: 'Daily Stress',
+            leftLabel: 'Low',
+            rightLabel: 'High',
+            value: state.profile.dailyStress,
+            accentColor: FitoraColors.warningOrange,
+            onChanged: controller.setDailyStress,
+          ),
+          const SizedBox(height: FitoraSpacing.xl),
+          PersonalizationSlider(
+            label: 'Sleep Quality',
+            leftLabel: 'Poor',
+            rightLabel: 'Excellent',
+            value: state.profile.sleepQuality,
+            accentColor: FitoraColors.lavender,
+            onChanged: controller.setSleepQuality,
+          ),
+          const SizedBox(height: FitoraSpacing.xl),
+          PersonalizationSlider(
+            label: 'Energy Levels',
+            leftLabel: 'Drained',
+            rightLabel: 'Energetic',
+            value: state.profile.energyLevel,
+            accentColor: FitoraColors.mintGreen,
+            onChanged: controller.setEnergyLevel,
+          ),
+        ],
+      ),
+    );
+  }
+
+  // STEP 8: AI Preview
+  Widget _buildAiPreviewStep(BuildContext context) {
+    return _buildStepContent(
+      Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const SizedBox(height: 20),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _buildPredictedRing('84', 'WELLNESS', FitoraColors.calmCyan, 0.84),
+              const SizedBox(width: 40),
+              _buildPredictedRing('87', 'RECOVERY', FitoraColors.lavender, 0.87),
+            ],
+          ).animate().fadeIn(duration: 800.ms).slideY(begin: 0.2, end: 0),
+          const SizedBox(height: 60),
+          Container(
+            padding: const EdgeInsets.all(FitoraSpacing.xl),
+            decoration: BoxDecoration(
+              color: FitoraColors.mintGreen.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: FitoraColors.mintGreen.withValues(alpha: 0.2)),
+            ),
+            child: Column(
+              children: [
+                const Icon(Icons.psychology_rounded, color: FitoraColors.mintGreen, size: 40)
+                    .animate(onPlay: (c) => c.repeat(reverse: true)).scale(begin: const Offset(0.9, 0.9), end: const Offset(1.1, 1.1), duration: 2.seconds),
+                const SizedBox(height: FitoraSpacing.md),
+                Text(
+                  "Based on your profile, Fitora predicts your recovery potential is high and recommends a strength-focused wellness plan.",
+                  style: TextStyle(fontSize: 18, color: Colors.white.withValues(alpha: 0.9), height: 1.5),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ).animate().fadeIn(delay: 600.ms).slideY(begin: 0.2, end: 0),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPredictedRing(String score, String label, Color color, double value) {
+    return Column(
+      children: [
+        Container(
+          width: 140,
+          height: 140,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(color: color.withValues(alpha: 0.2), blurRadius: 30, spreadRadius: 5),
+            ],
+          ),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              SizedBox(
+                width: 140,
+                height: 140,
+                child: CircularProgressIndicator(
+                  value: value,
+                  strokeWidth: 8,
+                  strokeCap: StrokeCap.round,
+                  backgroundColor: Colors.white.withValues(alpha: 0.05),
+                  valueColor: AlwaysStoppedAnimation(color),
+                ),
+              ),
+              Text(
+                score,
+                style: const TextStyle(fontSize: 48, fontWeight: FontWeight.w900, color: Colors.white),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          label,
+          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, letterSpacing: 2.0, color: color),
+        ),
+      ],
+    );
+  }
+
+  // STEP 9: Complete Setup
+  Widget _buildCompleteStep() {
+    return _buildStepContent(
+      Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const SizedBox(height: 100),
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: FitoraColors.mintGreen.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.check_rounded, color: FitoraColors.mintGreen, size: 80),
+          ).animate().scale(duration: 600.ms, curve: Curves.easeOutBack),
+          const SizedBox(height: 40),
+          Text(
+            "Your blueprint is ready.",
+            style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: Colors.white),
+            textAlign: TextAlign.center,
+          ).animate().fadeIn(delay: 300.ms).slideY(begin: 0.2, end: 0),
+        ],
       ),
     );
   }
@@ -477,6 +556,7 @@ class _PersonalizationActionBar extends StatelessWidget {
   final bool canGoBack;
   final bool canProceed;
   final bool isLastStep;
+  final bool isWelcome;
   final VoidCallback onBack;
   final VoidCallback onNext;
 
@@ -484,15 +564,25 @@ class _PersonalizationActionBar extends StatelessWidget {
     required this.canGoBack,
     required this.canProceed,
     required this.isLastStep,
+    required this.isWelcome,
     required this.onBack,
     required this.onNext,
   });
 
   @override
   Widget build(BuildContext context) {
+    if (isWelcome) {
+      return FitoraButton(
+        label: "Let's Begin",
+        isFullWidth: true,
+        onPressed: onNext,
+      ).animate().fadeIn(delay: 1.2.seconds);
+    }
+
     if (!canGoBack) {
       return FitoraButton(
-        label: isLastStep ? 'Finish setup' : 'Next',
+        label: isLastStep ? 'Enter Fitora' : 'Next',
+        isFullWidth: true,
         onPressed: canProceed ? onNext : null,
       );
     }
@@ -500,6 +590,7 @@ class _PersonalizationActionBar extends StatelessWidget {
     return Row(
       children: [
         Expanded(
+          flex: 1,
           child: FitoraButton(
             label: 'Back',
             variant: FitoraButtonVariant.secondary,
@@ -508,105 +599,13 @@ class _PersonalizationActionBar extends StatelessWidget {
         ),
         const SizedBox(width: FitoraSpacing.md),
         Expanded(
+          flex: 2,
           child: FitoraButton(
-            label: isLastStep ? 'Finish setup' : 'Next',
+            label: isLastStep ? 'Enter Fitora' : 'Next',
             onPressed: canProceed ? onNext : null,
           ),
         ),
       ],
     );
   }
-}
-
-class _PersonalizationBackground extends StatelessWidget {
-  const _PersonalizationBackground();
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            colorScheme.background,
-            colorScheme.surfaceVariant.withOpacity(0.55),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _OptionDefinition<T> {
-  final T value;
-  final String title;
-  final String subtitle;
-  final IconData icon;
-  final Color accentColor;
-
-  const _OptionDefinition({
-    required this.value,
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-    required this.accentColor,
-  });
-}
-
-class _ChipDefinition<T> {
-  final T value;
-  final String label;
-  final IconData icon;
-  final Color accentColor;
-
-  const _ChipDefinition({
-    required this.value,
-    required this.label,
-    required this.icon,
-    required this.accentColor,
-  });
-}
-
-int? _parseInt(String value) {
-  final trimmed = value.trim();
-  if (trimmed.isEmpty) {
-    return null;
-  }
-  return int.tryParse(trimmed);
-}
-
-double? _parseDouble(String value) {
-  final trimmed = value.trim();
-  if (trimmed.isEmpty) {
-    return null;
-  }
-  return double.tryParse(trimmed);
-}
-
-String _formatInt(int? value) {
-  if (value == null) {
-    return '';
-  }
-  return value.toString();
-}
-
-String _formatDouble(double? value) {
-  if (value == null) {
-    return '';
-  }
-  final isWhole = value % 1 == 0;
-  return isWhole ? value.toStringAsFixed(0) : value.toStringAsFixed(1);
-}
-
-void _syncController(TextEditingController controller, String text) {
-  if (controller.text == text) {
-    return;
-  }
-  controller.value = controller.value.copyWith(
-    text: text,
-    selection: TextSelection.collapsed(offset: text.length),
-    composing: TextRange.empty,
-  );
 }

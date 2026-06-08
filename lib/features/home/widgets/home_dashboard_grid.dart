@@ -32,24 +32,27 @@ class _MobileDashboardGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        HomeStepRingCard(progress: data.steps),
+        const SizedBox(height: FitoraSpacing.md),
+        GridView.count(
+          crossAxisCount: 2,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          mainAxisSpacing: FitoraSpacing.md,
+          crossAxisSpacing: FitoraSpacing.md,
+          childAspectRatio: 1.4,
+          children: [
+            _metricTile(context, data.metric(HomeMetricType.calories)),
+            _metricTile(context, data.metric(HomeMetricType.activeMinutes)),
+            _metricTile(context, data.metric(HomeMetricType.water)),
+            _metricTile(context, data.metric(HomeMetricType.sleep)),
+          ],
+        ),
+        const SizedBox(height: FitoraSpacing.md),
         AspectRatio(
-          aspectRatio: 1.95,
-          child: HomeStepRingCard(progress: data.steps),
-        ),
-        const SizedBox(height: FitoraSpacing.md),
-        _TwoColumnRow(
-          left: _metricTile(context, data.metric(HomeMetricType.calories)),
-          right: _metricTile(context, data.metric(HomeMetricType.activeMinutes)),
-        ),
-        const SizedBox(height: FitoraSpacing.md),
-        _TwoColumnRow(
-          left: _metricTile(context, data.metric(HomeMetricType.water)),
-          right: _metricTile(context, data.metric(HomeMetricType.sleep)),
-        ),
-        const SizedBox(height: FitoraSpacing.md),
-        AspectRatio(
-          aspectRatio: 4.0,
+          aspectRatio: 3.2,
           child: _metricTile(context, data.metric(HomeMetricType.streak)),
         ),
       ],
@@ -67,51 +70,28 @@ class _TabletDashboardGrid extends StatelessWidget {
     return Column(
       children: [
         Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
-              child: AspectRatio(
-                aspectRatio: 1.8,
-                child: HomeStepRingCard(progress: data.steps),
-              ),
+              flex: 5,
+              child: HomeStepRingCard(progress: data.steps),
             ),
             const SizedBox(width: FitoraSpacing.md),
             Expanded(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+              flex: 6,
+              child: GridView.count(
+                crossAxisCount: 2,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                mainAxisSpacing: FitoraSpacing.md,
+                crossAxisSpacing: FitoraSpacing.md,
+                childAspectRatio: 1.35,
                 children: [
-                  AspectRatio(
-                    aspectRatio: 3.0,
-                    child:
-                        _metricTile(context, data.metric(HomeMetricType.calories)),
-                  ),
-                  const SizedBox(height: FitoraSpacing.md),
-                  AspectRatio(
-                    aspectRatio: 3.0,
-                    child: _metricTile(
-                      context,
-                      data.metric(HomeMetricType.activeMinutes),
-                    ),
-                  ),
+                  _metricTile(context, data.metric(HomeMetricType.calories)),
+                  _metricTile(context, data.metric(HomeMetricType.activeMinutes)),
+                  _metricTile(context, data.metric(HomeMetricType.water)),
+                  _metricTile(context, data.metric(HomeMetricType.sleep)),
                 ],
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: FitoraSpacing.md),
-        Row(
-          children: [
-            Expanded(
-              child: AspectRatio(
-                aspectRatio: 4.0,
-                child: _metricTile(context, data.metric(HomeMetricType.water)),
-              ),
-            ),
-            const SizedBox(width: FitoraSpacing.md),
-            Expanded(
-              child: AspectRatio(
-                aspectRatio: 4.0,
-                child: _metricTile(context, data.metric(HomeMetricType.sleep)),
               ),
             ),
           ],
@@ -133,97 +113,41 @@ class _DesktopDashboardGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: AspectRatio(
-                aspectRatio: 1.9,
-                child: HomeStepRingCard(progress: data.steps),
-              ),
-            ),
-            const SizedBox(width: FitoraSpacing.md),
-            Expanded(
-              child: AspectRatio(
-                aspectRatio: 2.1,
-                child: _metricTile(context, data.metric(HomeMetricType.calories)),
-              ),
-            ),
-            const SizedBox(width: FitoraSpacing.md),
-            Expanded(
-              child: AspectRatio(
-                aspectRatio: 2.1,
-                child:
-                    _metricTile(context, data.metric(HomeMetricType.activeMinutes)),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: FitoraSpacing.md),
-        Row(
-          children: [
-            Expanded(
-              child: AspectRatio(
-                aspectRatio: 2.8,
-                child: _metricTile(context, data.metric(HomeMetricType.water)),
-              ),
-            ),
-            const SizedBox(width: FitoraSpacing.md),
-            Expanded(
-              child: AspectRatio(
-                aspectRatio: 2.8,
-                child: _metricTile(context, data.metric(HomeMetricType.sleep)),
-              ),
-            ),
-            const SizedBox(width: FitoraSpacing.md),
-            Expanded(
-              child: AspectRatio(
-                aspectRatio: 2.8,
+        Expanded(
+          flex: 4,
+          child: Column(
+            children: [
+              HomeStepRingCard(progress: data.steps),
+              const SizedBox(height: FitoraSpacing.md),
+              AspectRatio(
+                aspectRatio: 3.0,
                 child: _metricTile(context, data.metric(HomeMetricType.streak)),
               ),
-            ),
-          ],
+            ],
+          ),
+        ),
+        const SizedBox(width: FitoraSpacing.md),
+        Expanded(
+          flex: 8,
+          child: GridView.count(
+            crossAxisCount: 2,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            mainAxisSpacing: FitoraSpacing.md,
+            crossAxisSpacing: FitoraSpacing.md,
+            childAspectRatio: 1.8,
+            children: [
+              _metricTile(context, data.metric(HomeMetricType.calories)),
+              _metricTile(context, data.metric(HomeMetricType.activeMinutes)),
+              _metricTile(context, data.metric(HomeMetricType.water)),
+              _metricTile(context, data.metric(HomeMetricType.sleep)),
+            ],
+          ),
         ),
       ],
-    );
-  }
-}
-
-class _TwoColumnRow extends StatelessWidget {
-  final Widget left;
-  final Widget right;
-
-  const _TwoColumnRow({
-    required this.left,
-    required this.right,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isCompact = constraints.maxWidth < 420;
-        final aspectRatio = isCompact ? 1.55 : 1.75;
-
-        return Row(
-          children: [
-            Expanded(
-              child: AspectRatio(
-                aspectRatio: aspectRatio,
-                child: left,
-              ),
-            ),
-            const SizedBox(width: FitoraSpacing.md),
-            Expanded(
-              child: AspectRatio(
-                aspectRatio: aspectRatio,
-                child: right,
-              ),
-            ),
-          ],
-        );
-      },
     );
   }
 }

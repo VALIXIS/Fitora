@@ -31,9 +31,9 @@ class GlowContainer extends StatelessWidget {
         boxShadow: [
           BoxShadow(
             color: glow,
-            blurRadius: 24,
-            spreadRadius: 2,
-            offset: const Offset(0, 8),
+            blurRadius: 20.0,
+            spreadRadius: 1.5,
+            offset: const Offset(0, 6),
           ),
         ],
       ),

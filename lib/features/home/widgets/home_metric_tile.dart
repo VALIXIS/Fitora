@@ -21,28 +21,60 @@ class HomeMetricTile extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return FitoraCard(
+      padding: const EdgeInsets.all(FitoraSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Container(
-            padding: const EdgeInsets.all(FitoraSpacing.xs),
-            decoration: BoxDecoration(
-              color: accentColor.withOpacity(0.16),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, size: 18, color: accentColor),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: accentColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, size: 16, color: accentColor),
+              ),
+              Flexible(
+                child: Text(
+                  data.label,
+                  style: textTheme.labelSmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: FitoraSpacing.xs),
-          Text(data.label, style: textTheme.labelLarge),
-          const SizedBox(height: FitoraSpacing.xs),
-          Text(data.value, style: textTheme.headlineSmall),
-          const SizedBox(height: FitoraSpacing.xs),
+          Expanded(
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                data.value,
+                style: textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: -0.5,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ),
+          const SizedBox(height: 2),
           Text(
             data.caption,
             style: textTheme.bodySmall?.copyWith(
               color: colorScheme.onSurfaceVariant,
+              fontSize: 10,
             ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),

@@ -9,20 +9,6 @@ final List<ProviderObserver> appProviderObservers = [
 ];
 
 class AppProviderObserver extends ProviderObserver {
-  @override
-void providerDidFail(
-  ProviderBase<Object?> provider,
-  Object error,
-  StackTrace stackTrace,
-  ProviderContainer container,
-) {
-  super.providerDidFail(
-    provider,
-    error,
-    stackTrace,
-    container,
-  );
-}
 
   @override
   void didUpdateProvider(

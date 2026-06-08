@@ -70,5 +70,5 @@ class Workout {
 
   String get durationLabel => '${duration.inMinutes} min';
 
-  String get caloriesLabel => '${calories} kcal';
+  String get caloriesLabel => '$calories kcal';
 }

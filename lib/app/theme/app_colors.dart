@@ -1,94 +1,95 @@
 import 'package:flutter/material.dart';
+import 'package:fitora/core/theme/fitora_colors.dart' as core;
 
 class FitoraColors {
-  static const Color accentGreen = Color(0xFF2FD08B);
-  static const Color accentPink = Color(0xFFFF7DBA);
-  static const Color accentRed = Color(0xFFFF6B6B);
-  static const Color accentMintGlow = Color(0xFF7CFFD2);
+  static const Color accentGreen = core.FitoraColors.mintGreen;
+  static const Color accentPink = core.FitoraColors.softPink;
+  static const Color accentRed = core.FitoraColors.warmCoral;
+  static const Color accentMintGlow = core.FitoraColors.calmCyanGlow;
   static const Color accentRoseGlow = Color(0xFFFFB5D8);
 
-  static const Color lightBackground = Color(0xFFF9FBFA);
-  static const Color lightSurface = Color(0xFFFFFFFF);
-  static const Color lightSurfaceVariant = Color(0xFFF1F4F3);
-  static const Color lightOutline = Color(0xFFE2E8E6);
-  static const Color lightTextPrimary = Color(0xFF0F1B16);
-  static const Color lightTextSecondary = Color(0xFF4A5C56);
-  static const Color lightOnPrimary = Color(0xFFFFFFFF);
+  static const Color lightBackground = core.FitoraColors.lightBg;
+  static const Color lightSurface = core.FitoraColors.lightSurface;
+  static const Color lightSurfaceVariant = core.FitoraColors.lightSurfaceVariant;
+  static const Color lightOutline = core.FitoraColors.lightBorder;
+  static const Color lightTextPrimary = core.FitoraColors.lightTextPrimary;
+  static const Color lightTextSecondary = core.FitoraColors.lightTextSecondary;
+  static const Color lightOnPrimary = Colors.white;
 
-  static const Color darkBackground = Color(0xFF0A0F0E);
-  static const Color darkSurface = Color(0xFF121917);
-  static const Color darkSurfaceVariant = Color(0xFF19211F);
-  static const Color darkOutline = Color(0xFF2B3431);
-  static const Color darkTextPrimary = Color(0xFFE7F0ED);
-  static const Color darkTextSecondary = Color(0xFFB8C6C1);
-  static const Color darkOnPrimary = Color(0xFF081310);
+  static const Color darkBackground = core.FitoraColors.darkBg;
+  static const Color darkSurface = core.FitoraColors.darkSurface;
+  static const Color darkSurfaceVariant = core.FitoraColors.darkSurfaceVariant;
+  static const Color darkOutline = core.FitoraColors.darkBorder;
+  static const Color darkTextPrimary = core.FitoraColors.darkTextPrimary;
+  static const Color darkTextSecondary = core.FitoraColors.darkTextSecondary;
+  static const Color darkOnPrimary = Color(0xFF0E1312);
 
-  static const Color shadowLight = Color(0x12000000);
-  static const Color shadowDark = Color(0x66000000);
+  static const Color shadowLight = Color(0x0A000000);
+  static const Color shadowDark = Color(0x33000000);
 }
 
 class FitoraColorSchemes {
   static const ColorScheme light = ColorScheme(
     brightness: Brightness.light,
-    primary: FitoraColors.accentGreen,
-    onPrimary: FitoraColors.lightOnPrimary,
-    primaryContainer: FitoraColors.accentMintGlow,
-    onPrimaryContainer: FitoraColors.lightTextPrimary,
-    secondary: FitoraColors.accentPink,
-    onSecondary: FitoraColors.lightOnPrimary,
-    secondaryContainer: FitoraColors.accentRoseGlow,
-    onSecondaryContainer: FitoraColors.lightTextPrimary,
-    tertiary: FitoraColors.accentRed,
-    onTertiary: FitoraColors.lightOnPrimary,
-    tertiaryContainer: Color(0xFFFFB9B9),
-    onTertiaryContainer: FitoraColors.lightTextPrimary,
-    error: FitoraColors.accentRed,
-    onError: FitoraColors.lightOnPrimary,
+    primary: core.FitoraColors.mintGreen,
+    onPrimary: Colors.white,
+    primaryContainer: core.FitoraColors.calmCyanGlow,
+    onPrimaryContainer: core.FitoraColors.lightTextPrimary,
+    secondary: core.FitoraColors.softPink,
+    onSecondary: Colors.white,
+    secondaryContainer: Color(0xFFFFB5D8),
+    onSecondaryContainer: core.FitoraColors.lightTextPrimary,
+    tertiary: core.FitoraColors.warmCoral,
+    onTertiary: Colors.white,
+    tertiaryContainer: Color(0xFFFFDAD6),
+    onTertiaryContainer: core.FitoraColors.lightTextPrimary,
+    error: core.FitoraColors.errorRed,
+    onError: Colors.white,
     errorContainer: Color(0xFFFFDAD6),
     onErrorContainer: Color(0xFF410002),
-    surface: FitoraColors.lightBackground,
-    onSurface: FitoraColors.lightTextPrimary,
-    surfaceContainerHighest: FitoraColors.lightSurfaceVariant,
-    onSurfaceVariant: FitoraColors.lightTextSecondary,
-    outline: FitoraColors.lightOutline,
+    surface: core.FitoraColors.lightBg,
+    onSurface: core.FitoraColors.lightTextPrimary,
+    surfaceContainerHighest: core.FitoraColors.lightSurfaceVariant,
+    onSurfaceVariant: core.FitoraColors.lightTextSecondary,
+    outline: core.FitoraColors.lightBorder,
     outlineVariant: Color(0xFFD5DDD9),
     shadow: FitoraColors.shadowLight,
     scrim: Color(0x66000000),
-    inverseSurface: FitoraColors.darkSurface,
-    onInverseSurface: FitoraColors.darkTextPrimary,
-    inversePrimary: FitoraColors.accentGreen,
+    inverseSurface: core.FitoraColors.darkSurface,
+    onInverseSurface: core.FitoraColors.darkTextPrimary,
+    inversePrimary: core.FitoraColors.mintGreen,
     surfaceTint: Colors.transparent,
   );
 
   static const ColorScheme dark = ColorScheme(
     brightness: Brightness.dark,
-    primary: FitoraColors.accentGreen,
+    primary: core.FitoraColors.mintGreen,
     onPrimary: FitoraColors.darkOnPrimary,
-    primaryContainer: Color(0xFF1A4A38),
-    onPrimaryContainer: FitoraColors.accentMintGlow,
-    secondary: FitoraColors.accentPink,
+    primaryContainer: Color(0xFF143F2E),
+    onPrimaryContainer: core.FitoraColors.calmCyanGlow,
+    secondary: core.FitoraColors.softPink,
     onSecondary: FitoraColors.darkOnPrimary,
-    secondaryContainer: Color(0xFF4A1A30),
-    onSecondaryContainer: FitoraColors.accentRoseGlow,
-    tertiary: FitoraColors.accentRed,
+    secondaryContainer: Color(0xFF451931),
+    onSecondaryContainer: Color(0xFFFFB5D8),
+    tertiary: core.FitoraColors.warmCoral,
     onTertiary: FitoraColors.darkOnPrimary,
-    tertiaryContainer: Color(0xFF7F2F2F),
-    onTertiaryContainer: FitoraColors.darkTextPrimary,
-    error: FitoraColors.accentRed,
+    tertiaryContainer: Color(0xFF6E232F),
+    onTertiaryContainer: core.FitoraColors.darkTextPrimary,
+    error: core.FitoraColors.errorRed,
     onError: FitoraColors.darkOnPrimary,
     errorContainer: Color(0xFF8C1D18),
-    onErrorContainer: FitoraColors.darkTextPrimary,
-    surface: FitoraColors.darkBackground,
-    onSurface: FitoraColors.darkTextPrimary,
-    surfaceContainerHighest: FitoraColors.darkSurfaceVariant,
-    onSurfaceVariant: FitoraColors.darkTextSecondary,
-    outline: FitoraColors.darkOutline,
-    outlineVariant: Color(0xFF3C4743),
+    onErrorContainer: core.FitoraColors.darkTextPrimary,
+    surface: core.FitoraColors.darkBg,
+    onSurface: core.FitoraColors.darkTextPrimary,
+    surfaceContainerHighest: core.FitoraColors.darkSurfaceVariant,
+    onSurfaceVariant: core.FitoraColors.darkTextSecondary,
+    outline: core.FitoraColors.darkBorder,
+    outlineVariant: Color(0xFF232F2C),
     shadow: FitoraColors.shadowDark,
     scrim: Color(0x99000000),
-    inverseSurface: FitoraColors.lightSurface,
-    onInverseSurface: FitoraColors.lightTextPrimary,
-    inversePrimary: FitoraColors.accentGreen,
+    inverseSurface: core.FitoraColors.lightSurface,
+    onInverseSurface: core.FitoraColors.lightTextPrimary,
+    inversePrimary: core.FitoraColors.mintGreen,
     surfaceTint: Colors.transparent,
   );
 }

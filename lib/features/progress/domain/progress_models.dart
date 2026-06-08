@@ -22,7 +22,7 @@ class WorkoutHistoryEntry {
   String get durationLabel {
     final minutes = durationMinutes;
     if (minutes < 60) {
-      return '${minutes} min';
+      return '$minutes min';
     }
     final hours = minutes ~/ 60;
     final remaining = minutes % 60;

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:fitora/core/constants/spacing.dart';
 import 'package:fitora/features/home/domain/home_dashboard_models.dart';
 import 'package:fitora/shared/widgets/fitora_button.dart';
-import 'package:fitora/shared/widgets/glow_container.dart';
+import 'package:fitora/shared/widgets/fitora_card.dart';
 
 class HomeWorkoutHighlightCard extends StatelessWidget {
   final HomeWorkoutHighlight highlight;
@@ -19,82 +19,132 @@ class HomeWorkoutHighlightCard extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
-    return GlowContainer(
-      glowColor: colorScheme.primary.withOpacity(0.2),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final headerHeight = constraints.maxHeight * 0.26;
-
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                height: headerHeight,
-                decoration: BoxDecoration(
-                  borderRadius: FitoraSpacing.cardRadius,
-                  gradient: LinearGradient(
-                    colors: [
-                      colorScheme.primary.withOpacity(0.3),
-                      colorScheme.surfaceVariant.withOpacity(0.4),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+    return FitoraCard(
+      padding: EdgeInsets.zero,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Premium Gradient Header
+          Container(
+            height: 90,
+            decoration: BoxDecoration(
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(20),
+                topRight: Radius.circular(20),
+              ),
+              gradient: LinearGradient(
+                colors: [
+                  colorScheme.primary.withValues(alpha: 0.8),
+                  colorScheme.primaryContainer,
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+            child: Stack(
+              children: [
+                Positioned(
+                  right: -10,
+                  bottom: -10,
+                  child: Icon(
+                    Icons.fitness_center_rounded,
+                    size: 100,
+                    color: colorScheme.onPrimary.withValues(alpha: 0.12),
                   ),
                 ),
-                child: Align(
-                  alignment: Alignment.bottomLeft,
-                  child: Padding(
-                    padding: const EdgeInsets.all(FitoraSpacing.md),
-                    child: Row(
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: FitoraSpacing.md),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(FitoraSpacing.xs),
+                        decoration: BoxDecoration(
+                          color: colorScheme.surface.withValues(alpha: 0.85),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.play_arrow_rounded,
+                          color: colorScheme.primary,
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(width: FitoraSpacing.sm),
+                      Expanded(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "RECOMMENDED SESSION",
+                              style: textTheme.labelSmall?.copyWith(
+                                color: colorScheme.onPrimary.withValues(alpha: 0.7),
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.2,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Today\'s workout',
+                              style: textTheme.titleMedium?.copyWith(
+                                color: colorScheme.onPrimary,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Content
+          Padding(
+            padding: const EdgeInsets.all(FitoraSpacing.md),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  highlight.title,
+                  style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: FitoraSpacing.xs),
+                Text(
+                  highlight.subtitle,
+                  style: textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: FitoraSpacing.md),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
                       children: [
-                        Container(
-                          padding: const EdgeInsets.all(FitoraSpacing.xs),
-                          decoration: BoxDecoration(
-                            color: colorScheme.surface.withOpacity(0.7),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Icon(
-                            Icons.play_arrow_rounded,
-                            color: colorScheme.primary,
-                          ),
+                        _InfoPill(
+                          label: highlight.durationLabel,
+                          icon: Icons.timer_outlined,
                         ),
                         const SizedBox(width: FitoraSpacing.sm),
-                        Text(
-                          'Today\'s workout',
-                          style: textTheme.labelLarge,
+                        _InfoPill(
+                          label: highlight.difficultyLabel,
+                          icon: Icons.speed_outlined,
                         ),
                       ],
                     ),
-                  ),
+                    FitoraButton(
+                      label: highlight.ctaLabel,
+                      leading: const Icon(Icons.play_arrow_rounded, size: 18),
+                      onPressed: onPressed,
+                      isFullWidth: false,
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(height: FitoraSpacing.xs),
-              Text(highlight.title, style: textTheme.titleLarge),
-              const SizedBox(height: FitoraSpacing.xs),
-              Text(
-                highlight.subtitle,
-                style: textTheme.bodySmall?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
-              ),
-              const SizedBox(height: FitoraSpacing.xs),
-              Row(
-                children: [
-                  _InfoPill(label: highlight.durationLabel),
-                  const SizedBox(width: FitoraSpacing.sm),
-                  _InfoPill(label: highlight.difficultyLabel),
-                ],
-              ),
-              const SizedBox(height: FitoraSpacing.xs),
-              FitoraButton(
-                label: highlight.ctaLabel,
-                leading: const Icon(Icons.play_arrow_rounded),
-                onPressed: onPressed,
-                isFullWidth: false,
-              ),
-            ],
-          );
-        },
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -102,8 +152,9 @@ class HomeWorkoutHighlightCard extends StatelessWidget {
 
 class _InfoPill extends StatelessWidget {
   final String label;
+  final IconData icon;
 
-  const _InfoPill({required this.label});
+  const _InfoPill({required this.label, required this.icon});
 
   @override
   Widget build(BuildContext context) {
@@ -116,14 +167,25 @@ class _InfoPill extends StatelessWidget {
         vertical: FitoraSpacing.xs,
       ),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceVariant,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        label,
-        style: textTheme.labelSmall?.copyWith(
-          color: colorScheme.onSurfaceVariant,
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.7),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.5),
         ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: colorScheme.onSurfaceVariant),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: textTheme.labelSmall?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
       ),
     );
   }

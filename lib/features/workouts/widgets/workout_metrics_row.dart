@@ -73,22 +73,34 @@ class _MetricPill extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(
-        horizontal: FitoraSpacing.sm,
-        vertical: FitoraSpacing.xs,
+        horizontal: 14,
+        vertical: 8,
       ),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest,
+        color: Colors.white.withOpacity(0.08),
         borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.1),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: colorScheme.onSurfaceVariant),
+          Icon(icon, size: 16, color: Colors.white70),
           const SizedBox(width: FitoraSpacing.xs),
           Text(
             label,
             style: textTheme.labelSmall?.copyWith(
-              color: colorScheme.onSurfaceVariant,
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.5,
             ),
           ),
         ],

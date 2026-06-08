@@ -1,34 +1,41 @@
 enum PersonalizationStep {
+  welcome,
   goal,
+  activity,
   workout,
-  experience,
-  metrics,
   wellness,
+  body,
+  lifestyle,
+  aiPreview,
+  complete,
 }
 
 extension PersonalizationStepX on PersonalizationStep {
   String get title {
     return switch (this) {
+      PersonalizationStep.welcome => "Let's build your wellness blueprint",
       PersonalizationStep.goal => 'Choose your primary goal',
+      PersonalizationStep.activity => 'Set your activity level',
       PersonalizationStep.workout => 'Pick your workout style',
-      PersonalizationStep.experience => 'Set your experience level',
-      PersonalizationStep.metrics => 'Share basic metrics',
-      PersonalizationStep.wellness => 'Add wellness interests',
+      PersonalizationStep.wellness => 'Add wellness focus',
+      PersonalizationStep.body => 'Body information',
+      PersonalizationStep.lifestyle => 'Lifestyle assessment',
+      PersonalizationStep.aiPreview => 'Analyzing profile...',
+      PersonalizationStep.complete => 'Setup complete',
     };
   }
 
   String get subtitle {
     return switch (this) {
-      PersonalizationStep.goal =>
-        'Tell us what you want to focus on first so we can guide you better.',
-      PersonalizationStep.workout =>
-        'We will tailor sessions to fit your space and schedule.',
-      PersonalizationStep.experience =>
-        'Choose the level that feels comfortable for you right now.',
-      PersonalizationStep.metrics =>
-        'A few details help us personalize pacing and insights.',
-      PersonalizationStep.wellness =>
-        'Optional: pick the habits you want gentle reminders for.',
+      PersonalizationStep.welcome => 'Your AI coach will create a plan tailored specifically for you.',
+      PersonalizationStep.goal => 'Tell us what you want to focus on first.',
+      PersonalizationStep.activity => 'Choose the level that fits your current routine.',
+      PersonalizationStep.workout => 'We will tailor sessions to your environment.',
+      PersonalizationStep.wellness => 'Select areas you want to prioritize.',
+      PersonalizationStep.body => 'Helps us calculate accurate metrics.',
+      PersonalizationStep.lifestyle => 'Helps the AI adapt your daily recovery.',
+      PersonalizationStep.aiPreview => 'Generating your wellness blueprint.',
+      PersonalizationStep.complete => 'Your blueprint is ready.',
     };
   }
 }
@@ -135,6 +142,7 @@ extension WellnessInterestX on WellnessInterest {
 }
 
 class PersonalizationProfile {
+  final String? name;
   final PersonalizationGoal? goal;
   final WorkoutPreference? workoutPreference;
   final ExperienceLevel? experienceLevel;
@@ -142,8 +150,12 @@ class PersonalizationProfile {
   final double? heightCm;
   final double? weightKg;
   final Set<WellnessInterest> interests;
+  final double? dailyStress;
+  final double? sleepQuality;
+  final double? energyLevel;
 
   PersonalizationProfile({
+    this.name,
     this.goal,
     this.workoutPreference,
     this.experienceLevel,
@@ -151,11 +163,15 @@ class PersonalizationProfile {
     this.heightCm,
     this.weightKg,
     Set<WellnessInterest>? interests,
+    this.dailyStress,
+    this.sleepQuality,
+    this.energyLevel,
   }) : interests = Set.unmodifiable(interests ?? const {});
 
   factory PersonalizationProfile.empty() => PersonalizationProfile();
 
   PersonalizationProfile copyWith({
+    String? name,
     PersonalizationGoal? goal,
     WorkoutPreference? workoutPreference,
     ExperienceLevel? experienceLevel,
@@ -163,8 +179,12 @@ class PersonalizationProfile {
     double? heightCm,
     double? weightKg,
     Set<WellnessInterest>? interests,
+    double? dailyStress,
+    double? sleepQuality,
+    double? energyLevel,
   }) {
     return PersonalizationProfile(
+      name: name ?? this.name,
       goal: goal ?? this.goal,
       workoutPreference: workoutPreference ?? this.workoutPreference,
       experienceLevel: experienceLevel ?? this.experienceLevel,
@@ -172,58 +192,53 @@ class PersonalizationProfile {
       heightCm: heightCm ?? this.heightCm,
       weightKg: weightKg ?? this.weightKg,
       interests: interests ?? this.interests,
+      dailyStress: dailyStress ?? this.dailyStress,
+      sleepQuality: sleepQuality ?? this.sleepQuality,
+      energyLevel: energyLevel ?? this.energyLevel,
     );
   }
 
   bool get hasMetrics => age != null && heightCm != null && weightKg != null;
+  bool get hasLifestyle => dailyStress != null && sleepQuality != null && energyLevel != null;
 
   Map<String, dynamic> toJson() {
     return {
+      'name': name,
       'goal': goal?.name,
       'workoutPreference': workoutPreference?.name,
       'experienceLevel': experienceLevel?.name,
       'age': age,
       'heightCm': heightCm,
       'weightKg': weightKg,
-      'interests': interests.map((interest) => interest.name).toList(),
+      'interests': interests.map((e) => e.name).toList(),
+      'dailyStress': dailyStress,
+      'sleepQuality': sleepQuality,
+      'energyLevel': energyLevel,
     };
   }
 
   factory PersonalizationProfile.fromJson(Map<String, dynamic> json) {
-    final interests = (json['interests'] as List?)
-            ?.map((value) => value?.toString())
-            .whereType<String>()
-            .map((value) => _parseEnum(WellnessInterest.values, value))
-            .whereType<WellnessInterest>()
-            .toSet() ??
-        <WellnessInterest>{};
-
     return PersonalizationProfile(
-      goal: _parseEnum(PersonalizationGoal.values, json['goal']?.toString()),
-      workoutPreference: _parseEnum(
-        WorkoutPreference.values,
-        json['workoutPreference']?.toString(),
-      ),
-      experienceLevel: _parseEnum(
-        ExperienceLevel.values,
-        json['experienceLevel']?.toString(),
-      ),
-      age: (json['age'] as num?)?.toInt(),
+      name: json['name'] as String?,
+      goal: json['goal'] != null
+          ? PersonalizationGoal.values.byName(json['goal'] as String)
+          : null,
+      workoutPreference: json['workoutPreference'] != null
+          ? WorkoutPreference.values.byName(json['workoutPreference'] as String)
+          : null,
+      experienceLevel: json['experienceLevel'] != null
+          ? ExperienceLevel.values.byName(json['experienceLevel'] as String)
+          : null,
+      age: json['age'] as int?,
       heightCm: (json['heightCm'] as num?)?.toDouble(),
       weightKg: (json['weightKg'] as num?)?.toDouble(),
-      interests: interests,
+      interests: (json['interests'] as List<dynamic>?)
+              ?.map((e) => WellnessInterest.values.byName(e as String))
+              .toSet() ??
+          {},
+      dailyStress: (json['dailyStress'] as num?)?.toDouble(),
+      sleepQuality: (json['sleepQuality'] as num?)?.toDouble(),
+      energyLevel: (json['energyLevel'] as num?)?.toDouble(),
     );
   }
-}
-
-T? _parseEnum<T extends Enum>(List<T> values, String? name) {
-  if (name == null) {
-    return null;
-  }
-  for (final value in values) {
-    if (value.name == name) {
-      return value;
-    }
-  }
-  return null;
 }

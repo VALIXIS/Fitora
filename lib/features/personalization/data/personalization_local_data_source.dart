@@ -41,4 +41,9 @@ class PersonalizationLocalDataSource {
     final encoded = jsonEncode(profile.toJson());
     await prefs.setString(StorageKeys.personalizationProfile, encoded);
   }
+
+  Future<void> clearProfile() async {
+    final prefs = await AppPreferences.instance();
+    await prefs.remove(StorageKeys.personalizationProfile);
+  }
 }

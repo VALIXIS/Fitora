@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fitora/features/personalization/providers/personalization_controller.dart';
+import 'package:fitora/features/wellness/providers/wellness_provider.dart';
+import 'package:fitora/features/progress/providers/progress_controller.dart';
 import 'package:fitora/features/workouts/data/local_workout_repository.dart';
 import 'package:fitora/features/workouts/domain/workout_models.dart';
 import 'package:fitora/features/workouts/domain/workout_recommendation.dart';
@@ -31,6 +33,10 @@ final workoutBrowseProvider = Provider<AsyncValue<WorkoutBrowseData>>((ref) {
   final profile = ref.watch(
     personalizationControllerProvider.select((state) => state.profile),
   );
+  
+  // Watch wellness recovery score and progress history
+  final wellness = ref.watch(wellnessProvider);
+  final progress = ref.watch(progressControllerProvider);
 
   return workoutsAsync.whenData((workouts) {
     final featured =
@@ -42,6 +48,8 @@ final workoutBrowseProvider = Provider<AsyncValue<WorkoutBrowseData>>((ref) {
     var recommended = recommender.recommend(
       workouts: workouts,
       profile: profile,
+      recoveryScore: wellness.recoveryScore,
+      history: progress.history,
       limit: 4,
     );
     if (recommended.isEmpty) {

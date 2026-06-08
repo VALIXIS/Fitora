@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fitora/core/constants/spacing.dart';
+import 'package:fitora/shared/widgets/scale_on_press.dart';
 
 class FitoraCard extends StatelessWidget {
   final Widget child;
@@ -17,7 +18,7 @@ class FitoraCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    final card = Card(
       margin: margin ?? EdgeInsets.zero,
       child: InkWell(
         onTap: onTap,
@@ -28,5 +29,15 @@ class FitoraCard extends StatelessWidget {
         ),
       ),
     );
+
+    if (onTap != null) {
+      return ScaleOnPress(
+        onTap: onTap,
+        scaleDownTo: 0.97,
+        child: card,
+      );
+    }
+
+    return card;
   }
 }

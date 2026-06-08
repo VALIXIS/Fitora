@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:fitora/app/providers/theme_mode_provider.dart';
+import 'package:fitora/core/theme/fitora_colors.dart';
 import 'package:fitora/features/settings/providers/settings_provider.dart';
 
 class SettingsSheet extends ConsumerWidget {
@@ -30,33 +32,44 @@ class SettingsSheet extends ConsumerWidget {
             SwitchListTile(
               title: const Text('Enable notifications'),
               value: settings.notificationsEnabled,
-              onChanged: (v) => ref.read(settingsProvider.notifier).setNotifications(v),
+              onChanged: (v) => ref.read(settingsProvider.notifier).updateSetting('notificationsEnabled', v),
             ),
             SwitchListTile(
               title: const Text('Hydration reminders'),
-              value: settings.hydrationReminders,
-              onChanged: (v) => ref.read(settingsProvider.notifier).setHydrationReminders(v),
+              value: settings.waterReminder,
+              onChanged: (v) => ref.read(settingsProvider.notifier).updateSetting('waterReminder', v),
             ),
             SwitchListTile(
               title: const Text('Sound & haptics'),
-              value: settings.soundEnabled,
-              onChanged: (v) => ref.read(settingsProvider.notifier).setSoundEnabled(v),
+              value: settings.soundEffectsEnabled,
+              onChanged: (v) => ref.read(settingsProvider.notifier).updateSetting('soundEffectsEnabled', v),
             ),
             SwitchListTile(
               title: const Text('Autoplay rest timers'),
               value: settings.autoplayRest,
-              onChanged: (v) => ref.read(settingsProvider.notifier).setAutoplayRest(v),
+              onChanged: (v) => ref.read(settingsProvider.notifier).updateSetting('autoplayRest', v),
             ),
             ListTile(
               title: const Text('Units'),
-              subtitle: Text(settings.units == 'metric' ? 'Metric (kg, cm)' : 'Imperial (lbs, in)'),
+              subtitle: Text(settings.isMetric ? 'Metric (kg, cm)' : 'Imperial (lbs, in)'),
               trailing: PopupMenuButton<String>(
-                onSelected: (v) => ref.read(settingsProvider.notifier).setUnits(v),
+                onSelected: (v) => ref.read(settingsProvider.notifier).updateSetting('isMetric', v == 'metric'),
                 itemBuilder: (context) => [
                   const PopupMenuItem(value: 'metric', child: Text('Metric')),
                   const PopupMenuItem(value: 'imperial', child: Text('Imperial')),
                 ],
               ),
+            ),
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.sync_rounded, color: FitoraColors.mintGreen),
+              title: const Text('Health Integration'),
+              subtitle: const Text('Google Fit, Health Connect, Apple Health…'),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: () {
+                Navigator.of(context).pop();
+                context.push('/profile/health-sync');
+              },
             ),
             const Divider(),
             ListTile(

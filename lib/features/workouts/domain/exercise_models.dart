@@ -66,10 +66,10 @@ class ExerciseDose {
   String get summary {
     final parts = <String>[];
     if (sets != null) {
-      parts.add('${sets} sets');
+      parts.add('$sets sets');
     }
     if (reps != null) {
-      parts.add('${reps} reps');
+      parts.add('$reps reps');
     }
     if (duration != null) {
       parts.add(_formatDuration(duration!));
@@ -89,6 +89,9 @@ class Exercise {
   final TargetMuscle targetMuscle;
   final List<Equipment> equipment;
   final String? beginnerTip;
+  final String? gifPath;
+  final List<String>? commonMistakes;
+  final List<String>? modifications;
 
   const Exercise({
     required this.id,
@@ -98,6 +101,9 @@ class Exercise {
     required this.targetMuscle,
     required this.equipment,
     this.beginnerTip,
+    this.gifPath,
+    this.commonMistakes,
+    this.modifications,
   });
 }
 
@@ -108,7 +114,7 @@ String _formatDuration(Duration duration) {
     return '${seconds}s';
   }
   if (seconds == 0) {
-    return '${minutes} min';
+    return '$minutes min';
   }
   return '${minutes}m ${seconds}s';
 }

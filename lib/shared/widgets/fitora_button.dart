@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fitora/core/constants/spacing.dart';
+import 'package:fitora/shared/widgets/scale_on_press.dart';
 
 enum FitoraButtonVariant { primary, secondary, ghost }
 
@@ -32,11 +33,15 @@ class FitoraButton extends StatelessWidget {
         TextButton(onPressed: onPressed, child: child),
     };
 
+    final wrappedButton = onPressed != null
+        ? ScaleOnPress(scaleDownTo: 0.96, child: button)
+        : button;
+
     if (isFullWidth) {
-      return SizedBox(width: double.infinity, child: button);
+      return SizedBox(width: double.infinity, child: wrappedButton);
     }
 
-    return button;
+    return wrappedButton;
   }
 
   Widget _buildChild(BuildContext context) {

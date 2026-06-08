@@ -59,11 +59,15 @@ class PersonalizationViewState {
 
   bool get canProceed {
     return switch (currentStep) {
+      PersonalizationStep.welcome => true,
       PersonalizationStep.goal => profile.goal != null,
+      PersonalizationStep.activity => profile.experienceLevel != null,
       PersonalizationStep.workout => profile.workoutPreference != null,
-      PersonalizationStep.experience => profile.experienceLevel != null,
-      PersonalizationStep.metrics => profile.hasMetrics,
-      PersonalizationStep.wellness => true,
+      PersonalizationStep.wellness => profile.interests.isNotEmpty,
+      PersonalizationStep.body => profile.hasMetrics,
+      PersonalizationStep.lifestyle => profile.hasLifestyle,
+      PersonalizationStep.aiPreview => true,
+      PersonalizationStep.complete => true,
     };
   }
 
@@ -73,6 +77,7 @@ class PersonalizationViewState {
 class PersonalizationController extends StateNotifier<PersonalizationViewState> {
   final PersonalizationLocalDataSource _dataSource;
   late final Future<void> _loadFuture;
+  Future<void> _saveQueue = Future<void>.value();
 
   PersonalizationController(this._dataSource)
       : super(PersonalizationViewState.initial()) {
@@ -114,27 +119,39 @@ class PersonalizationController extends StateNotifier<PersonalizationViewState> 
   }
 
   void setGoal(PersonalizationGoal goal) {
-    _updateProfile(state.profile.copyWith(goal: goal));
+    updateProfile(state.profile.copyWith(goal: goal));
   }
 
   void setWorkoutPreference(WorkoutPreference preference) {
-    _updateProfile(state.profile.copyWith(workoutPreference: preference));
+    updateProfile(state.profile.copyWith(workoutPreference: preference));
   }
 
   void setExperienceLevel(ExperienceLevel level) {
-    _updateProfile(state.profile.copyWith(experienceLevel: level));
+    updateProfile(state.profile.copyWith(experienceLevel: level));
   }
 
   void setAge(int? age) {
-    _updateProfile(state.profile.copyWith(age: age));
+    updateProfile(state.profile.copyWith(age: age));
   }
 
   void setHeight(double? heightCm) {
-    _updateProfile(state.profile.copyWith(heightCm: heightCm));
+    updateProfile(state.profile.copyWith(heightCm: heightCm));
   }
 
   void setWeight(double? weightKg) {
-    _updateProfile(state.profile.copyWith(weightKg: weightKg));
+    updateProfile(state.profile.copyWith(weightKg: weightKg));
+  }
+
+  void setDailyStress(double? stress) {
+    updateProfile(state.profile.copyWith(dailyStress: stress));
+  }
+
+  void setSleepQuality(double? quality) {
+    updateProfile(state.profile.copyWith(sleepQuality: quality));
+  }
+
+  void setEnergyLevel(double? energy) {
+    updateProfile(state.profile.copyWith(energyLevel: energy));
   }
 
   void toggleInterest(WellnessInterest interest) {
@@ -144,17 +161,28 @@ class PersonalizationController extends StateNotifier<PersonalizationViewState> 
     } else {
       updated.add(interest);
     }
-    _updateProfile(state.profile.copyWith(interests: updated));
+    updateProfile(state.profile.copyWith(interests: updated));
   }
 
   Future<void> completePersonalization() async {
-    await _dataSource.saveProfile(state.profile);
+    await _persistProfile(state.profile);
     await _dataSource.setCompleted(true);
     state = state.copyWith(isCompleted: true);
   }
 
-  void _updateProfile(PersonalizationProfile profile) {
+  void updateProfile(PersonalizationProfile profile) {
     state = state.copyWith(profile: profile);
-    unawaited(_dataSource.saveProfile(profile));
+    unawaited(_persistProfile(profile));
+  }
+
+  Future<void> _persistProfile(PersonalizationProfile profile) {
+    _saveQueue = _saveQueue.then((_) => _dataSource.saveProfile(profile));
+    return _saveQueue;
+  }
+
+  Future<void> reset() async {
+    await _dataSource.clearProfile();
+    await _dataSource.setCompleted(false);
+    state = PersonalizationViewState.initial();
   }
 }

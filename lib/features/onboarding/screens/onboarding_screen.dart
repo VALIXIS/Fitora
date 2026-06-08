@@ -37,13 +37,6 @@ class OnboardingScreen extends HookConsumerWidget {
     }
 
     final colorScheme = Theme.of(context).colorScheme;
-    final icons = [
-      Icons.auto_awesome_rounded,
-      Icons.dashboard_rounded,
-      Icons.psychology_alt_rounded,
-      Icons.spa_rounded,
-      Icons.favorite_rounded,
-    ];
     final accents = [
       colorScheme.primary,
       colorScheme.secondary,
@@ -90,79 +83,55 @@ class OnboardingScreen extends HookConsumerWidget {
     }
 
     return Scaffold(
-      body: SafeArea(
-        child: Stack(
-          children: [
-            const _OnboardingBackground(),
-            Column(
-              children: [
-                Expanded(
-                  child: PageView.builder(
-                    controller: pageController,
-                    itemCount: state.pages.length,
-                    physics: const BouncingScrollPhysics(),
-                    onPageChanged: controller.setPage,
-                    itemBuilder: (context, index) {
-                      final page = state.pages[index];
-                      final icon = icons[index % icons.length];
-                      final accent = accents[index % accents.length];
-
-                      return LayoutBuilder(
-                        builder: (context, constraints) {
-                          return SingleChildScrollView(
-                            physics: const BouncingScrollPhysics(),
-                            padding: FitoraSpacing.pagePadding,
-                            child: ConstrainedBox(
-                              constraints: BoxConstraints(
-                                minHeight: constraints.maxHeight,
-                              ),
-                              child: Center(
-                                child: ConstrainedBox(
-                                  constraints:
-                                      const BoxConstraints(maxWidth: 420),
-                                  child: OnboardingPage(
-                                    data: page,
-                                    icon: icon,
-                                    accentColor: accent,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      );
-                    },
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    FitoraSpacing.md,
-                    FitoraSpacing.sm,
-                    FitoraSpacing.md,
-                    FitoraSpacing.lg,
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _OnboardingIndicator(
-                        total: state.pages.length,
-                        currentIndex: state.pageIndex,
-                      ),
-                      const SizedBox(height: FitoraSpacing.sm),
-                      _OnboardingControlsRow(
-                        isLastPage: state.isLastPage,
-                        onBack: handleBack,
-                        onNext: handleNext,
-                        onSkip: handleSkip,
-                        onStart: handleStart,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+      backgroundColor: const Color(0xFF0E1312),
+      body: Column(
+        children: [
+          Expanded(
+            child: PageView.builder(
+              controller: pageController,
+              itemCount: state.pages.length,
+              physics: const BouncingScrollPhysics(),
+              onPageChanged: controller.setPage,
+              itemBuilder: (context, index) {
+                final page = state.pages[index];
+                final accent = accents[index % accents.length];
+                return OnboardingPage(
+                  data: page,
+                  index: index,
+                  accentColor: accent,
+                );
+              },
             ),
-          ],
-        ),
+          ),
+          SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                FitoraSpacing.xl,
+                0,
+                FitoraSpacing.xl,
+                FitoraSpacing.lg,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _OnboardingIndicator(
+                    total: state.pages.length,
+                    currentIndex: state.pageIndex,
+                  ),
+                  const SizedBox(height: FitoraSpacing.xl),
+                  _OnboardingControlsRow(
+                    isLastPage: state.isLastPage,
+                    onBack: handleBack,
+                    onNext: handleNext,
+                    onSkip: handleSkip,
+                    onStart: handleStart,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -237,28 +206,6 @@ class _OnboardingIndicator extends StatelessWidget {
           ),
         );
       }),
-    );
-  }
-}
-
-class _OnboardingBackground extends StatelessWidget {
-  const _OnboardingBackground();
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            colorScheme.background,
-            colorScheme.surfaceVariant.withOpacity(0.6),
-          ],
-        ),
-      ),
     );
   }
 }

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fitora/core/constants/spacing.dart';
 import 'package:fitora/features/home/domain/home_dashboard_models.dart';
-import 'package:fitora/shared/widgets/glow_container.dart';
+import 'package:fitora/shared/widgets/fitora_card.dart';
 
 class HomeStepRingCard extends StatelessWidget {
   final HomeStepProgress progress;
@@ -17,71 +17,97 @@ class HomeStepRingCard extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
     final percent = progress.progress.clamp(0.0, 1.0);
 
-    return GlowContainer(
-      glowColor: colorScheme.primary.withOpacity(0.18),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final base = constraints.maxWidth < constraints.maxHeight
-            ? constraints.maxWidth
-            : constraints.maxHeight;
-            final size = (base * 0.68)
-              .clamp(84.0, constraints.maxHeight * 0.8)
-            .toDouble();
-
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                TweenAnimationBuilder<double>(
-                  tween: Tween(begin: 0, end: percent),
-                  duration: const Duration(milliseconds: 900),
-                  curve: Curves.easeOutCubic,
-                  builder: (context, value, _) {
-                    return SizedBox(
-                      width: size,
-                      height: size,
-                      child: Stack(
-                        alignment: Alignment.center,
+    return FitoraCard(
+      padding: const EdgeInsets.symmetric(vertical: FitoraSpacing.md, horizontal: FitoraSpacing.md),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0.0, end: percent),
+              duration: const Duration(milliseconds: 1000),
+              curve: Curves.easeOutCubic,
+              builder: (context, value, _) {
+                return SizedBox(
+                  width: 140,
+                  height: 140,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // Backdrop shadow/glow for the ring itself
+                      Container(
+                        width: 124,
+                        height: 124,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: colorScheme.primary.withValues(alpha: 0.06),
+                              blurRadius: 16,
+                              spreadRadius: 2,
+                            ),
+                          ],
+                        ),
+                      ),
+                      CircularProgressIndicator(
+                        value: 1.0,
+                        strokeWidth: 12,
+                        backgroundColor: colorScheme.surfaceContainerHighest,
+                        valueColor: AlwaysStoppedAnimation(
+                          colorScheme.primary.withValues(alpha: 0.15),
+                        ),
+                      ),
+                      CircularProgressIndicator(
+                        value: value,
+                        strokeWidth: 12,
+                        strokeCap: StrokeCap.round,
+                        backgroundColor: Colors.transparent,
+                        valueColor: AlwaysStoppedAnimation(
+                          colorScheme.primary,
+                        ),
+                      ),
+                      // Text info centered in the ring
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          CircularProgressIndicator(
-                            value: value,
-                            strokeWidth: 10,
-                            backgroundColor: colorScheme.surfaceVariant,
-                            valueColor: AlwaysStoppedAnimation(
-                              colorScheme.primary,
+                          const Icon(
+                            Icons.directions_walk_rounded,
+                            color: Colors.grey,
+                            size: 20,
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            _formatNumber(progress.current),
+                            style: textTheme.headlineMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: -0.5,
                             ),
                           ),
-                          Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                _formatNumber(progress.current),
-                                style: textTheme.titleLarge,
-                              ),
-                              Text(
-                                'steps',
-                                style: textTheme.bodySmall?.copyWith(
-                                  color: colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                            ],
+                          Text(
+                            'steps',
+                            style: textTheme.bodySmall?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ],
                       ),
-                    );
-                  },
-                ),
-                const SizedBox(height: FitoraSpacing.xs),
-                Text(
-                  'Daily goal ${_formatNumber(progress.goal)}',
-                  style: textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
+                    ],
                   ),
-                ),
-              ],
+                );
+              },
             ),
-          );
-        },
+            const SizedBox(height: FitoraSpacing.sm),
+            Text(
+              'Daily goal: ${_formatNumber(progress.goal)} steps',
+              style: textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

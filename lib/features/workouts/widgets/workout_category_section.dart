@@ -21,8 +21,9 @@ class WorkoutCategorySection extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final isNarrow = constraints.maxWidth < 520;
-        final textScale = MediaQuery.textScaleFactorOf(context);
-        final cardHeight = 176 * (textScale < 1 ? 1 : textScale);
+        final textScaler = MediaQuery.textScalerOf(context);
+        final scale = textScaler.scale(1);
+        final cardHeight = 190 * (scale < 1 ? 1 : scale);
 
         Widget content;
 
@@ -45,7 +46,7 @@ class WorkoutCategorySection extends StatelessWidget {
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: workouts.length,
-              separatorBuilder: (_, __) =>
+              separatorBuilder: (_, _) =>
                   const SizedBox(width: FitoraSpacing.md),
               itemBuilder: (context, index) {
                 final workout = workouts[index];

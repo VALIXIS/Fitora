@@ -9,19 +9,19 @@ final themeModeProvider =
 );
 
 class ThemeModeController extends StateNotifier<ThemeMode> {
-  ThemeModeController() : super(ThemeMode.light);
+  ThemeModeController() : super(ThemeMode.dark);
 
   Future<void> load() async {
     final prefs = await AppPreferences.instance();
     final value = prefs.getString(StorageKeys.themeMode);
     if (value == null) {
-      state = ThemeMode.light;
+      state = ThemeMode.dark;
       return;
     }
 
     state = ThemeMode.values.firstWhere(
       (mode) => mode.name == value,
-      orElse: () => ThemeMode.light,
+      orElse: () => ThemeMode.dark,
     );
   }
 

@@ -5,11 +5,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:fitora/core/utils/app_logger.dart';
+import 'package:fitora/features/auth/data/auth_local_data_source.dart';
 import 'package:fitora/features/auth/data/firebase_auth_repository.dart';
 import 'package:fitora/features/auth/domain/auth_repository.dart';
 import 'package:fitora/features/auth/models/auth_action_state.dart';
 import 'package:fitora/features/auth/models/auth_session.dart';
-import 'package:fitora/features/auth/models/auth_status.dart';
 import 'package:fitora/features/auth/models/auth_user.dart';
 import 'package:fitora/features/auth/services/firebase_auth_service.dart';
 
@@ -23,7 +23,11 @@ final authRepositoryProvider = Provider<AuthRepository>((ref) {
 
 final authStateProvider =
     StateNotifierProvider<AuthController, AuthSession>((ref) {
-  return AuthController(ref.read(authRepositoryProvider), ref);
+  return AuthController(
+    ref.read(authRepositoryProvider),
+    ref.read(authLocalDataSourceProvider),
+    ref,
+  );
 });
 
 final authActionProvider =
@@ -33,10 +37,12 @@ final authActionProvider =
 
 class AuthController extends StateNotifier<AuthSession> {
   final AuthRepository _repository;
+  final AuthLocalDataSource _localDataSource;
   final Ref _ref;
   StreamSubscription<AuthUser?>? _subscription;
 
-  AuthController(this._repository, this._ref) : super(AuthSession.loading()) {
+  AuthController(this._repository, this._localDataSource, this._ref)
+      : super(AuthSession.loading()) {
     _subscription = _repository.authStateChanges().listen(
       _handleAuthChange,
       onError: _handleAuthError,
@@ -46,9 +52,12 @@ class AuthController extends StateNotifier<AuthSession> {
 
   void _handleAuthChange(AuthUser? user) {
     if (user == null) {
+      unawaited(_localDataSource.setCompleted(false));
       state = AuthSession.unauthenticated();
       return;
     }
+
+    unawaited(_localDataSource.setCompleted(true));
 
     if (user.isAnonymous) {
       state = AuthSession.guest(user);
