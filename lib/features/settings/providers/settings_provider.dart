@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fitora/app/providers/theme_mode_provider.dart';
 import 'package:fitora/core/services/notification_service.dart';
 import 'package:fitora/core/storage/app_preferences.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 class SettingsState {
   final bool isDarkMode;
@@ -163,4 +164,8 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
 
 final settingsProvider = StateNotifierProvider<SettingsNotifier, SettingsState>((ref) {
   return SettingsNotifier(ref);
+});
+
+final packageInfoProvider = FutureProvider<PackageInfo>((ref) async {
+  return PackageInfo.fromPlatform();
 });

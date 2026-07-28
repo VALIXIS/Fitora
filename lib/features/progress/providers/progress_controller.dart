@@ -89,6 +89,8 @@ class ProgressController extends StateNotifier<ProgressState> {
     unawaited(_repository.saveHistory(updated));
   }
 
+
+
   ProgressState _buildState(
     List<WorkoutHistoryEntry> history, {
     required bool isLoading,

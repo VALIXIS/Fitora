@@ -10,6 +10,7 @@ import 'package:fitora/features/personalization/providers/personalization_contro
 import 'package:fitora/features/personalization/domain/personalization_models.dart';
 import 'package:fitora/features/auth/providers/auth_providers.dart';
 import 'package:fitora/features/profile/widgets/sensor_debug_panel.dart';
+import 'package:fitora/features/settings/providers/settings_provider.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -74,6 +75,22 @@ class ProfileScreen extends ConsumerWidget {
                     const SensorDebugPanel(),
                     const SizedBox(height: FitoraSpacing.xxl),
 
+                    Consumer(
+                      builder: (context, ref, _) {
+                        final packageInfoAsync = ref.watch(packageInfoProvider);
+                        final versionText = packageInfoAsync.when(
+                          data: (info) => 'Version ${info.version} (Build ${info.buildNumber})',
+                          loading: () => 'Loading...',
+                          error: (_, _) => 'Version 1.0.0',
+                        );
+                        return Center(
+                          child: Text(
+                            versionText,
+                            style: textTheme.labelSmall?.copyWith(color: Colors.white38),
+                          ),
+                        );
+                      },
+                    ),
                     const SizedBox(height: 100), // Bottom padding
                   ],
                 ),
@@ -477,16 +494,12 @@ class ProfileScreen extends ConsumerWidget {
     return _buildCard([
       _buildActionTile(tt, Icons.settings_rounded, 'Settings', onTap: () => context.pushNamed(AppRouteNames.settings)),
       _buildDivider(),
-      _buildActionTile(tt, Icons.notifications_none_rounded, 'Notifications', onTap: () {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Notification settings opened')));
-      }),
+      _buildActionTile(tt, Icons.info_outline_rounded, 'About Fitora', onTap: () => context.pushNamed(AppRouteNames.about)),
       _buildDivider(),
-      _buildActionTile(tt, Icons.lock_outline_rounded, 'Privacy', onTap: () {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Privacy settings opened')));
-      }),
+      _buildActionTile(tt, Icons.lock_outline_rounded, 'Privacy Policy', onTap: () => context.pushNamed(AppRouteNames.privacyPolicy)),
       _buildDivider(),
       _buildActionTile(tt, Icons.help_outline_rounded, 'Help & Support', onTap: () {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Support center opened')));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Support email: support@fitora.app')));
       }),
     ]);
   }

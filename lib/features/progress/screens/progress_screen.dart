@@ -7,6 +7,8 @@ import 'package:fitora/shared/widgets/fitora_card.dart';
 import 'package:fitora/shared/widgets/glow_container.dart';
 import 'package:fitora/core/health/providers/health_providers.dart';
 import 'package:fitora/core/health/domain/health_models.dart';
+import 'package:fitora/features/wellness/providers/wellness_provider.dart';
+import 'package:fitora/features/personalization/providers/personalization_controller.dart';
 
 class ProgressScreen extends ConsumerStatefulWidget {
   const ProgressScreen({super.key});
@@ -23,6 +25,14 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     final today = DateTime(now.year, now.month, now.day);
     final lastWeek = today.subtract(const Duration(days: 6));
     final summaries = ref.watch(weeklyActivityProvider(lastWeek));
+
+    final profile = ref.watch(personalizationControllerProvider).profile;
+    final hasWeight = profile.weightKg != null && profile.weightKg! > 0;
+    
+    final sleepValues = summaries.map((s) {
+      return ref.watch(sleepSummaryProvider(s.date)).totalSleep.inMinutes.toDouble();
+    }).toList();
+    final hasSleepHistory = sleepValues.any((v) => v > 0);
 
     return Scaffold(
       backgroundColor: const Color(0xFF0E1312),
@@ -61,7 +71,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
 
                       _buildSectionHeader(textTheme, 'TRENDS'),
                       const SizedBox(height: FitoraSpacing.md),
-                      _buildTrendsSection(textTheme, summaries),
+                      _buildTrendsSection(textTheme, summaries, hasSleepHistory, sleepValues, hasWeight, profile.weightKg),
                       const SizedBox(height: 100),
                     ],
                   ),
@@ -104,31 +114,36 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     return Consumer(
       builder: (context, ref, _) {
         final sleep = ref.watch(sleepSummaryProvider(DateTime.now()));
+        final wellness = ref.watch(wellnessProvider);
+        final now = DateTime.now();
+        final todayStr = "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
+        final mood = wellness.loggedMoods[todayStr] ?? 'Not logged';
         
+        final hasSleep = sleep.totalSleep.inMinutes > 0;
+
         return Column(
           children: [
             Row(
               children: [
-                Expanded(
-                  child: Builder(builder: (context) {
-                    if (sleep.totalSleep.inMinutes == 0) {
-                      return _buildMetricCard(tt, 'Sleep', '--', '', Icons.bedtime_rounded, Colors.white38);
-                    }
-                    final hours = sleep.totalSleep.inHours;
-                    final minutes = sleep.totalSleep.inMinutes.remainder(60);
-                    return _buildMetricCard(tt, 'Sleep', '${hours}h ${minutes}m', '', Icons.bedtime_rounded, FitoraColors.softPink);
-                  }),
-                ),
-                const SizedBox(width: FitoraSpacing.sm),
-                Expanded(child: _buildMetricCard(tt, 'Hydration', '0.0', ' L', Icons.water_drop_rounded, Colors.blueAccent)),
+                if (hasSleep) ...[
+                  Expanded(
+                    child: Builder(builder: (context) {
+                      final hours = sleep.totalSleep.inHours;
+                      final minutes = sleep.totalSleep.inMinutes.remainder(60);
+                      return _buildMetricCard(tt, 'Sleep', '${hours}h ${minutes}m', '', Icons.bedtime_rounded, FitoraColors.softPink);
+                    }),
+                  ),
+                  const SizedBox(width: FitoraSpacing.sm),
+                ],
+                Expanded(child: _buildMetricCard(tt, 'Hydration', wellness.hydrationLiters.toStringAsFixed(1), ' L', Icons.water_drop_rounded, Colors.blueAccent)),
               ],
             ),
             const SizedBox(height: FitoraSpacing.sm),
             Row(
               children: [
-                Expanded(child: _buildMetricCard(tt, 'Mood', 'Unknown', '', Icons.sentiment_satisfied_rounded, Colors.amber)),
+                Expanded(child: _buildMetricCard(tt, 'Mood', mood, '', Icons.sentiment_satisfied_rounded, Colors.amber)),
                 const SizedBox(width: FitoraSpacing.sm),
-                Expanded(child: _buildMetricCard(tt, 'Breathing', '0 min', '', Icons.air_rounded, FitoraColors.calmCyan)),
+                Expanded(child: _buildMetricCard(tt, 'Breathing', '${wellness.breathingMinutes} min', '', Icons.air_rounded, FitoraColors.calmCyan)),
               ],
             ),
           ],
@@ -167,7 +182,14 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     );
   }
 
-  Widget _buildTrendsSection(TextTheme tt, List<DailyActivitySummary> summaries) {
+  Widget _buildTrendsSection(
+    TextTheme tt,
+    List<DailyActivitySummary> summaries,
+    bool hasSleepHistory,
+    List<double> sleepValues,
+    bool hasWeight,
+    double? weight,
+  ) {
     return Column(
       children: [
         _buildStepsGraph(tt, summaries),
@@ -179,8 +201,14 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
             Expanded(child: _buildTrendCard(tt, 'Active', Icons.timer_rounded, FitoraColors.calmCyan, summaries.map((s) => s.activeMinutes.toDouble()).toList())),
           ],
         ),
-        const SizedBox(height: FitoraSpacing.lg),
-        _buildWeightTrend(tt),
+        if (hasSleepHistory) ...[
+          const SizedBox(height: FitoraSpacing.lg),
+          _buildTrendCard(tt, 'Sleep History (Minutes)', Icons.bedtime_rounded, FitoraColors.softPink, sleepValues),
+        ],
+        if (hasWeight && weight != null) ...[
+          const SizedBox(height: FitoraSpacing.lg),
+          _buildWeightTrend(tt, weight),
+        ],
         const SizedBox(height: FitoraSpacing.lg),
         _buildStreakCard(tt),
       ],
@@ -215,7 +243,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
   }
 
   Widget _buildTrendCard(TextTheme tt, String title, IconData icon, Color color, List<double> values) {
-    final maxVal = values.reduce((curr, next) => curr > next ? curr : next);
+    final maxVal = values.isEmpty ? 1.0 : values.reduce((curr, next) => curr > next ? curr : next);
     
     return GlowContainer(
       glowColor: color.withValues(alpha: 0.15),
@@ -249,7 +277,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: values.map((val) {
-                  final heightRatio = (val / maxVal).clamp(0.0, 1.0);
+                  final heightRatio = maxVal == 0 ? 0.0 : (val / maxVal).clamp(0.0, 1.0);
                   return Container(
                     width: 8,
                     height: 60 * heightRatio,
@@ -267,7 +295,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     );
   }
 
-  Widget _buildWeightTrend(TextTheme tt) {
+  Widget _buildWeightTrend(TextTheme tt, double currentWeight) {
     return FitoraCard(
       padding: const EdgeInsets.all(FitoraSpacing.lg),
       child: Column(
@@ -284,26 +312,12 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text('68.2', style: tt.headlineMedium?.copyWith(fontWeight: FontWeight.w900, color: Colors.white)),
+              Text(currentWeight.toStringAsFixed(1), style: tt.headlineMedium?.copyWith(fontWeight: FontWeight.w900, color: Colors.white)),
               Padding(
                 padding: const EdgeInsets.only(bottom: 6, left: 4),
                 child: Text('kg', style: tt.bodySmall?.copyWith(color: Colors.white54)),
               ),
               const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: FitoraColors.mintGreen.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.arrow_downward_rounded, color: FitoraColors.mintGreen, size: 14),
-                    const SizedBox(width: 4),
-                    Text('1.2 kg', style: tt.labelSmall?.copyWith(color: FitoraColors.mintGreen, fontWeight: FontWeight.bold)),
-                  ],
-                ),
-              ),
             ],
           ),
         ],
@@ -332,6 +346,9 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
   }
 
   Widget _buildStreakCard(TextTheme tt) {
+    final wellness = ref.watch(wellnessProvider);
+    if (wellness.wellnessStreak == 0) return const SizedBox.shrink();
+
     return GlowContainer(
       glowColor: FitoraColors.warningOrange.withValues(alpha: 0.15),
       child: Container(
@@ -353,7 +370,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('12 DAY STREAK', style: tt.labelSmall?.copyWith(fontWeight: FontWeight.bold, letterSpacing: 1.0, color: FitoraColors.warningOrange)),
+                  Text('${wellness.wellnessStreak} DAY STREAK', style: tt.labelSmall?.copyWith(fontWeight: FontWeight.bold, letterSpacing: 1.0, color: FitoraColors.warningOrange)),
                   const SizedBox(height: 4),
                   Text('You are unstoppable!', style: tt.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: Colors.white)),
                   Text('Keep the momentum going.', style: tt.bodySmall?.copyWith(color: Colors.white70)),

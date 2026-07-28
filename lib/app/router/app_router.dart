@@ -16,9 +16,6 @@ import 'package:fitora/features/personalization/providers/personalization_contro
 import 'package:fitora/features/personalization/screens/personalization_flow_screen.dart';
 import 'package:fitora/features/profile/screens/profile_screen.dart';
 import 'package:fitora/features/progress/screens/progress_screen.dart';
-import 'package:fitora/features/workouts/screens/workout_detail_screen.dart';
-import 'package:fitora/features/workouts/session/screens/workout_session_screen.dart';
-import 'package:fitora/features/workouts/screens/workouts_screen.dart';
 import 'package:fitora/features/health_sync/screens/health_sync_screen.dart';
 import 'package:fitora/features/settings/screens/settings_screen.dart';
 import 'package:fitora/features/settings/screens/about_screen.dart';
@@ -31,7 +28,6 @@ import 'package:fitora/shared/screens/not_found_screen.dart';
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorKeys = [
   GlobalKey<NavigatorState>(debugLabel: 'home'),
-  GlobalKey<NavigatorState>(debugLabel: 'workouts'),
   GlobalKey<NavigatorState>(debugLabel: 'progress'),
   GlobalKey<NavigatorState>(debugLabel: 'profile'),
 ];
@@ -225,46 +221,6 @@ final appRouterProvider = Provider<GoRouter>(
               navigatorKey: _shellNavigatorKeys[1],
               routes: [
                 GoRoute(
-                  path: AppRoutes.workouts,
-                  name: AppRouteNames.workouts,
-                  pageBuilder: (context, state) => fadeThroughTransitionPage(
-                    context: context,
-                    state: state,
-                    child: const WorkoutsScreen(),
-                  ),
-                  routes: [
-                    GoRoute(
-                      path: AppRoutes.workoutDetail,
-                      name: AppRouteNames.workoutDetail,
-                      pageBuilder: (context, state) {
-                        final id = state.pathParameters['id'] ?? '';
-                        return slideUpTransitionPage(
-                          context: context,
-                          state: state,
-                          child: WorkoutDetailScreen(workoutId: id),
-                        );
-                      },
-                    ),
-                    GoRoute(
-                      path: AppRoutes.workoutSession,
-                      name: AppRouteNames.workoutSession,
-                      pageBuilder: (context, state) {
-                        final id = state.pathParameters['id'] ?? '';
-                        return slideUpTransitionPage(
-                          context: context,
-                          state: state,
-                          child: WorkoutSessionScreen(workoutId: id),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            StatefulShellBranch(
-              navigatorKey: _shellNavigatorKeys[2],
-              routes: [
-                GoRoute(
                   path: AppRoutes.progress,
                   name: AppRouteNames.progress,
                   pageBuilder: (context, state) => fadeThroughTransitionPage(
@@ -276,7 +232,7 @@ final appRouterProvider = Provider<GoRouter>(
               ],
             ),
             StatefulShellBranch(
-              navigatorKey: _shellNavigatorKeys[3],
+              navigatorKey: _shellNavigatorKeys[2],
               routes: [
                 GoRoute(
                   path: AppRoutes.profile,

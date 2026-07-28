@@ -4,7 +4,6 @@ import 'package:fitora/features/workouts/domain/workout_models.dart';
 import 'package:fitora/features/workouts/widgets/workout_metrics_row.dart';
 import 'package:fitora/features/workouts/widgets/workout_tag_chip.dart';
 import 'package:fitora/core/theme/fitora_colors.dart';
-import 'package:fitora/core/theme/fitora_colors.dart';
 import 'package:fitora/shared/widgets/glow_container.dart';
 
 class WorkoutCard extends StatelessWidget {

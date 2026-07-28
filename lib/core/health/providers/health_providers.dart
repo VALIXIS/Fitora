@@ -129,7 +129,7 @@ final dailyActivityProvider = Provider.family<DailyActivitySummary, DateTime>((r
         );
       },
       loading: () => cached,
-      error: (_, __) => cached,
+      error: (_, _) => cached,
     );
   }
   

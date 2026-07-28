@@ -26,8 +26,8 @@ android {
 
     defaultConfig {
         applicationId = "com.example.fitora"
-        // flutter_local_notifications v21 requires minSdk 21+
-        minSdk = flutter.minSdkVersion
+        // health plugin requires minSdk 26
+        minSdk = 26
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName

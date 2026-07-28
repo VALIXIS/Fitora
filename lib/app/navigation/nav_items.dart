@@ -24,12 +24,6 @@ class FitoraNavItems {
       selectedIcon: Icons.home,
     ),
     FitoraNavItem(
-      label: 'Workouts',
-      route: AppRoutes.workouts,
-      icon: Icons.fitness_center_outlined,
-      selectedIcon: Icons.fitness_center,
-    ),
-    FitoraNavItem(
       label: 'Progress',
       route: AppRoutes.progress,
       icon: Icons.show_chart_outlined,

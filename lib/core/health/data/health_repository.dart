@@ -1,5 +1,4 @@
 import 'package:fitora/core/health/domain/health_models.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 abstract class HealthRepository {
   Future<DailyActivitySummary> getDailyActivity(DateTime date);

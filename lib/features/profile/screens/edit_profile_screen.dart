@@ -225,7 +225,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
   Widget _buildDropdown<T>(String label, T? value, List<T> items, String Function(T) labelBuilder, void Function(T?) onChanged) {
     return DropdownButtonFormField<T>(
-      value: value,
+      initialValue: value,
       dropdownColor: const Color(0xFF1A2221),
       style: const TextStyle(color: Colors.white),
       decoration: InputDecoration(

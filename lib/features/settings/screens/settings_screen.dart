@@ -89,9 +89,19 @@ class SettingsScreen extends ConsumerWidget {
 
                     _buildSectionTitle(textTheme, 'ABOUT'),
                     _buildSettingsCard([
-                      _buildTile(textTheme, Icons.info_outline_rounded, 'App Version', 'v1.0.0 (Build 42)'),
+                      Consumer(
+                        builder: (context, ref, _) {
+                          final packageInfoAsync = ref.watch(packageInfoProvider);
+                          final versionText = packageInfoAsync.when(
+                            data: (info) => 'v${info.version} (Build ${info.buildNumber})',
+                            loading: () => 'Loading...',
+                            error: (_, _) => 'v1.0.0',
+                          );
+                          return _buildTile(textTheme, Icons.info_outline_rounded, 'App Version', versionText);
+                        },
+                      ),
                       _buildDivider(),
-                      _buildTile(textTheme, Icons.sports_gymnastics_rounded, 'About Fitora', null, onTap: () => context.pushNamed('about')),
+                      _buildTile(textTheme, Icons.sports_gymnastics_rounded, 'About Fitora', null, onTap: () => context.pushNamed(AppRouteNames.about)),
                       _buildDivider(),
                       _buildTile(textTheme, Icons.privacy_tip_rounded, 'Privacy Policy', null, onTap: () => context.pushNamed(AppRouteNames.privacyPolicy)),
                       _buildDivider(),
