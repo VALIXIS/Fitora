@@ -22,7 +22,6 @@ import 'package:fitora/features/settings/screens/about_screen.dart';
 import 'package:fitora/features/settings/screens/privacy_policy_screen.dart';
 import 'package:fitora/features/settings/screens/terms_of_service_screen.dart';
 import 'package:fitora/features/profile/screens/edit_profile_screen.dart';
-import 'package:fitora/features/ai_coach/screens/ai_coach_screen.dart';
 import 'package:fitora/shared/screens/not_found_screen.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -189,15 +188,7 @@ final appRouterProvider = Provider<GoRouter>(
             child: const PersonalizationFlowScreen(),
           ),
         ),
-        GoRoute(
-          path: AppRoutes.aiCoach,
-          name: AppRouteNames.aiCoach,
-          pageBuilder: (context, state) => slideUpTransitionPage(
-            context: context,
-            state: state,
-            child: const AICoachScreen(),
-          ),
-        ),
+
         StatefulShellRoute.indexedStack(
           builder: (context, state, navigationShell) => AppShell(
             navigationShell: navigationShell,

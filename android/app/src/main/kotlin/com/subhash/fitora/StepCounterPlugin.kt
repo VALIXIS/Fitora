@@ -1,4 +1,4 @@
-package com.example.fitora
+package com.subhash.fitora
 
 import android.content.Context
 import android.hardware.Sensor
@@ -14,8 +14,8 @@ import io.flutter.plugin.common.MethodChannel
 class StepCounterPlugin : FlutterPlugin, EventChannel.StreamHandler, MethodChannel.MethodCallHandler {
 
     companion object {
-        const val STEP_CHANNEL    = "com.example.fitora/step_counter"
-        const val DEBUG_CHANNEL   = "com.example.fitora/step_debug"
+        const val STEP_CHANNEL    = "com.subhash.fitora/step_counter"
+        const val DEBUG_CHANNEL   = "com.subhash.fitora/step_debug"
         const val PREFS_NAME      = "fitora_step_prefs"
         const val KEY_BOOT_STEP   = "boot_baseline_steps"
         const val KEY_SAVED_DATE  = "baseline_date"

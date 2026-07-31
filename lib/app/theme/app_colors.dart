@@ -65,7 +65,7 @@ class FitoraColorSchemes {
     brightness: Brightness.dark,
     primary: core.FitoraColors.mintGreen,
     onPrimary: FitoraColors.darkOnPrimary,
-    primaryContainer: Color(0xFF143F2E),
+    primaryContainer: Color(0xFF0E2830), // Dark Cyan
     onPrimaryContainer: core.FitoraColors.calmCyanGlow,
     secondary: core.FitoraColors.softPink,
     onSecondary: FitoraColors.darkOnPrimary,

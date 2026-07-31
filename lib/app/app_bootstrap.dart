@@ -1,6 +1,6 @@
 import 'dart:async';
-
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fitora/app/fitora_app.dart';
 import 'package:fitora/app/providers/app_providers.dart';
@@ -19,6 +19,15 @@ class AppBootstrap {
         final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
         AppLogger.info('AppBootstrap: WidgetsFlutterBinding initialized at ${stopwatch.elapsedMilliseconds}ms');
         
+        SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness: Brightness.light,
+          statusBarBrightness: Brightness.dark,
+          systemNavigationBarColor: Color(0xFF0E1312),
+          systemNavigationBarDividerColor: Colors.transparent,
+          systemNavigationBarIconBrightness: Brightness.light,
+        ));
+
         FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
 
         FlutterError.onError = (details) {

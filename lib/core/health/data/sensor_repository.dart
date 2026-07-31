@@ -1,8 +1,8 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-const _stepEventChannel = EventChannel('com.example.fitora/step_counter');
-const _debugMethodChannel = MethodChannel('com.example.fitora/step_debug');
+const _stepEventChannel = EventChannel('com.subhash.fitora/step_counter');
+const _debugMethodChannel = MethodChannel('com.subhash.fitora/step_debug');
 
 final sensorRepositoryProvider = Provider<SensorRepository>((ref) {
   return SensorRepository();

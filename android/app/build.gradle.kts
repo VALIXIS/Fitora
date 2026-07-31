@@ -1,3 +1,6 @@
+import java.util.Properties
+import java.io.FileInputStream
+
 plugins {
     id("com.android.application")
     // START: FlutterFire Configuration
@@ -8,8 +11,23 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+// ── Release signing ───────────────────────────────────────────────────────────
+// To enable release signing, create android/key.properties with:
+//   storePassword=<your-keystore-password>
+//   keyPassword=<your-key-password>
+//   keyAlias=<your-key-alias>
+//   storeFile=<path-to-your-keystore.jks>
+//
+// Then run: flutter build apk --release  or  flutter build appbundle --release
+// ─────────────────────────────────────────────────────────────────────────────
+val keystorePropertiesFile = rootProject.file("key.properties")
+val keystoreProperties = Properties()
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+}
+
 android {
-    namespace = "com.example.fitora"
+    namespace = "com.subhash.fitora"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -24,8 +42,19 @@ android {
         jvmTarget = JavaVersion.VERSION_17.toString()
     }
 
+    signingConfigs {
+        if (keystorePropertiesFile.exists()) {
+            create("release") {
+                keyAlias = keystoreProperties["keyAlias"] as String
+                keyPassword = keystoreProperties["keyPassword"] as String
+                storeFile = file(keystoreProperties["storeFile"] as String)
+                storePassword = keystoreProperties["storePassword"] as String
+            }
+        }
+    }
+
     defaultConfig {
-        applicationId = "com.example.fitora"
+        applicationId = "com.subhash.fitora"
         // health plugin requires minSdk 26
         minSdk = 26
         targetSdk = flutter.targetSdkVersion
@@ -35,8 +64,13 @@ android {
 
     buildTypes {
         release {
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = if (keystorePropertiesFile.exists()) {
+                signingConfigs.getByName("release")
+            } else {
+                // Falls back to debug signing until key.properties is provided.
+                // WARNING: Debug-signed APKs cannot be published to Google Play.
+                signingConfigs.getByName("debug")
+            }
         }
     }
 }

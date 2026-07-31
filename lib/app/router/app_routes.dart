@@ -17,7 +17,6 @@ class AppRoutes {
   static const String authEmail = '/auth/email';
   static const String onboarding = '/onboarding';
   static const String profileSetup = '/profile-setup';
-  static const String aiCoach = '/ai-coach';
 }
 
 class AppRouteNames {
@@ -36,7 +35,6 @@ class AppRouteNames {
   static const String about = 'about';
   static const String healthSync = 'healthSync';
   static const String editProfile = 'editProfile';
-  static const String aiCoach = 'aiCoach';
   static const String privacyPolicy = 'privacyPolicy';
   static const String termsOfService = 'termsOfService';
 }

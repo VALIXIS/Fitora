@@ -539,7 +539,6 @@ class _TrendsAndInsightsHub extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tt = Theme.of(context).textTheme;
-    final cs = Theme.of(context).colorScheme;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(FitoraSpacing.md),

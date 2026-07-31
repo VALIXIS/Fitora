@@ -1,12 +1,8 @@
 enum PersonalizationStep {
   welcome,
   goal,
-  activity,
-  workout,
   wellness,
   body,
-  lifestyle,
-  aiPreview,
   complete,
 }
 
@@ -15,27 +11,19 @@ extension PersonalizationStepX on PersonalizationStep {
     return switch (this) {
       PersonalizationStep.welcome => "Let's build your wellness blueprint",
       PersonalizationStep.goal => 'Choose your primary goal',
-      PersonalizationStep.activity => 'Set your activity level',
-      PersonalizationStep.workout => 'Pick your workout style',
       PersonalizationStep.wellness => 'Add wellness focus',
       PersonalizationStep.body => 'Body information',
-      PersonalizationStep.lifestyle => 'Lifestyle assessment',
-      PersonalizationStep.aiPreview => 'Analyzing profile...',
       PersonalizationStep.complete => 'Setup complete',
     };
   }
 
   String get subtitle {
     return switch (this) {
-      PersonalizationStep.welcome => 'Your AI coach will create a plan tailored specifically for you.',
+      PersonalizationStep.welcome => 'Set up your profile to customize your tracking goals.',
       PersonalizationStep.goal => 'Tell us what you want to focus on first.',
-      PersonalizationStep.activity => 'Choose the level that fits your current routine.',
-      PersonalizationStep.workout => 'We will tailor sessions to your environment.',
       PersonalizationStep.wellness => 'Select areas you want to prioritize.',
       PersonalizationStep.body => 'Helps us calculate accurate metrics.',
-      PersonalizationStep.lifestyle => 'Helps the AI adapt your daily recovery.',
-      PersonalizationStep.aiPreview => 'Generating your wellness blueprint.',
-      PersonalizationStep.complete => 'Your blueprint is ready.',
+      PersonalizationStep.complete => 'Your profile is ready.',
     };
   }
 }

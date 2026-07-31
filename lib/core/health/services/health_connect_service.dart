@@ -1,6 +1,6 @@
-import 'package:flutter/foundation.dart';
 import 'package:health/health.dart';
 import 'package:fitora/core/health/domain/health_models.dart';
+import 'package:fitora/core/utils/app_logger.dart';
 
 class HealthConnectService {
   final Health _health = Health();
@@ -23,8 +23,8 @@ class HealthConnectService {
       if (available == null) return HealthConnectStatus.permissionRequired;
       if (available) return HealthConnectStatus.connected;
       return HealthConnectStatus.permissionRequired;
-    } catch (e) {
-      debugPrint('Health Connect status error: $e');
+    } catch (e, st) {
+      AppLogger.error('Health Connect status error: $e', st);
       return HealthConnectStatus.error;
     }
   }
@@ -32,8 +32,8 @@ class HealthConnectService {
   Future<bool> requestPermissions() async {
     try {
       return await _health.requestAuthorization(_dataTypes);
-    } catch (e) {
-      debugPrint('Health Connect permission error: $e');
+    } catch (e, st) {
+      AppLogger.error('Health Connect permission error: $e', st);
       return false;
     }
   }
@@ -45,8 +45,8 @@ class HealthConnectService {
         endTime: end,
         types: _dataTypes,
       );
-    } catch (e) {
-      debugPrint('Health Connect data error: $e');
+    } catch (e, st) {
+      AppLogger.error('Health Connect data error: $e', st);
       return [];
     }
   }
@@ -54,8 +54,8 @@ class HealthConnectService {
   Future<int?> getSteps(DateTime start, DateTime end) async {
     try {
       return await _health.getTotalStepsInInterval(start, end);
-    } catch (e) {
-      debugPrint('Health Connect steps error: $e');
+    } catch (e, st) {
+      AppLogger.error('Health Connect steps error: $e', st);
       return null;
     }
   }

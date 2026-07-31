@@ -1,4 +1,4 @@
-package com.example.fitora
+package com.subhash.fitora
 
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine

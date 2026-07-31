@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:fitora/app/router/app_routes.dart';
 import 'package:fitora/core/constants/spacing.dart';
 import 'package:fitora/features/auth/models/auth_action_state.dart';
 import 'package:fitora/features/auth/models/auth_status.dart';
@@ -21,7 +19,6 @@ class AuthScreen extends HookConsumerWidget {
     final actionState = ref.watch(authActionProvider);
     final actionController = ref.read(authActionProvider.notifier);
     final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
 
     final errorMessage = actionState.error ??
         (authSession.status == AuthStatus.error ? authSession.message : null);
@@ -67,18 +64,7 @@ class AuthScreen extends HookConsumerWidget {
                                             actionController.signInWithGoogle(),
                                   ),
                                   const SizedBox(height: FitoraSpacing.md),
-                                  AuthActionButton(
-                                    label: 'Continue with Email',
-                                    icon: Icons.mail_outline,
-                                    style: AuthActionStyle.secondary,
-                                    isLoading: isBusy &&
-                                        activeAction == AuthActionType.email,
-                                    onPressed: isBusy
-                                        ? null
-                                        : () =>
-                                            context.push(AppRoutes.authEmail),
-                                  ),
-                                  const SizedBox(height: FitoraSpacing.md),
+
                                   AuthActionButton(
                                     label: 'Continue as Guest',
                                     icon: Icons.person_outline,

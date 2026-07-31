@@ -6,6 +6,7 @@ import 'package:fitora/core/health/domain/health_models.dart';
 import 'package:fitora/core/health/data/health_connect_repository.dart';
 import 'package:fitora/core/health/data/sensor_health_repository.dart';
 import 'package:fitora/core/health/services/health_cache_service.dart';
+import 'package:fitora/core/utils/app_logger.dart';
 
 class HealthSyncService extends StateNotifier<SyncStatus> with WidgetsBindingObserver {
   final HealthConnectRepository _hcRepo;
@@ -108,8 +109,8 @@ class HealthSyncService extends StateNotifier<SyncStatus> with WidgetsBindingObs
       } catch (_) {}
 
       state = SyncStatus.synced;
-    } catch (e) {
-      debugPrint('Sync Error: $e');
+    } catch (e, st) {
+      AppLogger.error('Sync error: $e', st);
       state = SyncStatus.error;
     }
   }

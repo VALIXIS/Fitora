@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -11,6 +12,9 @@ import 'package:fitora/features/personalization/domain/personalization_models.da
 import 'package:fitora/features/auth/providers/auth_providers.dart';
 import 'package:fitora/features/profile/widgets/sensor_debug_panel.dart';
 import 'package:fitora/features/settings/providers/settings_provider.dart';
+import 'package:fitora/shared/widgets/glow_container.dart';
+import 'package:fitora/features/wellness/providers/wellness_provider.dart';
+import 'package:fitora/shared/widgets/fitora_background.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -21,81 +25,266 @@ class ProfileScreen extends ConsumerWidget {
     final personalizationState = ref.watch(personalizationControllerProvider);
     final profile = personalizationState.profile;
     final authSession = ref.watch(authStateProvider);
+    final wellness = ref.watch(wellnessProvider);
+    final activity = ref.watch(dailyActivityProvider(DateTime.now()));
+    
     String displayName = authSession.user?.displayName ?? '';
     if (displayName.isEmpty) displayName = profile.name ?? '';
     if (displayName.isEmpty) displayName = 'Guest User';
-    return Scaffold(
-      backgroundColor: const Color(0xFF0E1312),
-      appBar: AppBar(
+    
+    return FitoraBackground(
+      child: Scaffold(
         backgroundColor: Colors.transparent,
-        elevation: 0,
-        title: Text('Profile', style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800, color: Colors.white)),
-        centerTitle: true,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          title: Text(
+            'Profile',
+            style: textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w900,
+              color: Colors.white,
+              letterSpacing: 0.5,
+            ),
+          ),
+          centerTitle: true,
+        ),
+        body: SafeArea(
+          child: CustomScrollView(
+            physics: const BouncingScrollPhysics(),
+            slivers: [
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: FitoraSpacing.xl, vertical: FitoraSpacing.md),
+                sliver: SliverList(
+                  delegate: SliverChildListDelegate(
+                    [
+                      _buildProfileHeader(context, textTheme, profile, displayName, profile.goal?.label ?? 'General Fitness'),
+                      const SizedBox(height: FitoraSpacing.xl),
+  
+                      _buildSectionTitle(textTheme, 'HEALTH OVERVIEW'),
+                      _buildHealthOverview(textTheme, profile),
+                      const SizedBox(height: FitoraSpacing.xl),
+  
+                      _buildSectionTitle(textTheme, 'SENSOR STATUS'),
+                      _buildSensorStatusCard(context, textTheme, ref),
+                      const SizedBox(height: FitoraSpacing.xl),
+  
+                      _buildSectionTitle(textTheme, 'PERSONALIZATION'),
+                      _buildPersonalizationDetails(textTheme, profile),
+                      const SizedBox(height: FitoraSpacing.xl),
+  
+                      _buildSectionTitle(textTheme, 'GOALS'),
+                      _buildGoalsSection(textTheme, activity, wellness),
+                      const SizedBox(height: FitoraSpacing.xl),
+  
+                      _buildSectionTitle(textTheme, 'INTEGRATIONS & SYNC'),
+                      _buildHealthSyncCard(context, textTheme, ref),
+                      const SizedBox(height: FitoraSpacing.md),
+                      _buildOtherIntegrations(context, textTheme),
+                      const SizedBox(height: FitoraSpacing.xl),
+  
+                      _buildSectionTitle(textTheme, 'QUICK ACTIONS'),
+                      _buildQuickActions(context, textTheme),
+                      const SizedBox(height: FitoraSpacing.xl),
+  
+                      if (kDebugMode) ...[
+                        _buildSectionTitle(textTheme, 'DEVELOPER DEBUG'),
+                        const SensorDebugPanel(),
+                        const SizedBox(height: FitoraSpacing.xl),
+                      ],
+  
+                      Consumer(
+                        builder: (context, ref, _) {
+                          final packageInfoAsync = ref.watch(packageInfoProvider);
+                          final versionText = packageInfoAsync.when(
+                            data: (info) => 'Version ${info.version} (Build ${info.buildNumber})',
+                            loading: () => 'Loading...',
+                            error: (_, _) => 'Version 1.0.0',
+                          );
+                          return Center(
+                            child: Text(
+                              versionText,
+                              style: textTheme.labelSmall?.copyWith(color: Colors.white38),
+                            ),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 100),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
-      body: SafeArea(
-        child: CustomScrollView(
-          physics: const BouncingScrollPhysics(),
-          slivers: [
-            SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: FitoraSpacing.xl, vertical: FitoraSpacing.md),
-              sliver: SliverList(
-                delegate: SliverChildListDelegate(
-                  [
-                    _buildProfileHeader(context, textTheme, profile, displayName, profile.goal?.label ?? 'Setting up goals...'),
-                    const SizedBox(height: FitoraSpacing.xxl),
+    );
+  }
 
-                    _buildSectionTitle(textTheme, 'HEALTH OVERVIEW'),
-                    _buildHealthOverview(textTheme, profile),
-                    const SizedBox(height: FitoraSpacing.xxl),
+  Widget _buildSectionTitle(TextTheme textTheme, String title) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4, bottom: 12),
+      child: Text(
+        title,
+        style: textTheme.labelSmall?.copyWith(
+          fontWeight: FontWeight.bold,
+          letterSpacing: 1.5,
+          color: Colors.white30,
+        ),
+      ),
+    );
+  }
 
-                    _buildSectionTitle(textTheme, 'SENSOR TRACKING'),
-                    _buildSensorStatusCard(context, textTheme, ref),
-                    const SizedBox(height: FitoraSpacing.xxl),
+  Widget _buildCard(List<Widget> children, {Color? highlightColor}) {
+    final glowColor = highlightColor ?? FitoraColors.calmCyan;
+    return GlowContainer(
+      glowColor: glowColor.withValues(alpha: 0.03),
+      borderRadius: BorderRadius.circular(20),
+      padding: EdgeInsets.zero,
+      child: Container(
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.02),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: highlightColor?.withValues(alpha: 0.2) ?? Colors.white.withValues(alpha: 0.08)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: children,
+        ),
+      ),
+    );
+  }
 
-                    _buildSectionTitle(textTheme, 'PERSONALIZATION'),
-                    _buildPersonalizationDetails(textTheme, profile),
-                    const SizedBox(height: FitoraSpacing.xxl),
-
-                    _buildSectionTitle(textTheme, 'GOALS'),
-                    _buildGoalsSection(textTheme),
-                    const SizedBox(height: FitoraSpacing.xxl),
-
-                    _buildSectionTitle(textTheme, 'INTEGRATIONS & SYNC'),
-                    _buildHealthSyncCard(context, textTheme, ref),
-                    const SizedBox(height: FitoraSpacing.md),
-                    _buildOtherIntegrations(context, textTheme),
-                    const SizedBox(height: FitoraSpacing.xxl),
-
-                    _buildSectionTitle(textTheme, 'QUICK ACTIONS'),
-                    _buildQuickActions(context, textTheme),
-                    const SizedBox(height: FitoraSpacing.xxl),
-
-                    // ⚠️ TEMP: Remove after device verification
-                    _buildSectionTitle(textTheme, 'DEVELOPER DEBUG'),
-                    const SensorDebugPanel(),
-                    const SizedBox(height: FitoraSpacing.xxl),
-
-                    Consumer(
-                      builder: (context, ref, _) {
-                        final packageInfoAsync = ref.watch(packageInfoProvider);
-                        final versionText = packageInfoAsync.when(
-                          data: (info) => 'Version ${info.version} (Build ${info.buildNumber})',
-                          loading: () => 'Loading...',
-                          error: (_, _) => 'Version 1.0.0',
-                        );
-                        return Center(
-                          child: Text(
-                            versionText,
-                            style: textTheme.labelSmall?.copyWith(color: Colors.white38),
-                          ),
-                        );
-                      },
+  Widget _buildProfileHeader(BuildContext context, TextTheme tt, PersonalizationProfile profile, String name, String subtitle) {
+    return _buildCard(
+      highlightColor: FitoraColors.mintGreen,
+      [
+        Padding(
+          padding: const EdgeInsets.all(FitoraSpacing.lg),
+          child: Row(
+            children: [
+              Container(
+                width: 72,
+                height: 72,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: [FitoraColors.mintGreen, FitoraColors.calmCyan],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
+                child: const Icon(Icons.person, color: Colors.white, size: 36),
+              ),
+              const SizedBox(width: FitoraSpacing.lg),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(name, style: tt.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: Colors.white)),
+                    const SizedBox(height: 4),
+                    Text(subtitle, style: tt.bodySmall?.copyWith(color: Colors.white70)),
+                    const SizedBox(height: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: FitoraColors.lavender.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: FitoraColors.lavender.withValues(alpha: 0.3)),
+                      ),
+                      child: Text(
+                        profile.experienceLevel?.label ?? 'Beginner Level',
+                        style: tt.labelSmall?.copyWith(color: FitoraColors.lavender, fontWeight: FontWeight.bold),
+                      ),
                     ),
-                    const SizedBox(height: 100), // Bottom padding
                   ],
                 ),
               ),
+              IconButton(
+                icon: const Icon(Icons.edit_rounded, color: Colors.white54),
+                onPressed: () => context.pushNamed(AppRouteNames.editProfile),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHealthOverview(TextTheme tt, PersonalizationProfile profile) {
+    double bmi = 0.0;
+    if (profile.weightKg != null && profile.heightCm != null && profile.heightCm! > 0) {
+      final heightM = profile.heightCm! / 100;
+      bmi = profile.weightKg! / (heightM * heightM);
+    }
+
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(child: _buildHealthMetric(tt, 'Age', '${profile.age ?? 25}')),
+            const SizedBox(width: FitoraSpacing.sm),
+            Expanded(child: _buildHealthMetric(tt, 'Height', '${profile.heightCm?.round() ?? 170} cm')),
+            const SizedBox(width: FitoraSpacing.sm),
+            Expanded(child: _buildHealthMetric(tt, 'Weight', '${profile.weightKg?.toStringAsFixed(1) ?? 65.0} kg')),
+          ],
+        ),
+        if (bmi > 0) ...[
+          const SizedBox(height: FitoraSpacing.sm),
+          _buildCard([
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              child: Row(
+                children: [
+                  const Icon(Icons.monitor_weight_outlined, color: FitoraColors.mintGreen, size: 28),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('BMI (Body Mass Index)', style: tt.bodyMedium?.copyWith(color: Colors.white, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 4),
+                        Text(_getBmiCategory(bmi), style: tt.labelSmall?.copyWith(color: Colors.white70)),
+                      ],
+                    ),
+                  ),
+                  Text(bmi.toStringAsFixed(1), style: tt.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: FitoraColors.mintGreen)),
+                ],
+              ),
             ),
+          ]),
+        ]
+      ],
+    );
+  }
+
+  String _getBmiCategory(double bmi) {
+    if (bmi < 18.5) return 'Underweight';
+    if (bmi < 25) return 'Normal Weight';
+    if (bmi < 30) return 'Overweight';
+    return 'Obese';
+  }
+
+  Widget _buildHealthMetric(TextTheme tt, String label, String value) {
+    return GlowContainer(
+      glowColor: FitoraColors.calmCyan.withValues(alpha: 0.02),
+      borderRadius: BorderRadius.circular(20),
+      padding: EdgeInsets.zero,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: FitoraSpacing.lg),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.02),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(value, style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w900, color: Colors.white)),
+            const SizedBox(height: 4),
+            Text(label.toUpperCase(), style: tt.labelSmall?.copyWith(color: Colors.white30, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
           ],
         ),
       ),
@@ -181,193 +370,21 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildSectionTitle(TextTheme textTheme, String title) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 4, bottom: 12),
-      child: Text(
-        title,
-        style: textTheme.labelSmall?.copyWith(
-          fontWeight: FontWeight.bold,
-          letterSpacing: 1.5,
-          color: Colors.white54,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCard(List<Widget> children, {Color? highlightColor}) {
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: highlightColor?.withValues(alpha: 0.2) ?? Colors.white.withValues(alpha: 0.05)),
-        boxShadow: highlightColor != null
-            ? [
-                BoxShadow(
-                  color: highlightColor.withValues(alpha: 0.05),
-                  blurRadius: 20,
-                  spreadRadius: 0,
-                  offset: const Offset(0, 4),
-                )
-              ]
-            : null,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: children,
-      ),
-    );
-  }
-
-  Widget _buildProfileHeader(BuildContext context, TextTheme tt, PersonalizationProfile profile, String name, String subtitle) {
-    return _buildCard(
-      highlightColor: FitoraColors.mintGreen,
-      [
-        Padding(
-          padding: const EdgeInsets.all(FitoraSpacing.lg),
-          child: Row(
-            children: [
-              Container(
-                width: 72,
-                height: 72,
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    colors: [FitoraColors.mintGreen, FitoraColors.calmCyan],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                ),
-                child: const Icon(Icons.person, color: Colors.white, size: 36),
-              ),
-              const SizedBox(width: FitoraSpacing.lg),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(name, style: tt.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: Colors.white)),
-                    const SizedBox(height: 4),
-                    Text(subtitle, style: tt.bodySmall?.copyWith(color: Colors.white70)),
-                    const SizedBox(height: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: FitoraColors.lavender.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: FitoraColors.lavender.withValues(alpha: 0.3)),
-                      ),
-                      child: Text(
-                        profile.experienceLevel?.label ?? 'Beginner Level',
-                        style: tt.labelSmall?.copyWith(color: FitoraColors.lavender, fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.edit_rounded, color: Colors.white54),
-                onPressed: () => context.pushNamed(AppRouteNames.editProfile),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildHealthOverview(TextTheme tt, PersonalizationProfile profile) {
-    double bmi = 0.0;
-    if (profile.weightKg != null && profile.heightCm != null && profile.heightCm! > 0) {
-      final heightM = profile.heightCm! / 100;
-      bmi = profile.weightKg! / (heightM * heightM);
-    }
-
-    return Column(
-      children: [
-        Row(
-          children: [
-            Expanded(child: _buildHealthMetric(tt, 'Age', '${profile.age ?? 25}')),
-            const SizedBox(width: FitoraSpacing.md),
-            Expanded(child: _buildHealthMetric(tt, 'Height', '${profile.heightCm?.round() ?? 170} cm')),
-            const SizedBox(width: FitoraSpacing.md),
-            Expanded(child: _buildHealthMetric(tt, 'Weight', '${profile.weightKg?.toStringAsFixed(1) ?? 65.0} kg')),
-          ],
-        ),
-        if (bmi > 0) ...[
-          const SizedBox(height: FitoraSpacing.md),
-          _buildCard([
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-              child: Row(
-                children: [
-                  const Icon(Icons.monitor_weight_outlined, color: FitoraColors.mintGreen, size: 28),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('BMI (Body Mass Index)', style: tt.bodyMedium?.copyWith(color: Colors.white, fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 4),
-                        Text(_getBmiCategory(bmi), style: tt.labelSmall?.copyWith(color: Colors.white70)),
-                      ],
-                    ),
-                  ),
-                  Text(bmi.toStringAsFixed(1), style: tt.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: FitoraColors.mintGreen)),
-                ],
-              ),
-            ),
-          ]),
-        ]
-      ],
-    );
-  }
-
-  String _getBmiCategory(double bmi) {
-    if (bmi < 18.5) return 'Underweight';
-    if (bmi < 25) return 'Normal Weight';
-    if (bmi < 30) return 'Overweight';
-    return 'Obese';
-  }
-
   Widget _buildPersonalizationDetails(TextTheme tt, PersonalizationProfile profile) {
     return _buildCard([
       _buildTile(tt, Icons.track_changes_rounded, 'Primary Goal', profile.goal?.label ?? 'General Fitness', iconColor: FitoraColors.mintGreen),
-      _buildDivider(),
-      _buildTile(tt, Icons.fitness_center_rounded, 'Workout Preference', profile.workoutPreference?.label ?? 'Strength', iconColor: FitoraColors.calmCyan),
       _buildDivider(),
       _buildTile(tt, Icons.spa_rounded, 'Wellness Focus', profile.interests.isNotEmpty ? profile.interests.first.label : 'Energy', iconColor: FitoraColors.lavender),
     ]);
   }
 
-  Widget _buildHealthMetric(TextTheme tt, String label, String value) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: FitoraSpacing.lg),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(value, style: tt.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: Colors.white)),
-          const SizedBox(height: 4),
-          Text(label, style: tt.labelSmall?.copyWith(color: Colors.white54)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildGoalsSection(TextTheme tt) {
+  Widget _buildGoalsSection(TextTheme tt, DailyActivitySummary activity, wellness) {
+    final stepsGoalStr = activity.stepsGoal.toString().replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (m) => "${m[1]},");
+    final waterGoalStr = wellness.hydrationGoalLiters > 0 ? '${wellness.hydrationGoalLiters.toStringAsFixed(1)}L' : '2.5L';
     return _buildCard([
-      _buildTile(tt, Icons.directions_walk_rounded, 'Daily Steps', '10,000', iconColor: FitoraColors.calmCyan),
+      _buildTile(tt, Icons.directions_walk_rounded, 'Daily Steps', stepsGoalStr, iconColor: FitoraColors.calmCyan),
       _buildDivider(),
-      _buildTile(tt, Icons.water_drop_rounded, 'Water Goal', '2.5L', iconColor: Colors.blueAccent),
-      _buildDivider(),
-      _buildTile(tt, Icons.fitness_center_rounded, 'Workout Goal', '4 days/wk', iconColor: FitoraColors.mintGreen),
+      _buildTile(tt, Icons.water_drop_rounded, 'Water Goal', waterGoalStr, iconColor: Colors.blueAccent),
     ]);
   }
 
@@ -503,7 +520,6 @@ class ProfileScreen extends ConsumerWidget {
       }),
     ]);
   }
-
 
   Widget _buildDivider() {
     return Divider(color: Colors.white.withValues(alpha: 0.05), height: 1, indent: 56);

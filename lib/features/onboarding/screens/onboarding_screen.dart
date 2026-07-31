@@ -4,6 +4,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:fitora/app/router/app_routes.dart';
 import 'package:fitora/core/constants/spacing.dart';
+import 'package:fitora/core/services/permission_manager.dart';
 import 'package:fitora/features/onboarding/presentation/onboarding_page.dart';
 import 'package:fitora/features/onboarding/providers/onboarding_controller.dart';
 import 'package:fitora/shared/widgets/loading_widget.dart';
@@ -47,6 +48,11 @@ class OnboardingScreen extends HookConsumerWidget {
 
     Future<void> handleStart() async {
       await controller.completeOnboarding();
+      if (!context.mounted) {
+        return;
+      }
+      // Request Activity Recognition and Notifications sequentially on first launch
+      await PermissionManager.requestFirstLaunchPermissions(context);
       if (!context.mounted) {
         return;
       }

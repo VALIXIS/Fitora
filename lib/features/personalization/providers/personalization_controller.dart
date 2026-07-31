@@ -61,12 +61,8 @@ class PersonalizationViewState {
     return switch (currentStep) {
       PersonalizationStep.welcome => true,
       PersonalizationStep.goal => profile.goal != null,
-      PersonalizationStep.activity => profile.experienceLevel != null,
-      PersonalizationStep.workout => profile.workoutPreference != null,
       PersonalizationStep.wellness => profile.interests.isNotEmpty,
       PersonalizationStep.body => profile.hasMetrics,
-      PersonalizationStep.lifestyle => profile.hasLifestyle,
-      PersonalizationStep.aiPreview => true,
       PersonalizationStep.complete => true,
     };
   }

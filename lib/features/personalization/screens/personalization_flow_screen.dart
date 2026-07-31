@@ -14,7 +14,6 @@ import 'package:fitora/features/personalization/widgets/personalization_option_c
 import 'package:fitora/features/personalization/widgets/personalization_step_header.dart';
 import 'package:fitora/features/personalization/widgets/personalization_toggle_chip.dart';
 import 'package:fitora/features/personalization/widgets/personalization_wheel_picker.dart';
-import 'package:fitora/features/personalization/widgets/personalization_slider.dart';
 import 'package:fitora/shared/widgets/fitora_button.dart';
 import 'package:fitora/shared/widgets/loading_widget.dart';
 import 'package:fitora/features/auth/providers/auth_providers.dart';
@@ -45,7 +44,7 @@ class PersonalizationFlowScreen extends HookConsumerWidget {
       return const Scaffold(
         backgroundColor: Color(0xFF0E1312),
         body: SafeArea(
-          child: LoadingWidget(message: 'Preparing your luxury AI setup...'),
+          child: LoadingWidget(message: 'Preparing your wellness setup...'),
         ),
       );
     }
@@ -103,12 +102,8 @@ class PersonalizationFlowScreen extends HookConsumerWidget {
                     children: [
                       _buildWelcomeStep(nameController, controller, state),
                       _buildGoalStep(context, state, controller),
-                      _buildActivityStep(context, state, controller),
-                      _buildWorkoutStep(context, state, controller),
                       _buildWellnessStep(context, state, controller),
                       _buildBodyStep(context, state, controller),
-                      _buildLifestyleStep(context, state, controller),
-                      _buildAiPreviewStep(context),
                       _buildCompleteStep(),
                     ],
                   ),
@@ -199,7 +194,7 @@ class PersonalizationFlowScreen extends HookConsumerWidget {
           ).animate().fadeIn(delay: 500.ms).slideY(begin: 0.2, end: 0),
           const SizedBox(height: 20),
           Text(
-            "Your AI coach will create a plan tailored specifically for you.",
+            "Fitora helps you track and achieve your daily wellness goals.",
             style: TextStyle(fontSize: 18, color: Colors.white.withValues(alpha: 0.7)),
             textAlign: TextAlign.center,
           ).animate().fadeIn(delay: 800.ms).slideY(begin: 0.2, end: 0),
@@ -263,57 +258,7 @@ class PersonalizationFlowScreen extends HookConsumerWidget {
     );
   }
 
-  // STEP 3: Activity Level
-  Widget _buildActivityStep(BuildContext context, PersonalizationViewState state, PersonalizationController controller) {
-    return _buildStepContent(
-      Column(
-        children: [
-          _buildActivityOption(state, controller, ExperienceLevel.beginner, Icons.emoji_nature_rounded, FitoraColors.calmCyan),
-          const SizedBox(height: FitoraSpacing.md),
-          _buildActivityOption(state, controller, ExperienceLevel.intermediate, Icons.trending_up_rounded, FitoraColors.mintGreen),
-          const SizedBox(height: FitoraSpacing.md),
-          _buildActivityOption(state, controller, ExperienceLevel.advanced, Icons.bolt_rounded, FitoraColors.warningOrange),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActivityOption(PersonalizationViewState state, PersonalizationController controller, ExperienceLevel level, IconData icon, Color color) {
-    return PersonalizationOptionCard(
-      title: level.label,
-      subtitle: level.description,
-      icon: icon,
-      accentColor: color,
-      isSelected: state.profile.experienceLevel == level,
-      onTap: () => controller.setExperienceLevel(level),
-    );
-  }
-
-  // STEP 4: Workout Preference
-  Widget _buildWorkoutStep(BuildContext context, PersonalizationViewState state, PersonalizationController controller) {
-    return _buildStepContent(
-      Column(
-        children: [
-          _buildWorkoutOption(state, controller, WorkoutPreference.home, Icons.home_rounded, FitoraColors.softPink),
-          const SizedBox(height: FitoraSpacing.md),
-          _buildWorkoutOption(state, controller, WorkoutPreference.gym, Icons.fitness_center_rounded, FitoraColors.lavender),
-          const SizedBox(height: FitoraSpacing.md),
-          _buildWorkoutOption(state, controller, WorkoutPreference.mixed, Icons.shuffle_rounded, FitoraColors.calmCyan),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildWorkoutOption(PersonalizationViewState state, PersonalizationController controller, WorkoutPreference pref, IconData icon, Color color) {
-    return PersonalizationOptionCard(
-      title: pref.label,
-      subtitle: pref.description,
-      icon: icon,
-      accentColor: color,
-      isSelected: state.profile.workoutPreference == pref,
-      onTap: () => controller.setWorkoutPreference(pref),
-    );
-  }
+  // (Removed activity level & workout preference questions)
 
   // STEP 5: Wellness Focus
   Widget _buildWellnessStep(BuildContext context, PersonalizationViewState state, PersonalizationController controller) {
@@ -406,124 +351,7 @@ class PersonalizationFlowScreen extends HookConsumerWidget {
     );
   }
 
-  // STEP 7: Lifestyle Assessment
-  Widget _buildLifestyleStep(BuildContext context, PersonalizationViewState state, PersonalizationController controller) {
-    return _buildStepContent(
-      Column(
-        children: [
-          PersonalizationSlider(
-            label: 'Daily Stress',
-            leftLabel: 'Low',
-            rightLabel: 'High',
-            value: state.profile.dailyStress,
-            accentColor: FitoraColors.warningOrange,
-            onChanged: controller.setDailyStress,
-          ),
-          const SizedBox(height: FitoraSpacing.xl),
-          PersonalizationSlider(
-            label: 'Sleep Quality',
-            leftLabel: 'Poor',
-            rightLabel: 'Excellent',
-            value: state.profile.sleepQuality,
-            accentColor: FitoraColors.lavender,
-            onChanged: controller.setSleepQuality,
-          ),
-          const SizedBox(height: FitoraSpacing.xl),
-          PersonalizationSlider(
-            label: 'Energy Levels',
-            leftLabel: 'Drained',
-            rightLabel: 'Energetic',
-            value: state.profile.energyLevel,
-            accentColor: FitoraColors.mintGreen,
-            onChanged: controller.setEnergyLevel,
-          ),
-        ],
-      ),
-    );
-  }
-
-  // STEP 8: AI Preview
-  Widget _buildAiPreviewStep(BuildContext context) {
-    return _buildStepContent(
-      Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const SizedBox(height: 20),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _buildPredictedRing('84', 'WELLNESS', FitoraColors.calmCyan, 0.84),
-              const SizedBox(width: 40),
-              _buildPredictedRing('87', 'RECOVERY', FitoraColors.lavender, 0.87),
-            ],
-          ).animate().fadeIn(duration: 800.ms).slideY(begin: 0.2, end: 0),
-          const SizedBox(height: 60),
-          Container(
-            padding: const EdgeInsets.all(FitoraSpacing.xl),
-            decoration: BoxDecoration(
-              color: FitoraColors.mintGreen.withValues(alpha: 0.05),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: FitoraColors.mintGreen.withValues(alpha: 0.2)),
-            ),
-            child: Column(
-              children: [
-                const Icon(Icons.psychology_rounded, color: FitoraColors.mintGreen, size: 40)
-                    .animate(onPlay: (c) => c.repeat(reverse: true)).scale(begin: const Offset(0.9, 0.9), end: const Offset(1.1, 1.1), duration: 2.seconds),
-                const SizedBox(height: FitoraSpacing.md),
-                Text(
-                  "Based on your profile, Fitora predicts your recovery potential is high and recommends a strength-focused wellness plan.",
-                  style: TextStyle(fontSize: 18, color: Colors.white.withValues(alpha: 0.9), height: 1.5),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          ).animate().fadeIn(delay: 600.ms).slideY(begin: 0.2, end: 0),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPredictedRing(String score, String label, Color color, double value) {
-    return Column(
-      children: [
-        Container(
-          width: 140,
-          height: 140,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(color: color.withValues(alpha: 0.2), blurRadius: 30, spreadRadius: 5),
-            ],
-          ),
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              SizedBox(
-                width: 140,
-                height: 140,
-                child: CircularProgressIndicator(
-                  value: value,
-                  strokeWidth: 8,
-                  strokeCap: StrokeCap.round,
-                  backgroundColor: Colors.white.withValues(alpha: 0.05),
-                  valueColor: AlwaysStoppedAnimation(color),
-                ),
-              ),
-              Text(
-                score,
-                style: const TextStyle(fontSize: 48, fontWeight: FontWeight.w900, color: Colors.white),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
-        Text(
-          label,
-          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, letterSpacing: 2.0, color: color),
-        ),
-      ],
-    );
-  }
+  // (Removed lifestyle assessment and AI prediction preview steps)
 
   // STEP 9: Complete Setup
   Widget _buildCompleteStep() {

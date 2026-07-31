@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:permission_handler/permission_handler.dart' as ph;
 import 'package:fitora/app/providers/theme_mode_provider.dart';
 import 'package:fitora/core/services/notification_service.dart';
 import 'package:fitora/core/storage/app_preferences.dart';
@@ -16,6 +17,12 @@ class SettingsState {
   final bool isMetric;
   final bool autoplayRest;
 
+  // Hydration reminder settings
+  final bool hydrationReminderEnabled;
+  final int hydrationReminderIntervalHours; // 1, 2, 3, or 4
+  final int hydrationReminderStartHour;     // 0–23
+  final int hydrationReminderEndHour;       // 0–23
+
   const SettingsState({
     this.isDarkMode = true,
     this.notificationsEnabled = true,
@@ -26,6 +33,10 @@ class SettingsState {
     this.dailyGoalReminder = true,
     this.isMetric = true,
     this.autoplayRest = true,
+    this.hydrationReminderEnabled = false,
+    this.hydrationReminderIntervalHours = 2,
+    this.hydrationReminderStartHour = 8,
+    this.hydrationReminderEndHour = 22,
   });
 
   SettingsState copyWith({
@@ -38,6 +49,10 @@ class SettingsState {
     bool? dailyGoalReminder,
     bool? isMetric,
     bool? autoplayRest,
+    bool? hydrationReminderEnabled,
+    int? hydrationReminderIntervalHours,
+    int? hydrationReminderStartHour,
+    int? hydrationReminderEndHour,
   }) {
     return SettingsState(
       isDarkMode: isDarkMode ?? this.isDarkMode,
@@ -49,6 +64,10 @@ class SettingsState {
       dailyGoalReminder: dailyGoalReminder ?? this.dailyGoalReminder,
       isMetric: isMetric ?? this.isMetric,
       autoplayRest: autoplayRest ?? this.autoplayRest,
+      hydrationReminderEnabled: hydrationReminderEnabled ?? this.hydrationReminderEnabled,
+      hydrationReminderIntervalHours: hydrationReminderIntervalHours ?? this.hydrationReminderIntervalHours,
+      hydrationReminderStartHour: hydrationReminderStartHour ?? this.hydrationReminderStartHour,
+      hydrationReminderEndHour: hydrationReminderEndHour ?? this.hydrationReminderEndHour,
     );
   }
 }
@@ -72,56 +91,101 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
       dailyGoalReminder: prefs.getBool('dailyGoalReminder') ?? true,
       isMetric: prefs.getBool('isMetric') ?? true,
       autoplayRest: prefs.getBool('autoplayRest') ?? true,
+      hydrationReminderEnabled: prefs.getBool('hydrationReminderEnabled') ?? false,
+      hydrationReminderIntervalHours: prefs.getInt('hydrationReminderIntervalHours') ?? 2,
+      hydrationReminderStartHour: prefs.getInt('hydrationReminderStartHour') ?? 8,
+      hydrationReminderEndHour: prefs.getInt('hydrationReminderEndHour') ?? 22,
     );
   }
 
-  Future<void> updateSetting(String key, bool value) async {
+  Future<void> updateSetting(String key, dynamic value) async {
     final prefs = await AppPreferences.instance();
-    await prefs.setBool(key, value);
 
     switch (key) {
       case 'isDarkMode':
-        state = state.copyWith(isDarkMode: value);
-        ref.read(themeModeProvider.notifier).setThemeMode(value ? ThemeMode.dark : ThemeMode.light);
-        break;
+        final v = value as bool;
+        await prefs.setBool(key, v);
+        state = state.copyWith(isDarkMode: v);
+        ref.read(themeModeProvider.notifier).setThemeMode(v ? ThemeMode.dark : ThemeMode.light);
+
       case 'notificationsEnabled':
-        state = state.copyWith(notificationsEnabled: value);
-        if (value) {
+        final v = value as bool;
+        await prefs.setBool(key, v);
+        if (v) {
           final granted = await ref.read(notificationServiceProvider).requestPermissions();
           if (!granted) {
             state = state.copyWith(notificationsEnabled: false);
             await prefs.setBool('notificationsEnabled', false);
           } else {
+            state = state.copyWith(notificationsEnabled: true);
             _rescheduleAllNotifications();
           }
         } else {
+          state = state.copyWith(notificationsEnabled: false);
           await ref.read(notificationServiceProvider).cancelAll();
         }
-        break;
+
       case 'soundEffectsEnabled':
-        state = state.copyWith(soundEffectsEnabled: value);
-        break;
+        final v = value as bool;
+        await prefs.setBool(key, v);
+        state = state.copyWith(soundEffectsEnabled: v);
+
       case 'hapticsEnabled':
-        state = state.copyWith(hapticsEnabled: value);
-        break;
+        final v = value as bool;
+        await prefs.setBool(key, v);
+        state = state.copyWith(hapticsEnabled: v);
+
       case 'waterReminder':
-        state = state.copyWith(waterReminder: value);
+        final v = value as bool;
+        await prefs.setBool(key, v);
+        state = state.copyWith(waterReminder: v);
         _rescheduleAllNotifications();
-        break;
+
       case 'workoutReminder':
-        state = state.copyWith(workoutReminder: value);
+        final v = value as bool;
+        await prefs.setBool(key, v);
+        state = state.copyWith(workoutReminder: v);
         _rescheduleAllNotifications();
-        break;
+
       case 'dailyGoalReminder':
-        state = state.copyWith(dailyGoalReminder: value);
+        final v = value as bool;
+        await prefs.setBool(key, v);
+        state = state.copyWith(dailyGoalReminder: v);
         _rescheduleAllNotifications();
-        break;
+
       case 'isMetric':
-        state = state.copyWith(isMetric: value);
-        break;
+        final v = value as bool;
+        await prefs.setBool(key, v);
+        state = state.copyWith(isMetric: v);
+
       case 'autoplayRest':
-        state = state.copyWith(autoplayRest: value);
-        break;
+        final v = value as bool;
+        await prefs.setBool(key, v);
+        state = state.copyWith(autoplayRest: v);
+
+      case 'hydrationReminderEnabled':
+        final v = value as bool;
+        await prefs.setBool(key, v);
+        state = state.copyWith(hydrationReminderEnabled: v);
+        _rescheduleHydrationReminders();
+
+      case 'hydrationReminderIntervalHours':
+        final v = value as int;
+        await prefs.setInt(key, v);
+        state = state.copyWith(hydrationReminderIntervalHours: v);
+        _rescheduleHydrationReminders();
+
+      case 'hydrationReminderStartHour':
+        final v = value as int;
+        await prefs.setInt(key, v);
+        state = state.copyWith(hydrationReminderStartHour: v);
+        _rescheduleHydrationReminders();
+
+      case 'hydrationReminderEndHour':
+        final v = value as int;
+        await prefs.setInt(key, v);
+        state = state.copyWith(hydrationReminderEndHour: v);
+        _rescheduleHydrationReminders();
     }
   }
 
@@ -141,11 +205,33 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     if (state.dailyGoalReminder) {
       svc.scheduleDailyReminder(id: 5, title: 'Daily Goal', body: 'Check your progress for today!', hour: 20, minute: 0);
     }
+
+    // Re-apply hydration reminders too
+    _rescheduleHydrationReminders();
+  }
+
+  void _rescheduleHydrationReminders() {
+    final svc = ref.read(notificationServiceProvider);
+    if (!state.notificationsEnabled || !state.hydrationReminderEnabled) {
+      svc.cancelHydrationReminders();
+      return;
+    }
+    svc.scheduleHydrationReminders(
+      intervalHours: state.hydrationReminderIntervalHours,
+      startHour: state.hydrationReminderStartHour,
+      endHour: state.hydrationReminderEndHour,
+    );
+  }
+
+  /// Returns true if notification permission is currently granted.
+  Future<bool> checkNotificationPermission() async {
+    final status = await ph.Permission.notification.status;
+    return status.isGranted;
   }
 
   Future<void> resetToDefaults() async {
     final prefs = await AppPreferences.instance();
-    final keys = [
+    const keys = [
       'isDarkMode',
       'notificationsEnabled',
       'soundEffectsEnabled',
@@ -153,7 +239,11 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
       'waterReminder',
       'workoutReminder',
       'dailyGoalReminder',
-      'isMetric'
+      'isMetric',
+      'hydrationReminderEnabled',
+      'hydrationReminderIntervalHours',
+      'hydrationReminderStartHour',
+      'hydrationReminderEndHour',
     ];
     for (final key in keys) {
       await prefs.remove(key);

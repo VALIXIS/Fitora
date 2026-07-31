@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 
 class FitoraColors {
   // Premium Brand Colors
-  static const Color mintGreen = Color(0xFF2FD08B);
-  static const Color softEmerald = Color(0xFF14B8A6);
-  static const Color calmCyan = Color(0xFF06B6D4);
-  static const Color calmCyanGlow = Color(0xFF67E8F9);
+  static const Color mintGreen = Color(0xFF06B6D4); // Fitora Cyan
+  static const Color softEmerald = Color(0xFF3B82F6); // Fitora Blue
+  static const Color calmCyan = Color(0xFF8B5CF6); // Fitora Purple
+  static const Color calmCyanGlow = Color(0xFFC084FC); // Fitora Purple Glow
 
   // Secondary Wellness Colors
   static const Color softPink = Color(0xFFF472B6);
