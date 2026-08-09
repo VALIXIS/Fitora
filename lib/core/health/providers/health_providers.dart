@@ -10,6 +10,10 @@ import 'package:fitora/core/storage/app_preferences.dart';
 import 'dart:math';
 import 'package:fitora/core/health/services/health_permissions_service.dart';
 
+import 'package:fitora/core/constants/storage_keys.dart';
+import 'package:fitora/core/health/utils/goal_calculator.dart';
+import 'package:fitora/features/personalization/providers/personalization_controller.dart';
+
 // ---------------------------------------------------------------------------
 // Core Services
 // ---------------------------------------------------------------------------
@@ -22,25 +26,61 @@ final healthConnectServiceProvider = Provider<HealthConnectService>((ref) {
   return HealthConnectService();
 });
 
-final healthConnectRepositoryProvider = Provider<HealthConnectRepository>((ref) {
+final healthConnectRepositoryProvider = Provider<HealthConnectRepository>((
+  ref,
+) {
   return HealthConnectRepository(ref.watch(healthConnectServiceProvider));
 });
 
-final healthSyncServiceProvider = StateNotifierProvider<HealthSyncService, SyncStatus>((ref) {
-  return HealthSyncService(
-    ref.watch(healthConnectRepositoryProvider),
-    ref.watch(sensorHealthRepositoryProvider),
-    ref.watch(healthCacheServiceProvider),
-  );
-});
+final healthSyncServiceProvider =
+    StateNotifierProvider<HealthSyncService, SyncStatus>((ref) {
+      return HealthSyncService(
+        ref.watch(healthConnectRepositoryProvider),
+        ref.watch(sensorHealthRepositoryProvider),
+        ref.watch(healthCacheServiceProvider),
+      );
+    });
+
+// ---------------------------------------------------------------------------
+// Custom Step Goal Provider
+// ---------------------------------------------------------------------------
+
+final customStepGoalProvider =
+    StateNotifierProvider<CustomStepGoalNotifier, int?>((ref) {
+      return CustomStepGoalNotifier()..load();
+    });
+
+class CustomStepGoalNotifier extends StateNotifier<int?> {
+  CustomStepGoalNotifier() : super(null);
+
+  Future<void> load() async {
+    try {
+      final prefs = await AppPreferences.instance();
+      final saved = prefs.getInt(StorageKeys.customStepGoal);
+      if (saved != null && saved > 0) {
+        state = saved;
+      }
+    } catch (_) {}
+  }
+
+  Future<void> setGoal(int steps) async {
+    final clamped = steps.clamp(1000, 50000);
+    state = clamped;
+    try {
+      final prefs = await AppPreferences.instance();
+      await prefs.setInt(StorageKeys.customStepGoal, clamped);
+    } catch (_) {}
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Sensor permission status — drives gating of live data
 // ---------------------------------------------------------------------------
 
-final sensorStatusProvider = StateNotifierProvider<SensorStatusNotifier, SensorStatus>(
-  (ref) => SensorStatusNotifier(ref),
-);
+final sensorStatusProvider =
+    StateNotifierProvider<SensorStatusNotifier, SensorStatus>(
+      (ref) => SensorStatusNotifier(ref),
+    );
 
 class SensorStatusNotifier extends StateNotifier<SensorStatus> {
   final Ref _ref;
@@ -66,25 +106,33 @@ class SensorStatusNotifier extends StateNotifier<SensorStatus> {
 // Health Connect Status
 // ---------------------------------------------------------------------------
 
-final healthConnectStatusProvider = StateNotifierProvider<HealthConnectStatusNotifier, HealthConnectStatus>((ref) {
-  return HealthConnectStatusNotifier(ref.read(healthConnectServiceProvider));
-});
+final healthConnectStatusProvider =
+    StateNotifierProvider<HealthConnectStatusNotifier, HealthConnectStatus>((
+      ref,
+    ) {
+      return HealthConnectStatusNotifier(
+        ref.read(healthConnectServiceProvider),
+      );
+    });
 
 class HealthConnectStatusNotifier extends StateNotifier<HealthConnectStatus> {
   final HealthConnectService _service;
-  
-  HealthConnectStatusNotifier(this._service) : super(HealthConnectStatus.unknown) {
+
+  HealthConnectStatusNotifier(this._service)
+    : super(HealthConnectStatus.unknown) {
     checkStatus();
   }
-  
+
   Future<void> checkStatus() async {
     state = await _service.getStatus();
   }
-  
+
   Future<void> requestPermissions() async {
     state = HealthConnectStatus.syncing;
     final granted = await _service.requestPermissions();
-    state = granted ? HealthConnectStatus.connected : HealthConnectStatus.permissionRequired;
+    state = granted
+        ? HealthConnectStatus.connected
+        : HealthConnectStatus.permissionRequired;
   }
 }
 
@@ -98,13 +146,13 @@ final liveStepsProvider = StreamProvider<int>((ref) async* {
     yield 0;
     return;
   }
-  
+
   final repo = ref.read(sensorRepositoryProvider);
   final initial = await repo.getCurrentSteps();
   if (initial != null) {
     yield initial;
   }
-  
+
   yield* repo.stepStream;
 });
 
@@ -112,50 +160,116 @@ final liveStepsProvider = StreamProvider<int>((ref) async* {
 // Activity Providers (Driven by Cache & Merged with Live Steps)
 // ---------------------------------------------------------------------------
 
-final dailyActivityProvider = Provider.family<DailyActivitySummary, DateTime>((ref, date) {
+final dailyActivityProvider = Provider.family<DailyActivitySummary, DateTime>((
+  ref,
+  date,
+) {
   // Rebuild UI when background sync completes
   ref.watch(healthSyncServiceProvider);
-  
+
+  final profile = ref.watch(personalizationControllerProvider).profile;
+  final customStepGoal = ref.watch(customStepGoalProvider);
+
+  final computedGoals = HealthGoalCalculator.calculateGoals(
+    profile: profile,
+    customStepGoal: customStepGoal,
+  );
+
   final cache = ref.watch(healthCacheServiceProvider);
   final cached = cache.getDailyActivity(date) ?? DailyActivitySummary.empty();
+
+  final summaryWithDynamicGoals = cached.copyWith(
+    stepsGoal: computedGoals.stepsGoal,
+    caloriesGoal: computedGoals.caloriesGoal,
+  );
 
   final now = DateTime.now();
   if (date.year == now.year && date.month == now.month && date.day == now.day) {
     final liveSteps = ref.watch(liveStepsProvider);
     return liveSteps.when(
       data: (sensorSteps) {
-        return cached.copyWith(
-          steps: max(cached.steps, sensorSteps),
+        return summaryWithDynamicGoals.copyWith(
+          steps: max(summaryWithDynamicGoals.steps, sensorSteps),
         );
       },
-      loading: () => cached,
-      error: (_, _) => cached,
+      loading: () => summaryWithDynamicGoals,
+      error: (_, _) => summaryWithDynamicGoals,
     );
   }
-  
-  return cached;
+
+  return summaryWithDynamicGoals;
 });
 
-final weeklyActivityProvider = Provider.family<List<DailyActivitySummary>, DateTime>((ref, startDate) {
+final weeklyActivityProvider =
+    Provider.family<List<DailyActivitySummary>, DateTime>((ref, startDate) {
+      ref.watch(healthSyncServiceProvider);
+      final cache = ref.watch(healthCacheServiceProvider);
+
+      final profile = ref.watch(personalizationControllerProvider).profile;
+      final customStepGoal = ref.watch(customStepGoalProvider);
+      final computedGoals = HealthGoalCalculator.calculateGoals(
+        profile: profile,
+        customStepGoal: customStepGoal,
+      );
+
+      final list =
+          cache.getWeeklyActivity() ??
+          List.generate(
+            7,
+            (i) => DailyActivitySummary.empty(
+              date: startDate.add(Duration(days: i)),
+            ),
+          );
+      return list
+          .map(
+            (s) => s.copyWith(
+              stepsGoal: computedGoals.stepsGoal,
+              caloriesGoal: computedGoals.caloriesGoal,
+            ),
+          )
+          .toList();
+    });
+
+final sleepSummaryProvider = Provider.family<SleepSummary, DateTime>((
+  ref,
+  date,
+) {
   ref.watch(healthSyncServiceProvider);
   final cache = ref.watch(healthCacheServiceProvider);
-  return cache.getWeeklyActivity() ?? List.generate(7, (i) => DailyActivitySummary.empty(date: startDate.add(Duration(days: i))));
+  return cache.getSleepSummary(date) ??
+      SleepSummary(
+        totalSleep: Duration.zero,
+        remSleep: Duration.zero,
+        deepSleep: Duration.zero,
+        lightSleep: Duration.zero,
+        sleepScore: 0,
+        date: date,
+      );
 });
 
-final sleepSummaryProvider = Provider.family<SleepSummary, DateTime>((ref, date) {
-  ref.watch(healthSyncServiceProvider);
-  final cache = ref.watch(healthCacheServiceProvider);
-  return cache.getSleepSummary(date) ?? SleepSummary(
-    totalSleep: Duration.zero, remSleep: Duration.zero, deepSleep: Duration.zero, lightSleep: Duration.zero, sleepScore: 0, date: date,
+final recoverySummaryProvider = Provider.family<RecoverySummary, DateTime>((
+  ref,
+  date,
+) {
+  return RecoverySummary(
+    recoveryScore: 0,
+    hrv: 0,
+    restingHeartRate: 0,
+    date: date,
   );
 });
 
-final recoverySummaryProvider = Provider.family<RecoverySummary, DateTime>((ref, date) {
-  return RecoverySummary(recoveryScore: 0, hrv: 0, restingHeartRate: 0, date: date);
-});
-
-final hydrationSummaryProvider = Provider.family<HydrationSummary, DateTime>((ref, date) {
-  return HydrationSummary(waterConsumedLiters: 0.0, waterGoalLiters: 2.5, date: date);
+final hydrationSummaryProvider = Provider.family<HydrationSummary, DateTime>((
+  ref,
+  date,
+) {
+  final profile = ref.watch(personalizationControllerProvider).profile;
+  final computedGoals = HealthGoalCalculator.calculateGoals(profile: profile);
+  return HydrationSummary(
+    waterConsumedLiters: 0.0,
+    waterGoalLiters: computedGoals.hydrationGoalLiters,
+    date: date,
+  );
 });
 
 // ---------------------------------------------------------------------------

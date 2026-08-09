@@ -11,4 +11,5 @@ class StorageKeys {
   // Progress and profile
   static const String progressHistory = 'progress_history';
   static const String userProfile = 'user_profile';
+  static const String customStepGoal = 'custom_step_goal';
 }
