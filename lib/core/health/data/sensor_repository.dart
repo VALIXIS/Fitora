@@ -40,10 +40,12 @@ class SensorDebugSnapshot {
 ///   - Persisting the daily baseline across app restarts
 ///   - Midnight reset detection
 class SensorRepository {
+  Stream<int>? _sharedStream;
+
   /// A broadcast stream of today's step count.
   /// Emits nothing when the sensor is unavailable or encounters errors.
   Stream<int> get stepStream {
-    return _stepEventChannel
+    _sharedStream ??= _stepEventChannel
         .receiveBroadcastStream()
         .map<int?>((event) {
           if (event == null) return null;
@@ -52,7 +54,9 @@ class SensorRepository {
         })
         .where((steps) => steps != null && steps >= 0)
         .cast<int>()
-        .handleError((_) {}); // Silently swallow stream errors without crashing
+        .handleError((_) {}) // Silently swallow stream errors without crashing
+        .asBroadcastStream();
+    return _sharedStream!;
   }
 
   /// One-shot snapshot: returns the latest step count immediately, or null if unavailable.
@@ -60,7 +64,7 @@ class SensorRepository {
     try {
       final snap = await getDebugSnapshot();
       if (!snap.sensorAvailable) return null;
-      if (snap.todaySteps >= 0) return snap.todaySteps;
+      if (snap.rawSteps >= 0 && snap.todaySteps >= 0) return snap.todaySteps;
 
       // Fallback if snapshot is missing but stream works; return null on timeout rather than 0
       final steps = await stepStream.first

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/storage/app_preferences.dart';
 import '../domain/health_sync_models.dart';
@@ -10,13 +11,15 @@ final healthSyncProvider = StateNotifierProvider<HealthSyncController, HealthSyn
   return HealthSyncController()..load();
 });
 
-class HealthSyncController extends StateNotifier<HealthSyncState> {
+class HealthSyncController extends StateNotifier<HealthSyncState> with WidgetsBindingObserver {
   HealthSyncController()
       : super(HealthSyncState(
           connections: {},
           priorities: [],
           cachedData: HealthMetricData.empty(),
-        ));
+        )) {
+    WidgetsBinding.instance.addObserver(this);
+  }
 
   late final HealthSyncService _service;
   bool _initialized = false;
@@ -25,9 +28,31 @@ class HealthSyncController extends StateNotifier<HealthSyncState> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    if (_saveDebounceTimer?.isActive ?? false) {
+      _saveDebounceTimer?.cancel();
+      if (_initialized) {
+        _service.saveCachedData(state.cachedData);
+      }
+    }
     _pedometerSubscription?.cancel();
-    _saveDebounceTimer?.cancel();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState appState) {
+    if (appState == AppLifecycleState.paused || appState == AppLifecycleState.detached) {
+      if (_saveDebounceTimer?.isActive ?? false) {
+        _saveDebounceTimer?.cancel();
+        if (_initialized) {
+          _service.saveCachedData(state.cachedData);
+        }
+      }
+    } else if (appState == AppLifecycleState.resumed) {
+      if (_initialized) {
+        syncAllActive();
+      }
+    }
   }
 
   Future<void> load() async {

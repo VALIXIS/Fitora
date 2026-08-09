@@ -31,6 +31,7 @@ class PedometerService {
   void setInitialSteps(int steps) {
     if (steps > _currentSteps) {
       _currentSteps = steps;
+      _emitCurrentSteps();
     }
   }
 
@@ -65,6 +66,7 @@ class PedometerService {
 
   void _startSimulation() {
     _simulationTimer?.cancel();
+    if (!_isWalking) return;
     // Simulate walking: increments step counter by 1-2 steps every 900ms
     _simulationTimer = Timer.periodic(const Duration(milliseconds: 900), (timer) {
       if (_isWalking && _permissionStatus == HealthPermissionStatus.authorized) {
