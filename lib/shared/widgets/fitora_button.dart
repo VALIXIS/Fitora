@@ -24,14 +24,18 @@ class FitoraButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final child = _buildChild(context);
 
-    final button = switch (variant) {
-      FitoraButtonVariant.primary =>
-        FilledButton(onPressed: onPressed, child: child),
-      FitoraButtonVariant.secondary =>
-        OutlinedButton(onPressed: onPressed, child: child),
-      FitoraButtonVariant.ghost =>
-        TextButton(onPressed: onPressed, child: child),
-    };
+    Widget button;
+    switch (variant) {
+      case FitoraButtonVariant.primary:
+        button = FilledButton(onPressed: onPressed, child: child);
+        break;
+      case FitoraButtonVariant.secondary:
+        button = OutlinedButton(onPressed: onPressed, child: child);
+        break;
+      case FitoraButtonVariant.ghost:
+        button = TextButton(onPressed: onPressed, child: child);
+        break;
+    }
 
     final wrappedButton = onPressed != null
         ? ScaleOnPress(scaleDownTo: 0.96, child: button)

@@ -42,23 +42,26 @@ class AuthActionButton extends StatelessWidget {
           )
         : Icon(icon, size: 20);
 
-    return switch (style) {
-      AuthActionStyle.primary => FilledButton.icon(
+    switch (style) {
+      case AuthActionStyle.primary:
+        return FilledButton.icon(
           onPressed: onPressed,
           icon: iconWidget,
           label: _LabelText(text: label),
-        ),
-      AuthActionStyle.secondary => OutlinedButton.icon(
+        );
+      case AuthActionStyle.secondary:
+        return OutlinedButton.icon(
           onPressed: onPressed,
           icon: iconWidget,
           label: _LabelText(text: label),
-        ),
-      AuthActionStyle.subtle => TextButton.icon(
+        );
+      case AuthActionStyle.subtle:
+        return TextButton.icon(
           onPressed: onPressed,
           icon: iconWidget,
           label: _LabelText(text: label),
-        ),
-    };
+        );
+    }
   }
 }
 

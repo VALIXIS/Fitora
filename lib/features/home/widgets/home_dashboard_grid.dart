@@ -16,11 +16,13 @@ class HomeDashboardGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return switch (columns) {
-      1 => _MobileDashboardGrid(data: data),
-      2 => _TabletDashboardGrid(data: data),
-      _ => _DesktopDashboardGrid(data: data),
-    };
+    if (columns == 1) {
+      return _MobileDashboardGrid(data: data);
+    } else if (columns == 2) {
+      return _TabletDashboardGrid(data: data);
+    } else {
+      return _DesktopDashboardGrid(data: data);
+    }
   }
 }
 
