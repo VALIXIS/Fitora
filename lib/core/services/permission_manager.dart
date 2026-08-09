@@ -36,7 +36,9 @@ class PermissionManager {
   /// Shows the sequential first-launch permission bottom sheet.
   /// Requests Activity Recognition first, then Notifications.
   /// Health Connect is handled separately when the user enters Health Sync.
-  static Future<void> requestFirstLaunchPermissions(BuildContext context) async {
+  static Future<void> requestFirstLaunchPermissions(
+    BuildContext context,
+  ) async {
     if (!context.mounted) return;
 
     final alreadyShown = await wasPermissionsFlowShown();
@@ -48,8 +50,18 @@ class PermissionManager {
     await _showActivityRecognitionSheet(context);
   }
 
-  static Future<void> _showActivityRecognitionSheet(BuildContext context) async {
+  static Future<void> _showActivityRecognitionSheet(
+    BuildContext context,
+  ) async {
     if (!context.mounted) return;
+
+    final alreadyGranted = await ph.Permission.activityRecognition.isGranted;
+    if (!context.mounted) return;
+
+    if (alreadyGranted) {
+      await _showNotificationSheet(context);
+      return;
+    }
 
     final granted = await showModalBottomSheet<bool>(
       context: context,
@@ -163,7 +175,10 @@ class _PermissionSheet extends StatelessWidget {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: iconColor.withValues(alpha: 0.12),
-              border: Border.all(color: iconColor.withValues(alpha: 0.3), width: 1.5),
+              border: Border.all(
+                color: iconColor.withValues(alpha: 0.3),
+                width: 1.5,
+              ),
             ),
             child: Icon(icon, color: iconColor, size: 34),
           ),
@@ -216,7 +231,9 @@ class _PermissionSheet extends StatelessWidget {
                 backgroundColor: iconColor,
                 foregroundColor: Colors.black,
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
               ),
               child: Text(
                 allowLabel,

@@ -13,6 +13,7 @@ import 'package:fitora/features/personalization/providers/personalization_contro
 import 'package:fitora/features/profile/screens/profile_screen.dart';
 import 'package:fitora/core/utils/greeting_utils.dart';
 import 'package:fitora/shared/widgets/fitora_background.dart';
+import 'package:fitora/core/services/permission_manager.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -22,6 +23,16 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        PermissionManager.requestFirstLaunchPermissions(context);
+      }
+    });
+  }
+
   String _buildSyncLabel(SyncStatus syncStatus, DateTime? lastSyncTime) {
     if (syncStatus == SyncStatus.syncing) return 'Syncing...';
     if (syncStatus == SyncStatus.error) return 'Sync failed';
