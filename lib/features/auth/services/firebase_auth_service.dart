@@ -29,12 +29,27 @@ class FirebaseAuthService {
       return null;
     }
 
+    try {
+      if (await _googleSignIn.isSignedIn()) {
+        await _googleSignIn.signOut();
+      }
+    } catch (e) {
+      AppLogger.info('Google sign-in pre-cleanup warning: $e');
+    }
+
     final account = await _googleSignIn.signIn();
     if (account == null) {
       return null;
     }
 
     final authentication = await account.authentication;
+    if (authentication.idToken == null && authentication.accessToken == null) {
+      throw FirebaseAuthException(
+        code: 'missing-google-token',
+        message: 'Could not obtain authentication tokens from Google.',
+      );
+    }
+
     final credential = GoogleAuthProvider.credential(
       accessToken: authentication.accessToken,
       idToken: authentication.idToken,
@@ -59,7 +74,16 @@ class FirebaseAuthService {
       return;
     }
 
-    await FirebaseAuth.instance.signOut();
-    await _googleSignIn.signOut();
+    try {
+      await FirebaseAuth.instance.signOut();
+    } catch (e, stackTrace) {
+      AppLogger.error(e, stackTrace);
+    }
+
+    try {
+      await _googleSignIn.signOut();
+    } catch (e, stackTrace) {
+      AppLogger.error(e, stackTrace);
+    }
   }
 }

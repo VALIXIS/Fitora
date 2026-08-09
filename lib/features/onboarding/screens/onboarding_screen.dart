@@ -19,6 +19,15 @@ class OnboardingScreen extends HookConsumerWidget {
     final pageController = usePageController(initialPage: state.pageIndex);
 
     useEffect(() {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (context.mounted) {
+          PermissionManager.requestFirstLaunchPermissions(context);
+        }
+      });
+      return null;
+    }, const []);
+
+    useEffect(() {
       if (!pageController.hasClients) {
         return null;
       }
@@ -31,9 +40,7 @@ class OnboardingScreen extends HookConsumerWidget {
 
     if (state.isLoading) {
       return const Scaffold(
-        body: SafeArea(
-          child: LoadingWidget(message: 'Preparing your journey'),
-        ),
+        body: SafeArea(child: LoadingWidget(message: 'Preparing your journey')),
       );
     }
 
@@ -60,8 +67,9 @@ class OnboardingScreen extends HookConsumerWidget {
     }
 
     Future<void> handleNext() async {
-      final nextIndex =
-          (state.pageIndex + 1).clamp(0, state.pages.length - 1).toInt();
+      final nextIndex = (state.pageIndex + 1)
+          .clamp(0, state.pages.length - 1)
+          .toInt();
       await pageController.animateToPage(
         nextIndex,
         duration: const Duration(milliseconds: 280),
@@ -70,8 +78,9 @@ class OnboardingScreen extends HookConsumerWidget {
     }
 
     Future<void> handleBack() async {
-      final prevIndex =
-          (state.pageIndex - 1).clamp(0, state.pages.length - 1).toInt();
+      final prevIndex = (state.pageIndex - 1)
+          .clamp(0, state.pages.length - 1)
+          .toInt();
       await pageController.animateToPage(
         prevIndex,
         duration: const Duration(milliseconds: 260),
@@ -187,10 +196,7 @@ class _OnboardingIndicator extends StatelessWidget {
   final int total;
   final int currentIndex;
 
-  const _OnboardingIndicator({
-    required this.total,
-    required this.currentIndex,
-  });
+  const _OnboardingIndicator({required this.total, required this.currentIndex});
 
   @override
   Widget build(BuildContext context) {
