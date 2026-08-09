@@ -11,6 +11,7 @@ import 'package:fitora/core/health/domain/health_models.dart';
 import 'package:fitora/features/wellness/providers/wellness_provider.dart';
 import 'package:fitora/features/personalization/providers/personalization_controller.dart';
 import 'package:fitora/features/profile/screens/profile_screen.dart';
+import 'package:fitora/core/utils/greeting_utils.dart';
 import 'package:fitora/shared/widgets/fitora_background.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -34,7 +35,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         : (localTime.hour > 12 ? localTime.hour - 12 : localTime.hour);
     final amPm = localTime.hour >= 12 ? 'PM' : 'AM';
     final minute = localTime.minute.toString().padLeft(2, '0');
-    return 'Synced at $hourVal:$minute $amPm';
+    return 'Last synced $hourVal:$minute $amPm';
   }
 
   @override
@@ -46,12 +47,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final syncStatus = ref.watch(healthSyncServiceProvider); // Rebuilds on sync
 
     final profile = ref.watch(personalizationControllerProvider).profile;
+    final String greetingPrefix = getDynamicGreeting(now);
     final String greeting;
     if (profile.name != null && profile.name!.trim().isNotEmpty) {
       final firstName = profile.name!.trim().split(' ').first;
-      greeting = 'Good morning, $firstName';
+      greeting = '$greetingPrefix, $firstName';
     } else {
-      greeting = 'Welcome';
+      greeting = greetingPrefix;
     }
 
     final lastWeek = today.subtract(const Duration(days: 6));
@@ -269,6 +271,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
       (m) => '${m[1]},',
     );
+
     final stepsGoalText = stepsValue == 0
         ? "Start walking to begin tracking today's progress."
         : 'Goal: $goalFormatted';
@@ -518,180 +521,104 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     TextTheme textTheme,
     List<DailyActivitySummary> summaries,
   ) {
-    final maxSteps = summaries.isEmpty
-        ? 1
-        : summaries
-              .map((s) => s.steps)
-              .reduce((curr, next) => curr > next ? curr : next);
-    final maxVal = maxSteps == 0 ? 1 : maxSteps;
-
-    final now = DateTime.now();
-    final weekdays = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+    final days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
     return GlowContainer(
-          glowColor: FitoraColors.calmCyan.withValues(alpha: 0.05),
+      glowColor: FitoraColors.calmCyan.withValues(alpha: 0.05),
+      borderRadius: BorderRadius.circular(24),
+      padding: EdgeInsets.zero,
+      child: Container(
+        padding: const EdgeInsets.all(FitoraSpacing.xl),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.02),
           borderRadius: BorderRadius.circular(24),
-          padding: EdgeInsets.zero,
-          child: Container(
-            padding: const EdgeInsets.all(FitoraSpacing.xl),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.02),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Weekly Overview',
-                      style: textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    GestureDetector(
-                      onTap: () => context.go(AppRoutes.progress),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            'Details',
-                            style: textTheme.labelLarge?.copyWith(
-                              color: FitoraColors.mintGreen,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const Icon(
-                            Icons.chevron_right_rounded,
-                            color: FitoraColors.mintGreen,
-                            size: 20,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: FitoraSpacing.xl),
-                SizedBox(
-                  height: 120,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: List.generate(summaries.length, (index) {
-                      final summary = summaries[index];
-                      final steps = summary.steps;
-                      final date = summary.date;
-
-                      final isToday =
-                          date.day == now.day &&
-                          date.month == now.month &&
-                          date.year == now.year;
-                      final double ratio = (steps / maxVal).clamp(0.02, 1.0);
-
-                      final labelIndex = (date.weekday - 1) % 7;
-                      final dayLabel = weekdays[labelIndex];
-
-                      return Expanded(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            if (steps > 0)
-                              Text(
-                                steps >= 1000
-                                    ? '${(steps / 1000).toStringAsFixed(1)}k'
-                                    : '$steps',
-                                style: textTheme.labelSmall?.copyWith(
-                                  color: isToday
-                                      ? FitoraColors.mintGreen
-                                      : Colors.white30,
-                                  fontSize: 9,
-                                  fontWeight: isToday
-                                      ? FontWeight.bold
-                                      : FontWeight.normal,
-                                ),
-                              )
-                            else
-                              const Text(
-                                '-',
-                                style: TextStyle(
-                                  color: Colors.white12,
-                                  fontSize: 9,
-                                ),
-                              ),
-                            const SizedBox(height: 6),
-                            Expanded(
-                              child: LayoutBuilder(
-                                builder: (context, constraints) {
-                                  final barHeight =
-                                      constraints.maxHeight * ratio;
-                                  return Container(
-                                    width: 12,
-                                    height: barHeight,
-                                    decoration: BoxDecoration(
-                                      gradient: LinearGradient(
-                                        colors: isToday
-                                            ? [
-                                                FitoraColors.mintGreen,
-                                                FitoraColors.softEmerald,
-                                              ]
-                                            : [
-                                                FitoraColors.calmCyan
-                                                    .withValues(alpha: 0.4),
-                                                FitoraColors.calmCyan
-                                                    .withValues(alpha: 0.1),
-                                              ],
-                                        begin: Alignment.topCenter,
-                                        end: Alignment.bottomCenter,
-                                      ),
-                                      borderRadius: BorderRadius.circular(99),
-                                      border: Border.all(
-                                        color: isToday
-                                            ? FitoraColors.mintGreen.withValues(
-                                                alpha: 0.8,
-                                              )
-                                            : Colors.transparent,
-                                        width: 1.5,
-                                      ),
-                                      boxShadow: isToday
-                                          ? [
-                                              BoxShadow(
-                                                color: FitoraColors.mintGreen
-                                                    .withValues(alpha: 0.3),
-                                                blurRadius: 8,
-                                                spreadRadius: 1,
-                                              ),
-                                            ]
-                                          : null,
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              dayLabel,
-                              style: textTheme.labelSmall?.copyWith(
-                                color: isToday ? Colors.white : Colors.white30,
-                                fontWeight: isToday
-                                    ? FontWeight.w900
-                                    : FontWeight.normal,
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    }),
+                Text(
+                  'WEEKLY ACTIVITY',
+                  style: textTheme.labelSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.5,
+                    color: Colors.white30,
                   ),
+                ),
+                Text(
+                  '7 Day Trend',
+                  style: textTheme.bodySmall?.copyWith(color: Colors.white54),
                 ),
               ],
             ),
-          ),
-        )
-        .animate()
-        .fadeIn(delay: 200.ms, duration: 400.ms)
-        .slideY(begin: 0.05, end: 0);
+            const SizedBox(height: FitoraSpacing.lg),
+            SizedBox(
+              height: 120,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: List.generate(7, (index) {
+                  final summary = index < summaries.length
+                      ? summaries[index]
+                      : null;
+                  final heightFactor = summary != null
+                      ? summary.stepsProgress.clamp(0.1, 1.0)
+                      : 0.1;
+                  final isToday = index == summaries.length - 1;
+
+                  return Column(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Expanded(
+                        child: Alignment(
+                          0,
+                          1,
+                        ), // Align bar to bottom of container
+                        child: Container(
+                          width: 14,
+                          height: 80 * heightFactor,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(99),
+                            gradient: isToday
+                                ? const LinearGradient(
+                                    begin: Alignment.bottomCenter,
+                                    end: Alignment.topCenter,
+                                    colors: [
+                                      FitoraColors.mintGreen,
+                                      FitoraColors.brightTeal,
+                                    ],
+                                  )
+                                : null,
+                            color: isToday
+                                ? null
+                                : Colors.white.withValues(alpha: 0.1),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: FitoraSpacing.xs),
+                      Text(
+                        days[index],
+                        style: textTheme.labelSmall?.copyWith(
+                          color: isToday
+                              ? FitoraColors.mintGreen
+                              : Colors.white38,
+                          fontWeight: isToday
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                        ),
+                      ),
+                    ],
+                  );
+                }),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ).animate().fadeIn(delay: 200.ms, duration: 400.ms).slideY(begin: 0.05, end: 0);
   }
 
   Widget _buildDailyGoals(
@@ -704,7 +631,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final hasSleep = sleep.totalSleep.inMinutes > 0;
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
         _buildGoalCard(
@@ -722,7 +648,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
         const SizedBox(height: FitoraSpacing.sm),
         _buildGoalCard(
-          title: 'Hydration',
+          title: 'Hydration Goal',
           subtitle: wellness.hydrationGoalLiters == 0
               ? 'Set Daily Water Goal'
               : (wellness.hydrationLiters == 0
