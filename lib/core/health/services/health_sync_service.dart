@@ -8,13 +8,15 @@ import 'package:fitora/core/health/data/sensor_health_repository.dart';
 import 'package:fitora/core/health/services/health_cache_service.dart';
 import 'package:fitora/core/utils/app_logger.dart';
 
-class HealthSyncService extends StateNotifier<SyncStatus> with WidgetsBindingObserver {
+class HealthSyncService extends StateNotifier<SyncStatus>
+    with WidgetsBindingObserver {
   final HealthConnectRepository _hcRepo;
   final SensorHealthRepository _sensorRepo;
   final HealthCacheService _cache;
   Timer? _pollingTimer;
 
-  HealthSyncService(this._hcRepo, this._sensorRepo, this._cache) : super(SyncStatus.offline) {
+  HealthSyncService(this._hcRepo, this._sensorRepo, this._cache)
+    : super(SyncStatus.offline) {
     WidgetsBinding.instance.addObserver(this);
     _startPolling();
   }
@@ -31,14 +33,24 @@ class HealthSyncService extends StateNotifier<SyncStatus> with WidgetsBindingObs
     if (state == AppLifecycleState.resumed) {
       syncNow();
       _startPolling();
-    } else if (state == AppLifecycleState.paused) {
-      _pollingTimer?.cancel();
+    } else if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.hidden) {
+      // Perform immediate sync when app is minimized/backgrounded to preserve tracking
+      syncNow();
+      // Maintain active background polling timer
+      if (_pollingTimer == null || !_pollingTimer!.isActive) {
+        _startPolling();
+      }
     }
   }
 
   void _startPolling() {
     _pollingTimer?.cancel();
-    _pollingTimer = Timer.periodic(const Duration(minutes: 15), (_) => syncNow());
+    _pollingTimer = Timer.periodic(
+      const Duration(minutes: 15),
+      (_) => syncNow(),
+    );
   }
 
   Future<void> syncNow() async {
@@ -48,7 +60,7 @@ class HealthSyncService extends StateNotifier<SyncStatus> with WidgetsBindingObs
     try {
       final now = DateTime.now();
       final today = DateTime(now.year, now.month, now.day);
-      
+
       // 1. Fetch Health Connect
       DailyActivitySummary? hcSummary;
       try {
@@ -83,7 +95,8 @@ class HealthSyncService extends StateNotifier<SyncStatus> with WidgetsBindingObs
         );
       } else {
         // Both failed, fallback to cache or empty
-        mergedSummary = _cache.getDailyActivity(today) ?? DailyActivitySummary.empty();
+        mergedSummary =
+            _cache.getDailyActivity(today) ?? DailyActivitySummary.empty();
       }
 
       // 4. Save Daily Activity to Cache
@@ -95,13 +108,13 @@ class HealthSyncService extends StateNotifier<SyncStatus> with WidgetsBindingObs
       try {
         final lastWeek = today.subtract(const Duration(days: 6));
         final weekly = await _hcRepo.getWeeklyActivity(lastWeek);
-        
+
         // Merge today's data into the weekly array
         final updatedWeekly = weekly.map((s) {
           if (s.date == today) return mergedSummary;
           return s;
         }).toList();
-        
+
         await _cache.saveWeeklyActivity(updatedWeekly);
 
         final sleep = await _hcRepo.getSleepSummary(today);

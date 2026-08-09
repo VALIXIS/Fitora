@@ -10,6 +10,7 @@ import 'package:fitora/core/health/providers/health_providers.dart';
 import 'package:fitora/core/health/domain/health_models.dart';
 import 'package:fitora/features/wellness/providers/wellness_provider.dart';
 import 'package:fitora/features/personalization/providers/personalization_controller.dart';
+import 'package:fitora/core/utils/greeting_utils.dart';
 import 'package:fitora/shared/widgets/fitora_background.dart';
 import 'package:fitora/core/services/permission_manager.dart';
 
@@ -56,12 +57,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final syncStatus = ref.watch(healthSyncServiceProvider); // Rebuilds on sync
 
     final profile = ref.watch(personalizationControllerProvider).profile;
+    final String greetingPrefix = getDynamicGreeting(now);
     final String greeting;
     if (profile.name != null && profile.name!.trim().isNotEmpty) {
       final firstName = profile.name!.trim().split(' ').first;
-      greeting = 'Good morning, $firstName';
+      greeting = '$greetingPrefix, $firstName';
     } else {
-      greeting = 'Welcome';
+      greeting = greetingPrefix;
     }
 
     final lastWeek = today.subtract(const Duration(days: 6));
