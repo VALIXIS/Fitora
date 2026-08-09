@@ -10,6 +10,7 @@ import 'package:fitora/core/health/providers/health_providers.dart';
 import 'package:fitora/core/health/domain/health_models.dart';
 import 'package:fitora/features/wellness/providers/wellness_provider.dart';
 import 'package:fitora/features/personalization/providers/personalization_controller.dart';
+import 'package:fitora/core/utils/greeting_utils.dart';
 import 'package:fitora/shared/widgets/fitora_background.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -28,7 +29,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     if (diff.inSeconds < 60) return 'Last synced just now';
     if (diff.inMinutes < 60) return 'Last synced ${diff.inMinutes} min ago';
     final localTime = lastSyncTime.toLocal();
-    final hourVal = localTime.hour == 0 ? 12 : (localTime.hour > 12 ? localTime.hour - 12 : localTime.hour);
+    final hourVal = localTime.hour == 0
+        ? 12
+        : (localTime.hour > 12 ? localTime.hour - 12 : localTime.hour);
     final amPm = localTime.hour >= 12 ? 'PM' : 'AM';
     final minute = localTime.minute.toString().padLeft(2, '0');
     return 'Synced at $hourVal:$minute $amPm';
@@ -43,12 +46,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final syncStatus = ref.watch(healthSyncServiceProvider); // Rebuilds on sync
 
     final profile = ref.watch(personalizationControllerProvider).profile;
+    final String greetingPrefix = getDynamicGreeting(now);
     final String greeting;
     if (profile.name != null && profile.name!.trim().isNotEmpty) {
       final firstName = profile.name!.trim().split(' ').first;
-      greeting = 'Good morning, $firstName';
+      greeting = '$greetingPrefix, $firstName';
     } else {
-      greeting = 'Welcome';
+      greeting = greetingPrefix;
     }
 
     final lastWeek = today.subtract(const Duration(days: 6));
@@ -58,87 +62,100 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       child: Scaffold(
         backgroundColor: Colors.transparent,
         body: RefreshIndicator(
-          onRefresh: () => ref.read(healthSyncServiceProvider.notifier).syncNow(),
+          onRefresh: () =>
+              ref.read(healthSyncServiceProvider.notifier).syncNow(),
           color: const Color(0xFF06B6D4),
           backgroundColor: const Color(0xFF0D1117),
           child: CustomScrollView(
-          physics: const BouncingScrollPhysics(),
-          slivers: [
-            // ── Premium SafeArea Header ─────────────────────────────────────────
-            SliverToBoxAdapter(
-              child: _buildHeader(textTheme, activity, greeting, syncStatus),
-            ),
-            
-            // ── Scrollable Dashboard Grid ──────────────────────────────────────
-            SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: FitoraSpacing.xl),
-              sliver: SliverList(
-                delegate: SliverChildListDelegate([
-                  const SizedBox(height: FitoraSpacing.sm),
-                  
-                  // Hero Steps Card (Visual Centerpiece)
-                  _buildHeroStepsCard(textTheme, activity),
-                  const SizedBox(height: FitoraSpacing.xl),
-                  
-                  // Quick Stats Section Header
-                  Text(
-                    'QUICK STATS',
-                    style: textTheme.labelSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.5,
-                      color: Colors.white30,
-                    ),
-                  ),
-                  const SizedBox(height: FitoraSpacing.md),
-                  
-                  // Quick Stats Grid (Calories, Active Time, Distance, Hydration)
-                  Consumer(
-                    builder: (context, ref, _) {
-                      final wellness = ref.watch(wellnessProvider);
-                      return _buildQuickStats(textTheme, activity, wellness);
-                    },
-                  ),
-                  const SizedBox(height: FitoraSpacing.xl),
-                  
-                  // Weekly Activity Section
-                  _buildWeeklyActivity(textTheme, weeklySummaries),
-                  const SizedBox(height: FitoraSpacing.xl),
-                  
-                  // Daily Goals Section Header
-                  Text(
-                    'DAILY GOALS',
-                    style: textTheme.labelSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.5,
-                      color: Colors.white30,
-                    ),
-                  ),
-                  const SizedBox(height: FitoraSpacing.md),
-                  
-                  // Daily Goals Cards (Steps, Hydration, Sleep)
-                  Consumer(
-                    builder: (context, ref, _) {
-                      final wellness = ref.watch(wellnessProvider);
-                      return _buildDailyGoals(textTheme, activity, wellness, today);
-                    },
-                  ),
-                  const SizedBox(height: FitoraSpacing.xl),
-                  
-                  // Connection Prompt (if never synced before)
-                  _buildSyncPrompt(context, textTheme, activity),
-                  
-                  const SizedBox(height: 100), // Bottom scroll padding
-                ]),
+            physics: const BouncingScrollPhysics(),
+            slivers: [
+              // ── Premium SafeArea Header ─────────────────────────────────────────
+              SliverToBoxAdapter(
+                child: _buildHeader(textTheme, activity, greeting, syncStatus),
               ),
-            ),
-          ],
-        ),
+
+              // ── Scrollable Dashboard Grid ──────────────────────────────────────
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: FitoraSpacing.xl,
+                ),
+                sliver: SliverList(
+                  delegate: SliverChildListDelegate([
+                    const SizedBox(height: FitoraSpacing.sm),
+
+                    // Hero Steps Card (Visual Centerpiece)
+                    _buildHeroStepsCard(textTheme, activity),
+                    const SizedBox(height: FitoraSpacing.xl),
+
+                    // Quick Stats Section Header
+                    Text(
+                      'QUICK STATS',
+                      style: textTheme.labelSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.5,
+                        color: Colors.white30,
+                      ),
+                    ),
+                    const SizedBox(height: FitoraSpacing.md),
+
+                    // Quick Stats Grid (Calories, Active Time, Distance, Hydration)
+                    Consumer(
+                      builder: (context, ref, _) {
+                        final wellness = ref.watch(wellnessProvider);
+                        return _buildQuickStats(textTheme, activity, wellness);
+                      },
+                    ),
+                    const SizedBox(height: FitoraSpacing.xl),
+
+                    // Weekly Activity Section
+                    _buildWeeklyActivity(textTheme, weeklySummaries),
+                    const SizedBox(height: FitoraSpacing.xl),
+
+                    // Daily Goals Section Header
+                    Text(
+                      'DAILY GOALS',
+                      style: textTheme.labelSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.5,
+                        color: Colors.white30,
+                      ),
+                    ),
+                    const SizedBox(height: FitoraSpacing.md),
+
+                    // Daily Goals Cards (Steps, Hydration, Sleep)
+                    Consumer(
+                      builder: (context, ref, _) {
+                        final wellness = ref.watch(wellnessProvider);
+                        return _buildDailyGoals(
+                          textTheme,
+                          activity,
+                          wellness,
+                          today,
+                        );
+                      },
+                    ),
+                    const SizedBox(height: FitoraSpacing.xl),
+
+                    // Connection Prompt (if never synced before)
+                    _buildSyncPrompt(context, textTheme, activity),
+
+                    const SizedBox(height: 100), // Bottom scroll padding
+                  ]),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildHeader(TextTheme textTheme, DailyActivitySummary activity, String greeting, SyncStatus syncStatus) {
+  Widget _buildHeader(
+    TextTheme textTheme,
+    DailyActivitySummary activity,
+    String greeting,
+    SyncStatus syncStatus,
+  ) {
     return SafeArea(
       bottom: false,
       child: Padding(
@@ -161,9 +178,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: Colors.white.withValues(alpha: 0.05),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.1),
+                      ),
                     ),
-                    child: Image.asset('assets/icon_foreground.png', fit: BoxFit.contain),
+                    child: Image.asset(
+                      'assets/icon_foreground.png',
+                      fit: BoxFit.contain,
+                    ),
                   ),
                   const SizedBox(width: FitoraSpacing.md),
                   Expanded(
@@ -182,17 +204,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         const SizedBox(height: 2),
                         Row(
                           children: [
-                            const Icon(Icons.sync_rounded, color: Colors.white38, size: 10),
+                            const Icon(
+                              Icons.sync_rounded,
+                              color: Colors.white38,
+                              size: 10,
+                            ),
                             const SizedBox(width: 4),
-                             Expanded(
+                            Expanded(
                               child: Text(
-                                _buildSyncLabel(syncStatus, activity.lastSyncTime),
+                                _buildSyncLabel(
+                                  syncStatus,
+                                  activity.lastSyncTime,
+                                ),
                                 style: textTheme.labelSmall?.copyWith(
                                   color: syncStatus == SyncStatus.syncing
                                       ? const Color(0xFF06B6D4)
                                       : syncStatus == SyncStatus.error
-                                          ? Colors.redAccent
-                                          : Colors.white38,
+                                      ? Colors.redAccent
+                                      : Colors.white38,
                                   fontSize: 10,
                                 ),
                                 overflow: TextOverflow.ellipsis,
@@ -210,7 +239,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               icon: Badge(
                 backgroundColor: FitoraColors.mintGreen,
                 smallSize: 8,
-                child: const Icon(Icons.notifications_outlined, color: Colors.white, size: 24),
+                child: const Icon(
+                  Icons.notifications_outlined,
+                  color: Colors.white,
+                  size: 24,
+                ),
               ),
               onPressed: () {},
             ),
@@ -220,16 +253,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildHeroStepsCard(TextTheme textTheme, DailyActivitySummary activity) {
+  Widget _buildHeroStepsCard(
+    TextTheme textTheme,
+    DailyActivitySummary activity,
+  ) {
     final stepsValue = activity.steps;
     final stepsGoal = activity.stepsGoal;
     final progress = activity.stepsProgress;
-    
+
     final formattedSteps = stepsValue.toString().replaceAllMapped(
       RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
       (m) => '${m[1]},',
     );
-    
+
     final stepsGoalText = stepsValue == 0
         ? "Start walking to begin tracking today's progress."
         : 'Goal: ${stepsGoal.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => "${m[1]},")}';
@@ -253,11 +289,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: FitoraColors.mintGreen.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(99),
-                      border: Border.all(color: FitoraColors.mintGreen.withValues(alpha: 0.3)),
+                      border: Border.all(
+                        color: FitoraColors.mintGreen.withValues(alpha: 0.3),
+                      ),
                     ),
                     child: Text(
                       '${(progress * 100).toInt()}% OF GOAL',
@@ -288,9 +329,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   const SizedBox(height: 6),
                   Text(
                     stepsGoalText,
-                    style: textTheme.bodySmall?.copyWith(
-                      color: Colors.white54,
-                    ),
+                    style: textTheme.bodySmall?.copyWith(color: Colors.white54),
                   ),
                 ],
               ),
@@ -306,7 +345,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     value: progress,
                     strokeWidth: 9,
                     backgroundColor: Colors.white.withValues(alpha: 0.05),
-                    valueColor: const AlwaysStoppedAnimation<Color>(FitoraColors.mintGreen),
+                    valueColor: const AlwaysStoppedAnimation<Color>(
+                      FitoraColors.mintGreen,
+                    ),
                     strokeCap: StrokeCap.round,
                   ),
                 ),
@@ -330,64 +371,71 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.05, end: 0);
   }
 
-  Widget _buildQuickStats(TextTheme textTheme, DailyActivitySummary activity, wellness) {
+  Widget _buildQuickStats(
+    TextTheme textTheme,
+    DailyActivitySummary activity,
+    wellness,
+  ) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Expanded(
-              child: _buildStatCard(
-                label: 'Active',
-                value: activity.activeMinutes.toString(),
-                unit: ' min',
-                icon: Icons.timer_rounded,
-                color: FitoraColors.mintGreen,
-                textTheme: textTheme,
-              ),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildStatCard(
+                    label: 'Active',
+                    value: activity.activeMinutes.toString(),
+                    unit: ' min',
+                    icon: Icons.timer_rounded,
+                    color: FitoraColors.mintGreen,
+                    textTheme: textTheme,
+                  ),
+                ),
+                const SizedBox(width: FitoraSpacing.sm),
+                Expanded(
+                  child: _buildStatCard(
+                    label: 'Calories',
+                    value: activity.caloriesBurned.toInt().toString(),
+                    unit: ' kcal',
+                    icon: Icons.local_fire_department_rounded,
+                    color: FitoraColors.softEmerald,
+                    textTheme: textTheme,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(width: FitoraSpacing.sm),
-            Expanded(
-              child: _buildStatCard(
-                label: 'Calories',
-                value: activity.caloriesBurned.toInt().toString(),
-                unit: ' kcal',
-                icon: Icons.local_fire_department_rounded,
-                color: FitoraColors.softEmerald,
-                textTheme: textTheme,
-              ),
+            const SizedBox(height: FitoraSpacing.sm),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildStatCard(
+                    label: 'Distance',
+                    value: activity.distanceKm.toStringAsFixed(1),
+                    unit: ' km',
+                    icon: Icons.route_rounded,
+                    color: FitoraColors.calmCyan,
+                    textTheme: textTheme,
+                  ),
+                ),
+                const SizedBox(width: FitoraSpacing.sm),
+                Expanded(
+                  child: _buildStatCard(
+                    label: 'Hydration',
+                    value: wellness.hydrationLiters.toStringAsFixed(1),
+                    unit: ' L',
+                    icon: Icons.water_drop_rounded,
+                    color: Colors.blueAccent,
+                    textTheme: textTheme,
+                  ),
+                ),
+              ],
             ),
           ],
-        ),
-        const SizedBox(height: FitoraSpacing.sm),
-        Row(
-          children: [
-            Expanded(
-              child: _buildStatCard(
-                label: 'Distance',
-                value: activity.distanceKm.toStringAsFixed(1),
-                unit: ' km',
-                icon: Icons.route_rounded,
-                color: FitoraColors.calmCyan,
-                textTheme: textTheme,
-              ),
-            ),
-            const SizedBox(width: FitoraSpacing.sm),
-            Expanded(
-              child: _buildStatCard(
-                label: 'Hydration',
-                value: wellness.hydrationLiters.toStringAsFixed(1),
-                unit: ' L',
-                icon: Icons.water_drop_rounded,
-                color: Colors.blueAccent,
-                textTheme: textTheme,
-              ),
-            ),
-          ],
-        ),
-      ],
-    ).animate().fadeIn(delay: 150.ms, duration: 400.ms).slideY(begin: 0.05, end: 0);
+        )
+        .animate()
+        .fadeIn(delay: 150.ms, duration: 400.ms)
+        .slideY(begin: 0.05, end: 0);
   }
 
   Widget _buildStatCard({
@@ -458,156 +506,192 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildWeeklyActivity(TextTheme textTheme, List<DailyActivitySummary> summaries) {
+  Widget _buildWeeklyActivity(
+    TextTheme textTheme,
+    List<DailyActivitySummary> summaries,
+  ) {
     final maxSteps = summaries.isEmpty
         ? 1
-        : summaries.map((s) => s.steps).reduce((curr, next) => curr > next ? curr : next);
+        : summaries
+              .map((s) => s.steps)
+              .reduce((curr, next) => curr > next ? curr : next);
     final maxVal = maxSteps == 0 ? 1 : maxSteps;
 
     final now = DateTime.now();
     final weekdays = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
     return GlowContainer(
-      glowColor: FitoraColors.calmCyan.withValues(alpha: 0.05),
-      borderRadius: BorderRadius.circular(24),
-      padding: EdgeInsets.zero,
-      child: Container(
-        padding: const EdgeInsets.all(FitoraSpacing.xl),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.02),
+          glowColor: FitoraColors.calmCyan.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          padding: EdgeInsets.zero,
+          child: Container(
+            padding: const EdgeInsets.all(FitoraSpacing.xl),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.02),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Weekly Overview',
-                  style: textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Weekly Overview',
+                      style: textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: () => context.go(AppRoutes.progress),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'Details',
+                            style: textTheme.labelLarge?.copyWith(
+                              color: FitoraColors.mintGreen,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const Icon(
+                            Icons.chevron_right_rounded,
+                            color: FitoraColors.mintGreen,
+                            size: 20,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-                GestureDetector(
-                  onTap: () => context.go(AppRoutes.progress),
+                const SizedBox(height: FitoraSpacing.xl),
+                SizedBox(
+                  height: 120,
                   child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'Details',
-                        style: textTheme.labelLarge?.copyWith(
-                          color: FitoraColors.mintGreen,
-                          fontWeight: FontWeight.bold,
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: List.generate(summaries.length, (index) {
+                      final summary = summaries[index];
+                      final steps = summary.steps;
+                      final date = summary.date;
+
+                      final isToday =
+                          date.day == now.day &&
+                          date.month == now.month &&
+                          date.year == now.year;
+                      final double ratio = (steps / maxVal).clamp(0.02, 1.0);
+
+                      final labelIndex = (date.weekday - 1) % 7;
+                      final dayLabel = weekdays[labelIndex];
+
+                      return Expanded(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            if (steps > 0)
+                              Text(
+                                steps >= 1000
+                                    ? '${(steps / 1000).toStringAsFixed(1)}k'
+                                    : '$steps',
+                                style: textTheme.labelSmall?.copyWith(
+                                  color: isToday
+                                      ? FitoraColors.mintGreen
+                                      : Colors.white30,
+                                  fontSize: 9,
+                                  fontWeight: isToday
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                                ),
+                              )
+                            else
+                              const Text(
+                                '-',
+                                style: TextStyle(
+                                  color: Colors.white12,
+                                  fontSize: 9,
+                                ),
+                              ),
+                            const SizedBox(height: 6),
+                            Expanded(
+                              child: LayoutBuilder(
+                                builder: (context, constraints) {
+                                  final barHeight =
+                                      constraints.maxHeight * ratio;
+                                  return Container(
+                                    width: 12,
+                                    height: barHeight,
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        colors: isToday
+                                            ? [
+                                                FitoraColors.mintGreen,
+                                                FitoraColors.softEmerald,
+                                              ]
+                                            : [
+                                                FitoraColors.calmCyan
+                                                    .withValues(alpha: 0.4),
+                                                FitoraColors.calmCyan
+                                                    .withValues(alpha: 0.1),
+                                              ],
+                                        begin: Alignment.topCenter,
+                                        end: Alignment.bottomCenter,
+                                      ),
+                                      borderRadius: BorderRadius.circular(99),
+                                      border: Border.all(
+                                        color: isToday
+                                            ? FitoraColors.mintGreen.withValues(
+                                                alpha: 0.8,
+                                              )
+                                            : Colors.transparent,
+                                        width: 1.5,
+                                      ),
+                                      boxShadow: isToday
+                                          ? [
+                                              BoxShadow(
+                                                color: FitoraColors.mintGreen
+                                                    .withValues(alpha: 0.3),
+                                                blurRadius: 8,
+                                                spreadRadius: 1,
+                                              ),
+                                            ]
+                                          : null,
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              dayLabel,
+                              style: textTheme.labelSmall?.copyWith(
+                                color: isToday ? Colors.white : Colors.white30,
+                                fontWeight: isToday
+                                    ? FontWeight.w900
+                                    : FontWeight.normal,
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                      const Icon(
-                        Icons.chevron_right_rounded,
-                        color: FitoraColors.mintGreen,
-                        size: 20,
-                      ),
-                    ],
+                      );
+                    }),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: FitoraSpacing.xl),
-            SizedBox(
-              height: 120,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: List.generate(summaries.length, (index) {
-                  final summary = summaries[index];
-                  final steps = summary.steps;
-                  final date = summary.date;
-                  
-                  final isToday = date.day == now.day && date.month == now.month && date.year == now.year;
-                  final double ratio = (steps / maxVal).clamp(0.02, 1.0);
-                  
-                  final labelIndex = (date.weekday - 1) % 7;
-                  final dayLabel = weekdays[labelIndex];
-
-                  return Expanded(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        if (steps > 0)
-                          Text(
-                            steps >= 1000 ? '${(steps / 1000).toStringAsFixed(1)}k' : '$steps',
-                            style: textTheme.labelSmall?.copyWith(
-                              color: isToday ? FitoraColors.mintGreen : Colors.white30,
-                              fontSize: 9,
-                              fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
-                            ),
-                          )
-                        else
-                          const Text(
-                            '-',
-                            style: TextStyle(color: Colors.white12, fontSize: 9),
-                          ),
-                        const SizedBox(height: 6),
-                        Expanded(
-                          child: LayoutBuilder(
-                            builder: (context, constraints) {
-                              final barHeight = constraints.maxHeight * ratio;
-                              return Container(
-                                width: 12,
-                                height: barHeight,
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: isToday
-                                        ? [FitoraColors.mintGreen, FitoraColors.softEmerald]
-                                        : [
-                                            FitoraColors.calmCyan.withValues(alpha: 0.4),
-                                            FitoraColors.calmCyan.withValues(alpha: 0.1),
-                                          ],
-                                    begin: Alignment.topCenter,
-                                    end: Alignment.bottomCenter,
-                                  ),
-                                  borderRadius: BorderRadius.circular(99),
-                                  border: Border.all(
-                                    color: isToday
-                                        ? FitoraColors.mintGreen.withValues(alpha: 0.8)
-                                        : Colors.transparent,
-                                    width: 1.5,
-                                  ),
-                                  boxShadow: isToday
-                                      ? [
-                                          BoxShadow(
-                                            color: FitoraColors.mintGreen.withValues(alpha: 0.3),
-                                            blurRadius: 8,
-                                            spreadRadius: 1,
-                                          )
-                                        ]
-                                      : null,
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          dayLabel,
-                          style: textTheme.labelSmall?.copyWith(
-                            color: isToday ? Colors.white : Colors.white30,
-                            fontWeight: isToday ? FontWeight.w900 : FontWeight.normal,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }),
-              ),
-            ),
-          ],
-        ),
-      ),
-    ).animate().fadeIn(delay: 200.ms, duration: 400.ms).slideY(begin: 0.05, end: 0);
+          ),
+        )
+        .animate()
+        .fadeIn(delay: 200.ms, duration: 400.ms)
+        .slideY(begin: 0.05, end: 0);
   }
 
-  Widget _buildDailyGoals(TextTheme textTheme, DailyActivitySummary activity, wellness, DateTime today) {
+  Widget _buildDailyGoals(
+    TextTheme textTheme,
+    DailyActivitySummary activity,
+    wellness,
+    DateTime today,
+  ) {
     final sleep = ref.watch(sleepSummaryProvider(today));
     final hasSleep = sleep.totalSleep.inMinutes > 0;
 
@@ -616,7 +700,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       mainAxisSize: MainAxisSize.min,
       children: [
         _buildGoalCard(
-          title: activity.sensorStatus == SensorStatus.active ? 'Step Goal  🟢' : 'Step Goal',
+          title: activity.sensorStatus == SensorStatus.active
+              ? 'Step Goal  🟢'
+              : 'Step Goal',
           subtitle: activity.steps == 0
               ? "Start walking to begin tracking today's progress."
               : '${activity.steps.toString().replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (m) => "${m[1]},")} / ${activity.stepsGoal.toString().replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (m) => "${m[1]},")} steps',
@@ -631,11 +717,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           subtitle: wellness.hydrationGoalLiters == 0
               ? 'Set Daily Water Goal'
               : (wellness.hydrationLiters == 0
-                  ? 'Log your first glass of water today.'
-                  : '${wellness.hydrationLiters.toStringAsFixed(1)} / ${wellness.hydrationGoalLiters.toStringAsFixed(1)} L'),
+                    ? 'Log your first glass of water today.'
+                    : '${wellness.hydrationLiters.toStringAsFixed(1)} / ${wellness.hydrationGoalLiters.toStringAsFixed(1)} L'),
           progress: wellness.hydrationGoalLiters == 0
               ? 0.0
-              : (wellness.hydrationLiters / wellness.hydrationGoalLiters).clamp(0.0, 1.0),
+              : (wellness.hydrationLiters / wellness.hydrationGoalLiters).clamp(
+                  0.0,
+                  1.0,
+                ),
           icon: Icons.water_drop_rounded,
           color: Colors.blueAccent,
           textTheme: textTheme,
@@ -644,7 +733,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           const SizedBox(height: FitoraSpacing.sm),
           _buildGoalCard(
             title: 'Sleep',
-            subtitle: '${sleep.totalSleep.inHours}h ${sleep.totalSleep.inMinutes.remainder(60)}m logged',
+            subtitle:
+                '${sleep.totalSleep.inHours}h ${sleep.totalSleep.inMinutes.remainder(60)}m logged',
             progress: (sleep.totalSleep.inMinutes / 480.0).clamp(0.0, 1.0),
             icon: Icons.bedtime_rounded,
             color: FitoraColors.calmCyan,
@@ -735,10 +825,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildSyncPrompt(BuildContext context, TextTheme textTheme, DailyActivitySummary activity) {
+  Widget _buildSyncPrompt(
+    BuildContext context,
+    TextTheme textTheme,
+    DailyActivitySummary activity,
+  ) {
     if (activity.lastSyncTime != null) return const SizedBox.shrink();
-    
-    final hasSensorIssue = activity.sensorStatus == SensorStatus.unknown || activity.sensorStatus == SensorStatus.permissionRequired;
+
+    final hasSensorIssue =
+        activity.sensorStatus == SensorStatus.unknown ||
+        activity.sensorStatus == SensorStatus.permissionRequired;
 
     return GlowContainer(
       glowColor: FitoraColors.mintGreen.withValues(alpha: 0.08),
@@ -762,7 +858,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     color: FitoraColors.mintGreen.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.link_rounded, color: FitoraColors.mintGreen, size: 20),
+                  child: const Icon(
+                    Icons.link_rounded,
+                    color: FitoraColors.mintGreen,
+                    size: 20,
+                  ),
                 ),
                 const SizedBox(width: FitoraSpacing.md),
                 Expanded(
@@ -781,7 +881,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         hasSensorIssue
                             ? 'Enable sensors or connect health integration to sync your activity.'
                             : 'Sync steps and metrics automatically with your health source.',
-                        style: textTheme.bodySmall?.copyWith(color: Colors.white54, fontSize: 11),
+                        style: textTheme.bodySmall?.copyWith(
+                          color: Colors.white54,
+                          fontSize: 11,
+                        ),
                       ),
                     ],
                   ),
@@ -795,28 +898,45 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   Expanded(
                     child: OutlinedButton(
                       onPressed: () async {
-                        await ref.read(healthSyncServiceProvider.notifier).syncNow();
+                        await ref
+                            .read(healthSyncServiceProvider.notifier)
+                            .syncNow();
                       },
                       style: OutlinedButton.styleFrom(
                         side: const BorderSide(color: Colors.white10),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                         padding: const EdgeInsets.symmetric(vertical: 10),
                       ),
-                      child: Text('Permissions', style: textTheme.labelLarge?.copyWith(color: Colors.white)),
+                      child: Text(
+                        'Permissions',
+                        style: textTheme.labelLarge?.copyWith(
+                          color: Colors.white,
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(width: FitoraSpacing.sm),
                 ],
                 Expanded(
                   child: FilledButton(
-                    onPressed: () => context.pushNamed(AppRouteNames.healthSync),
+                    onPressed: () =>
+                        context.pushNamed(AppRouteNames.healthSync),
                     style: FilledButton.styleFrom(
                       backgroundColor: FitoraColors.mintGreen,
                       foregroundColor: Colors.black,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                       padding: const EdgeInsets.symmetric(vertical: 10),
                     ),
-                    child: Text('Connect Now', style: textTheme.labelLarge?.copyWith(fontWeight: FontWeight.bold)),
+                    child: Text(
+                      'Connect Now',
+                      style: textTheme.labelLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                 ),
               ],
