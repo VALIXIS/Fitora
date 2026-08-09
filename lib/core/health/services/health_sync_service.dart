@@ -65,25 +65,33 @@ class HealthSyncService extends StateNotifier<SyncStatus> with WidgetsBindingObs
 
       // 3. Merge Data
       DailyActivitySummary mergedSummary;
+      final cachedSummary = _cache.getDailyActivity(today);
+      final existingSteps = cachedSummary?.steps ?? 0;
+
       if (hcSummary != null && sensorSummary != null) {
+        final calcSteps = max(existingSteps, max(hcSummary.steps, sensorSummary.steps));
         mergedSummary = hcSummary.copyWith(
-          steps: max(hcSummary.steps, sensorSummary.steps),
+          steps: calcSteps,
           dataSource: DataSource.healthConnectAndSensor,
           lastSyncTime: now,
         );
       } else if (hcSummary != null) {
+        final calcSteps = max(existingSteps, hcSummary.steps);
         mergedSummary = hcSummary.copyWith(
+          steps: calcSteps,
           dataSource: DataSource.healthConnectOnly,
           lastSyncTime: now,
         );
       } else if (sensorSummary != null) {
+        final calcSteps = max(existingSteps, sensorSummary.steps);
         mergedSummary = sensorSummary.copyWith(
+          steps: calcSteps,
           dataSource: DataSource.sensorOnly,
           lastSyncTime: now,
         );
       } else {
         // Both failed, fallback to cache or empty
-        mergedSummary = _cache.getDailyActivity(today) ?? DailyActivitySummary.empty();
+        mergedSummary = cachedSummary ?? DailyActivitySummary.empty();
       }
 
       // 4. Save Daily Activity to Cache
@@ -96,9 +104,13 @@ class HealthSyncService extends StateNotifier<SyncStatus> with WidgetsBindingObs
         final lastWeek = today.subtract(const Duration(days: 6));
         final weekly = await _hcRepo.getWeeklyActivity(lastWeek);
         
-        // Merge today's data into the weekly array
+        // Merge today's data into the weekly array using date component comparison
         final updatedWeekly = weekly.map((s) {
-          if (s.date == today) return mergedSummary;
+          if (s.date.year == today.year &&
+              s.date.month == today.month &&
+              s.date.day == today.day) {
+            return mergedSummary;
+          }
           return s;
         }).toList();
         

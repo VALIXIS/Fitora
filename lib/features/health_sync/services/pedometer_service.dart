@@ -19,15 +19,17 @@ class PedometerService {
 
   // Stream of realtime steps count
   Stream<int> get stepStream {
-    _stepStreamController ??= StreamController<int>.broadcast(
-      onListen: _startSimulation,
-      onCancel: _stopSimulation,
-    );
+    if (_stepStreamController == null || _stepStreamController!.isClosed) {
+      _stepStreamController = StreamController<int>.broadcast(
+        onListen: _startSimulation,
+        onCancel: _stopSimulation,
+      );
+    }
     return _stepStreamController!.stream;
   }
 
   void setInitialSteps(int steps) {
-    if (steps > 0) {
+    if (steps > _currentSteps) {
       _currentSteps = steps;
     }
   }
@@ -39,16 +41,25 @@ class PedometerService {
   Future<HealthPermissionStatus> requestPermissions() async {
     await Future.delayed(const Duration(milliseconds: 600)); // OS pop-up speed
     _permissionStatus = HealthPermissionStatus.authorized;
-    _stepStreamController?.add(_currentSteps);
+    _emitCurrentSteps();
     return _permissionStatus;
   }
 
   void toggleWalkSimulation() {
     _isWalking = !_isWalking;
     if (_isWalking) {
+      _emitCurrentSteps();
       _startSimulation();
     } else {
       _stopSimulation();
+    }
+  }
+
+  void _emitCurrentSteps() {
+    if (_stepStreamController != null &&
+        !_stepStreamController!.isClosed &&
+        _stepStreamController!.hasListener) {
+      _stepStreamController!.add(max(0, _currentSteps));
     }
   }
 
@@ -58,7 +69,7 @@ class PedometerService {
     _simulationTimer = Timer.periodic(const Duration(milliseconds: 900), (timer) {
       if (_isWalking && _permissionStatus == HealthPermissionStatus.authorized) {
         _currentSteps += 1 + Random().nextInt(2);
-        _stepStreamController?.add(_currentSteps);
+        _emitCurrentSteps();
       }
     });
   }

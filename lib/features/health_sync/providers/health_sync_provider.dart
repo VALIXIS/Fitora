@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:math';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/storage/app_preferences.dart';
 import '../domain/health_sync_models.dart';
@@ -18,6 +20,15 @@ class HealthSyncController extends StateNotifier<HealthSyncState> {
 
   late final HealthSyncService _service;
   bool _initialized = false;
+  StreamSubscription<int>? _pedometerSubscription;
+  Timer? _saveDebounceTimer;
+
+  @override
+  void dispose() {
+    _pedometerSubscription?.cancel();
+    _saveDebounceTimer?.cancel();
+    super.dispose();
+  }
 
   Future<void> load() async {
     if (_initialized) return;
@@ -44,18 +55,34 @@ class HealthSyncController extends StateNotifier<HealthSyncState> {
 
     // Set up step stream listener for real-time live step tracking updates
     PedometerService().setInitialSteps(cachedData.steps);
-    PedometerService().stepStream.listen((realtimeSteps) {
+    _pedometerSubscription?.cancel();
+    _pedometerSubscription = PedometerService().stepStream.listen((realtimeSteps) {
+      if (realtimeSteps < 0) return;
+
       final hasActiveConnectedSource = state.connections.values.any(
-        (c) => c.isConnected && c.permissionStatus == HealthPermissionStatus.authorized
+        (c) => c.isConnected && c.permissionStatus == HealthPermissionStatus.authorized,
       );
       if (hasActiveConnectedSource) {
+        final currentSteps = state.cachedData.steps;
+        final lastTime = state.cachedData.timestamp;
+        final now = DateTime.now();
+        final isSameDay = lastTime.year == now.year &&
+            lastTime.month == now.month &&
+            lastTime.day == now.day;
+        final updatedSteps = isSameDay ? max(currentSteps, realtimeSteps) : realtimeSteps;
+
         state = state.copyWith(
           cachedData: state.cachedData.copyWith(
-            steps: realtimeSteps,
-            timestamp: DateTime.now(),
+            steps: updatedSteps,
+            timestamp: now,
           ),
         );
-        _service.saveCachedData(state.cachedData);
+
+        // Debounce local persistence to prevent race conditions during frequent updates
+        _saveDebounceTimer?.cancel();
+        _saveDebounceTimer = Timer(const Duration(seconds: 1), () {
+          _service.saveCachedData(state.cachedData);
+        });
       }
     });
 
