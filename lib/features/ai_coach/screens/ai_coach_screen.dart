@@ -217,14 +217,24 @@ class _CoachOrbHeaderState extends State<_CoachOrbHeader> with SingleTickerProvi
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
-    // Adapt gradient highlight color to Coach Mood
-    final primaryColor = switch (widget.mood) {
-      AICoachMood.idle => FitoraColors.mintGreen,
-      AICoachMood.thinking => FitoraColors.calmCyan,
-      AICoachMood.speaking => FitoraColors.lavender,
-      AICoachMood.comforting => FitoraColors.softPink,
-      AICoachMood.encouraging => FitoraColors.warmCoral,
-    };
+    Color primaryColor;
+    switch (widget.mood) {
+      case AICoachMood.idle:
+        primaryColor = FitoraColors.mintGreen;
+        break;
+      case AICoachMood.thinking:
+        primaryColor = FitoraColors.calmCyan;
+        break;
+      case AICoachMood.speaking:
+        primaryColor = FitoraColors.lavender;
+        break;
+      case AICoachMood.comforting:
+        primaryColor = FitoraColors.softPink;
+        break;
+      case AICoachMood.encouraging:
+        primaryColor = FitoraColors.warmCoral;
+        break;
+    }
 
     final secondaryColor = primaryColor.withValues(alpha: 0.35);
 

@@ -386,37 +386,37 @@ class ProfileScreen extends ConsumerWidget {
   ) {
     final sensorStatus = ref.watch(sensorStatusProvider);
 
-    final (
-      Color statusColor,
-      IconData statusIcon,
-      String title,
-      String subtitle,
-    ) = switch (sensorStatus) {
-      SensorStatus.active => (
-        FitoraColors.mintGreen,
-        Icons.sensors_rounded,
-        'Sensor Tracking Active',
-        'Your steps and activity are being tracked in real-time.',
-      ),
-      SensorStatus.permissionRequired => (
-        FitoraColors.warningOrange,
-        Icons.sensors_off_rounded,
-        'Permission Required',
-        'Grant Activity Recognition access to enable live step tracking.',
-      ),
-      SensorStatus.unavailable => (
-        Colors.white38,
-        Icons.do_not_disturb_rounded,
-        'Sensor Unavailable',
-        'Your device does not have a supported step counter sensor.',
-      ),
-      SensorStatus.unknown => (
-        Colors.white38,
-        Icons.sensors_rounded,
-        'Checking Sensor...',
-        'Verifying sensor permission status.',
-      ),
-    };
+    Color statusColor;
+    IconData statusIcon;
+    String title;
+    String subtitle;
+
+    switch (sensorStatus) {
+      case SensorStatus.active:
+        statusColor = FitoraColors.mintGreen;
+        statusIcon = Icons.sensors_rounded;
+        title = 'Sensor Tracking Active';
+        subtitle = 'Your steps and activity are being tracked in real-time.';
+        break;
+      case SensorStatus.permissionRequired:
+        statusColor = FitoraColors.warningOrange;
+        statusIcon = Icons.sensors_off_rounded;
+        title = 'Permission Required';
+        subtitle = 'Grant Activity Recognition access to enable live step tracking.';
+        break;
+      case SensorStatus.unavailable:
+        statusColor = Colors.white38;
+        statusIcon = Icons.do_not_disturb_rounded;
+        title = 'Sensor Unavailable';
+        subtitle = 'Your device does not have a supported step counter sensor.';
+        break;
+      case SensorStatus.unknown:
+        statusColor = Colors.white38;
+        statusIcon = Icons.sensors_rounded;
+        title = 'Checking Sensor...';
+        subtitle = 'Verifying sensor permission status.';
+        break;
+    }
 
     return _buildCard(highlightColor: statusColor, [
       Padding(
@@ -548,49 +548,58 @@ class ProfileScreen extends ConsumerWidget {
     final syncStatus = ref.watch(healthSyncServiceProvider);
     final activity = ref.watch(dailyActivityProvider(DateTime.now()));
 
-    final (
-      Color color,
-      IconData icon,
-      String title,
-      String subtitle,
-      String actionText,
-    ) = switch (syncStatus) {
-      SyncStatus.synced => (
-        FitoraColors.mintGreen,
-        Icons.health_and_safety_rounded,
-        'Data Synced',
-        'All health metrics are up to date.',
-        'Sync Now',
-      ),
-      SyncStatus.syncing => (
-        Colors.blueAccent,
-        Icons.sync_rounded,
-        'Syncing...',
-        'Fetching latest health data.',
-        '',
-      ),
-      SyncStatus.offline => (
-        Colors.white38,
-        Icons.cloud_off_rounded,
-        'Offline Mode',
-        'Using locally cached data.',
-        'Retry',
-      ),
-      SyncStatus.error => (
-        Colors.redAccent,
-        Icons.error_outline_rounded,
-        'Sync Error',
-        'Failed to synchronize health records.',
-        'Retry',
-      ),
-    };
+    Color color;
+    IconData icon;
+    String title;
+    String subtitle;
+    String actionText;
 
-    String dataSourceStr = switch (activity.dataSource) {
-      DataSource.healthConnectAndSensor => 'Health Connect + Sensor',
-      DataSource.sensorOnly => 'Sensor Only',
-      DataSource.healthConnectOnly => 'Health Connect Only',
-      DataSource.cache => 'Offline Cache',
-    };
+    switch (syncStatus) {
+      case SyncStatus.synced:
+        color = FitoraColors.mintGreen;
+        icon = Icons.health_and_safety_rounded;
+        title = 'Data Synced';
+        subtitle = 'All health metrics are up to date.';
+        actionText = 'Sync Now';
+        break;
+      case SyncStatus.syncing:
+        color = Colors.blueAccent;
+        icon = Icons.sync_rounded;
+        title = 'Syncing...';
+        subtitle = 'Fetching latest health data.';
+        actionText = '';
+        break;
+      case SyncStatus.offline:
+        color = Colors.white38;
+        icon = Icons.cloud_off_rounded;
+        title = 'Offline Mode';
+        subtitle = 'Using locally cached data.';
+        actionText = 'Retry';
+        break;
+      case SyncStatus.error:
+        color = Colors.redAccent;
+        icon = Icons.error_outline_rounded;
+        title = 'Sync Error';
+        subtitle = 'Failed to synchronize health records.';
+        actionText = 'Retry';
+        break;
+    }
+
+    String dataSourceStr;
+    switch (activity.dataSource) {
+      case DataSource.healthConnectAndSensor:
+        dataSourceStr = 'Health Connect + Sensor';
+        break;
+      case DataSource.sensorOnly:
+        dataSourceStr = 'Sensor Only';
+        break;
+      case DataSource.healthConnectOnly:
+        dataSourceStr = 'Health Connect Only';
+        break;
+      case DataSource.cache:
+        dataSourceStr = 'Offline Cache';
+        break;
+    }
 
     return _buildCard(highlightColor: color, [
       Padding(

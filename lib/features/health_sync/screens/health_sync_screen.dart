@@ -317,19 +317,37 @@ class _HealthSourceCard extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final src = connection.source;
 
-    final brandColor = switch (src) {
-      HealthSource.googleFit => const Color(0xFFEA4335),
-      HealthSource.healthConnect => const Color(0xFF3DDC84),
-      HealthSource.samsungHealth => const Color(0xFF0A70F5),
-      HealthSource.appleHealth => const Color(0xFFFF2D55),
-    };
+    Color brandColor;
+    switch (src) {
+      case HealthSource.googleFit:
+        brandColor = const Color(0xFFEA4335);
+        break;
+      case HealthSource.healthConnect:
+        brandColor = const Color(0xFF3DDC84);
+        break;
+      case HealthSource.samsungHealth:
+        brandColor = const Color(0xFF0A70F5);
+        break;
+      case HealthSource.appleHealth:
+        brandColor = const Color(0xFFFF2D55);
+        break;
+    }
 
-    final brandIcon = switch (src) {
-      HealthSource.googleFit => Icons.fitness_center_rounded,
-      HealthSource.healthConnect => Icons.android_rounded,
-      HealthSource.samsungHealth => Icons.directions_run_rounded,
-      HealthSource.appleHealth => Icons.favorite_rounded,
-    };
+    IconData brandIcon;
+    switch (src) {
+      case HealthSource.googleFit:
+        brandIcon = Icons.fitness_center_rounded;
+        break;
+      case HealthSource.healthConnect:
+        brandIcon = Icons.android_rounded;
+        break;
+      case HealthSource.samsungHealth:
+        brandIcon = Icons.directions_run_rounded;
+        break;
+      case HealthSource.appleHealth:
+        brandIcon = Icons.favorite_rounded;
+        break;
+    }
 
     return Container(
       margin: const EdgeInsets.only(bottom: FitoraSpacing.md),

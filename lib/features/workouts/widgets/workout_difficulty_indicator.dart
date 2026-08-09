@@ -17,11 +17,18 @@ class WorkoutDifficultyIndicator extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final activeColor = accentColor ?? colorScheme.primary;
     final inactiveColor = colorScheme.outlineVariant;
-    final level = switch (difficulty) {
-      WorkoutDifficulty.beginner => 1,
-      WorkoutDifficulty.intermediate => 2,
-      WorkoutDifficulty.advanced => 3,
-    };
+    int level;
+    switch (difficulty) {
+      case WorkoutDifficulty.beginner:
+        level = 1;
+        break;
+      case WorkoutDifficulty.intermediate:
+        level = 2;
+        break;
+      case WorkoutDifficulty.advanced:
+        level = 3;
+        break;
+    }
 
     return Row(
       mainAxisSize: MainAxisSize.min,

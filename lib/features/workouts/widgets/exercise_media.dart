@@ -136,14 +136,21 @@ class _ExerciseMediaState extends State<ExerciseMedia> with SingleTickerProvider
   }
 
   IconData _iconFor(TargetMuscle muscle) {
-    return switch (muscle) {
-      TargetMuscle.fullBody => Icons.self_improvement_rounded,
-      TargetMuscle.upperBody => Icons.fitness_center_rounded,
-      TargetMuscle.lowerBody => Icons.accessibility_new_rounded,
-      TargetMuscle.core => Icons.directions_run_rounded,
-      TargetMuscle.cardio => Icons.favorite_rounded,
-      TargetMuscle.mobility => Icons.align_vertical_bottom_rounded,
-      TargetMuscle.recovery => Icons.spa_rounded,
-    };
+    switch (muscle) {
+      case TargetMuscle.fullBody:
+        return Icons.self_improvement_rounded;
+      case TargetMuscle.upperBody:
+        return Icons.fitness_center_rounded;
+      case TargetMuscle.lowerBody:
+        return Icons.accessibility_new_rounded;
+      case TargetMuscle.core:
+        return Icons.directions_run_rounded;
+      case TargetMuscle.cardio:
+        return Icons.favorite_rounded;
+      case TargetMuscle.mobility:
+        return Icons.align_vertical_bottom_rounded;
+      case TargetMuscle.recovery:
+        return Icons.spa_rounded;
+    }
   }
 }
