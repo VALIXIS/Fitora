@@ -47,15 +47,31 @@ class HealthGoalCalculator {
     if (customStepGoal != null && customStepGoal > 0) {
       stepsGoal = customStepGoal;
     } else {
-      int baseSteps = switch (profile.goal) {
-        PersonalizationGoal.loseWeight => 10000,
-        PersonalizationGoal.gainMuscle => 8000,
-        PersonalizationGoal.stayFit => 9500,
-        PersonalizationGoal.improveWellness => 8500,
-        PersonalizationGoal.buildHabits => 8000,
-        PersonalizationGoal.reduceStress => 7500,
-        null => 10000,
-      };
+      int baseSteps;
+      switch (profile.goal) {
+        case PersonalizationGoal.loseWeight:
+          baseSteps = 10000;
+          break;
+        case PersonalizationGoal.gainMuscle:
+          baseSteps = 8000;
+          break;
+        case PersonalizationGoal.stayFit:
+          baseSteps = 9500;
+          break;
+        case PersonalizationGoal.improveWellness:
+          baseSteps = 8500;
+          break;
+        case PersonalizationGoal.buildHabits:
+          baseSteps = 8000;
+          break;
+        case PersonalizationGoal.reduceStress:
+          baseSteps = 7500;
+          break;
+        case null:
+        default:
+          baseSteps = 10000;
+          break;
+      }
 
       if (bmi != null) {
         if (bmi < 18.5) {
@@ -82,15 +98,31 @@ class HealthGoalCalculator {
         ? profile.weightKg! * 7.0
         : 500.0;
 
-    double goalMultiplier = switch (profile.goal) {
-      PersonalizationGoal.loseWeight => 1.2,
-      PersonalizationGoal.gainMuscle => 0.85,
-      PersonalizationGoal.stayFit => 1.0,
-      PersonalizationGoal.improveWellness => 0.9,
-      PersonalizationGoal.buildHabits => 0.95,
-      PersonalizationGoal.reduceStress => 0.85,
-      null => 1.0,
-    };
+    double goalMultiplier;
+    switch (profile.goal) {
+      case PersonalizationGoal.loseWeight:
+        goalMultiplier = 1.2;
+        break;
+      case PersonalizationGoal.gainMuscle:
+        goalMultiplier = 0.85;
+        break;
+      case PersonalizationGoal.stayFit:
+        goalMultiplier = 1.0;
+        break;
+      case PersonalizationGoal.improveWellness:
+        goalMultiplier = 0.9;
+        break;
+      case PersonalizationGoal.buildHabits:
+        goalMultiplier = 0.95;
+        break;
+      case PersonalizationGoal.reduceStress:
+        goalMultiplier = 0.85;
+        break;
+      case null:
+      default:
+        goalMultiplier = 1.0;
+        break;
+    }
     baseCalories *= goalMultiplier;
 
     if (bmi != null) {

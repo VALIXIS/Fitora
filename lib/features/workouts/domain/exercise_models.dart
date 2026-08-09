@@ -10,15 +10,22 @@ enum TargetMuscle {
 
 extension TargetMuscleX on TargetMuscle {
   String get label {
-    return switch (this) {
-      TargetMuscle.fullBody => 'Full body',
-      TargetMuscle.upperBody => 'Upper body',
-      TargetMuscle.lowerBody => 'Lower body',
-      TargetMuscle.core => 'Core',
-      TargetMuscle.cardio => 'Cardio',
-      TargetMuscle.mobility => 'Mobility',
-      TargetMuscle.recovery => 'Recovery',
-    };
+    switch (this) {
+      case TargetMuscle.fullBody:
+        return 'Full body';
+      case TargetMuscle.upperBody:
+        return 'Upper body';
+      case TargetMuscle.lowerBody:
+        return 'Lower body';
+      case TargetMuscle.core:
+        return 'Core';
+      case TargetMuscle.cardio:
+        return 'Cardio';
+      case TargetMuscle.mobility:
+        return 'Mobility';
+      case TargetMuscle.recovery:
+        return 'Recovery';
+    }
   }
 }
 
@@ -36,17 +43,26 @@ enum Equipment {
 
 extension EquipmentX on Equipment {
   String get label {
-    return switch (this) {
-      Equipment.none => 'No equipment',
-      Equipment.mat => 'Mat',
-      Equipment.chair => 'Chair',
-      Equipment.dumbbells => 'Dumbbells',
-      Equipment.resistanceBand => 'Resistance band',
-      Equipment.kettlebell => 'Kettlebell',
-      Equipment.barbell => 'Barbell',
-      Equipment.machine => 'Machine',
-      Equipment.bench => 'Bench',
-    };
+    switch (this) {
+      case Equipment.none:
+        return 'No equipment';
+      case Equipment.mat:
+        return 'Mat';
+      case Equipment.chair:
+        return 'Chair';
+      case Equipment.dumbbells:
+        return 'Dumbbells';
+      case Equipment.resistanceBand:
+        return 'Resistance band';
+      case Equipment.kettlebell:
+        return 'Kettlebell';
+      case Equipment.barbell:
+        return 'Barbell';
+      case Equipment.machine:
+        return 'Machine';
+      case Equipment.bench:
+        return 'Bench';
+    }
   }
 }
 

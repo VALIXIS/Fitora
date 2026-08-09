@@ -252,12 +252,16 @@ class SettingsScreen extends ConsumerWidget {
   // ── Sync helpers ─────────────────────────────────────────────────────────
 
   String _syncStatusLabel(SyncStatus status) {
-    return switch (status) {
-      SyncStatus.syncing => 'Syncing...',
-      SyncStatus.synced => 'Connected',
-      SyncStatus.error => 'Sync Failed',
-      _ => 'Not Connected',
-    };
+    switch (status) {
+      case SyncStatus.syncing:
+        return 'Syncing...';
+      case SyncStatus.synced:
+        return 'Connected';
+      case SyncStatus.error:
+        return 'Sync Failed';
+      default:
+        return 'Not Connected';
+    }
   }
 
   String _lastSyncLabel(WidgetRef ref) {

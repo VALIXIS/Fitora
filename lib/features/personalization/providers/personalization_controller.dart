@@ -58,13 +58,18 @@ class PersonalizationViewState {
   bool get canGoBack => stepIndex > 0;
 
   bool get canProceed {
-    return switch (currentStep) {
-      PersonalizationStep.welcome => true,
-      PersonalizationStep.goal => profile.goal != null,
-      PersonalizationStep.wellness => profile.interests.isNotEmpty,
-      PersonalizationStep.body => profile.hasMetrics,
-      PersonalizationStep.complete => true,
-    };
+    switch (currentStep) {
+      case PersonalizationStep.welcome:
+        return true;
+      case PersonalizationStep.goal:
+        return profile.goal != null;
+      case PersonalizationStep.wellness:
+        return profile.interests.isNotEmpty;
+      case PersonalizationStep.body:
+        return profile.hasMetrics;
+      case PersonalizationStep.complete:
+        return true;
+    }
   }
 
   double get progress => (stepIndex + 1) / totalSteps;

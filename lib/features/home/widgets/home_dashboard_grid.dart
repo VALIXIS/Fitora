@@ -156,20 +156,43 @@ class _DesktopDashboardGrid extends StatelessWidget {
 
 Widget _metricTile(BuildContext context, HomeMetricTileData data) {
   final colorScheme = Theme.of(context).colorScheme;
-  final icon = switch (data.type) {
-    HomeMetricType.calories => Icons.local_fire_department_rounded,
-    HomeMetricType.activeMinutes => Icons.timer_rounded,
-    HomeMetricType.water => Icons.water_drop_rounded,
-    HomeMetricType.sleep => Icons.nights_stay_rounded,
-    HomeMetricType.streak => Icons.auto_awesome_rounded,
-  };
-  final accent = switch (data.type) {
-    HomeMetricType.calories => colorScheme.tertiary,
-    HomeMetricType.activeMinutes => colorScheme.primary,
-    HomeMetricType.water => colorScheme.secondary,
-    HomeMetricType.sleep => colorScheme.primaryContainer,
-    HomeMetricType.streak => colorScheme.secondaryContainer,
-  };
+  IconData icon;
+  switch (data.type) {
+    case HomeMetricType.calories:
+      icon = Icons.local_fire_department_rounded;
+      break;
+    case HomeMetricType.activeMinutes:
+      icon = Icons.timer_rounded;
+      break;
+    case HomeMetricType.water:
+      icon = Icons.water_drop_rounded;
+      break;
+    case HomeMetricType.sleep:
+      icon = Icons.nights_stay_rounded;
+      break;
+    case HomeMetricType.streak:
+      icon = Icons.auto_awesome_rounded;
+      break;
+  }
+
+  Color accent;
+  switch (data.type) {
+    case HomeMetricType.calories:
+      accent = colorScheme.tertiary;
+      break;
+    case HomeMetricType.activeMinutes:
+      accent = colorScheme.primary;
+      break;
+    case HomeMetricType.water:
+      accent = colorScheme.secondary;
+      break;
+    case HomeMetricType.sleep:
+      accent = colorScheme.primaryContainer;
+      break;
+    case HomeMetricType.streak:
+      accent = colorScheme.secondaryContainer;
+      break;
+  }
 
   return HomeMetricTile(
     data: data,

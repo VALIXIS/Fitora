@@ -8,23 +8,33 @@ enum PersonalizationStep {
 
 extension PersonalizationStepX on PersonalizationStep {
   String get title {
-    return switch (this) {
-      PersonalizationStep.welcome => "Let's build your wellness blueprint",
-      PersonalizationStep.goal => 'Choose your primary goal',
-      PersonalizationStep.wellness => 'Add wellness focus',
-      PersonalizationStep.body => 'Body information',
-      PersonalizationStep.complete => 'Setup complete',
-    };
+    switch (this) {
+      case PersonalizationStep.welcome:
+        return "Let's build your wellness blueprint";
+      case PersonalizationStep.goal:
+        return 'Choose your primary goal';
+      case PersonalizationStep.wellness:
+        return 'Add wellness focus';
+      case PersonalizationStep.body:
+        return 'Body information';
+      case PersonalizationStep.complete:
+        return 'Setup complete';
+    }
   }
 
   String get subtitle {
-    return switch (this) {
-      PersonalizationStep.welcome => 'Set up your profile to customize your tracking goals.',
-      PersonalizationStep.goal => 'Tell us what you want to focus on first.',
-      PersonalizationStep.wellness => 'Select areas you want to prioritize.',
-      PersonalizationStep.body => 'Helps us calculate accurate metrics.',
-      PersonalizationStep.complete => 'Your profile is ready.',
-    };
+    switch (this) {
+      case PersonalizationStep.welcome:
+        return 'Set up your profile to customize your tracking goals.';
+      case PersonalizationStep.goal:
+        return 'Tell us what you want to focus on first.';
+      case PersonalizationStep.wellness:
+        return 'Select areas you want to prioritize.';
+      case PersonalizationStep.body:
+        return 'Helps us calculate accurate metrics.';
+      case PersonalizationStep.complete:
+        return 'Your profile is ready.';
+    }
   }
 }
 
@@ -39,25 +49,37 @@ enum PersonalizationGoal {
 
 extension PersonalizationGoalX on PersonalizationGoal {
   String get label {
-    return switch (this) {
-      PersonalizationGoal.loseWeight => 'Lose weight',
-      PersonalizationGoal.gainMuscle => 'Gain muscle',
-      PersonalizationGoal.stayFit => 'Stay fit',
-      PersonalizationGoal.improveWellness => 'Improve wellness',
-      PersonalizationGoal.buildHabits => 'Build habits',
-      PersonalizationGoal.reduceStress => 'Reduce stress',
-    };
+    switch (this) {
+      case PersonalizationGoal.loseWeight:
+        return 'Lose weight';
+      case PersonalizationGoal.gainMuscle:
+        return 'Gain muscle';
+      case PersonalizationGoal.stayFit:
+        return 'Stay fit';
+      case PersonalizationGoal.improveWellness:
+        return 'Improve wellness';
+      case PersonalizationGoal.buildHabits:
+        return 'Build habits';
+      case PersonalizationGoal.reduceStress:
+        return 'Reduce stress';
+    }
   }
 
   String get description {
-    return switch (this) {
-      PersonalizationGoal.loseWeight => 'Lean out steadily with supportive plans.',
-      PersonalizationGoal.gainMuscle => 'Build strength and definition with ease.',
-      PersonalizationGoal.stayFit => 'Maintain energy and consistency every week.',
-      PersonalizationGoal.improveWellness => 'Balance your mind and body with care.',
-      PersonalizationGoal.buildHabits => 'Create daily routines that stick.',
-      PersonalizationGoal.reduceStress => 'Feel calmer through gentle guidance.',
-    };
+    switch (this) {
+      case PersonalizationGoal.loseWeight:
+        return 'Lean out steadily with supportive plans.';
+      case PersonalizationGoal.gainMuscle:
+        return 'Build strength and definition with ease.';
+      case PersonalizationGoal.stayFit:
+        return 'Maintain energy and consistency every week.';
+      case PersonalizationGoal.improveWellness:
+        return 'Balance your mind and body with care.';
+      case PersonalizationGoal.buildHabits:
+        return 'Create daily routines that stick.';
+      case PersonalizationGoal.reduceStress:
+        return 'Feel calmer through gentle guidance.';
+    }
   }
 }
 
@@ -69,19 +91,25 @@ enum WorkoutPreference {
 
 extension WorkoutPreferenceX on WorkoutPreference {
   String get label {
-    return switch (this) {
-      WorkoutPreference.home => 'Home workouts',
-      WorkoutPreference.gym => 'Gym workouts',
-      WorkoutPreference.mixed => 'Mixed',
-    };
+    switch (this) {
+      case WorkoutPreference.home:
+        return 'Home workouts';
+      case WorkoutPreference.gym:
+        return 'Gym workouts';
+      case WorkoutPreference.mixed:
+        return 'Mixed';
+    }
   }
 
   String get description {
-    return switch (this) {
-      WorkoutPreference.home => 'Minimal equipment with flexible sessions.',
-      WorkoutPreference.gym => 'Access to machines and heavier lifts.',
-      WorkoutPreference.mixed => 'A blend of home and gym days.',
-    };
+    switch (this) {
+      case WorkoutPreference.home:
+        return 'Minimal equipment with flexible sessions.';
+      case WorkoutPreference.gym:
+        return 'Access to machines and heavier lifts.';
+      case WorkoutPreference.mixed:
+        return 'A blend of home and gym days.';
+    }
   }
 }
 
@@ -93,19 +121,25 @@ enum ExperienceLevel {
 
 extension ExperienceLevelX on ExperienceLevel {
   String get label {
-    return switch (this) {
-      ExperienceLevel.beginner => 'Beginner',
-      ExperienceLevel.intermediate => 'Intermediate',
-      ExperienceLevel.advanced => 'Advanced',
-    };
+    switch (this) {
+      case ExperienceLevel.beginner:
+        return 'Beginner';
+      case ExperienceLevel.intermediate:
+        return 'Intermediate';
+      case ExperienceLevel.advanced:
+        return 'Advanced';
+    }
   }
 
   String get description {
-    return switch (this) {
-      ExperienceLevel.beginner => 'New to structured training or restarting.',
-      ExperienceLevel.intermediate => 'Comfortable with routine workouts.',
-      ExperienceLevel.advanced => 'Looking for higher intensity challenges.',
-    };
+    switch (this) {
+      case ExperienceLevel.beginner:
+        return 'New to structured training or restarting.';
+      case ExperienceLevel.intermediate:
+        return 'Comfortable with routine workouts.';
+      case ExperienceLevel.advanced:
+        return 'Looking for higher intensity challenges.';
+    }
   }
 }
 
@@ -119,13 +153,18 @@ enum WellnessInterest {
 
 extension WellnessInterestX on WellnessInterest {
   String get label {
-    return switch (this) {
-      WellnessInterest.sleepTracking => 'Sleep tracking',
-      WellnessInterest.hydrationReminders => 'Hydration reminders',
-      WellnessInterest.cycleTracking => 'Cycle tracking',
-      WellnessInterest.mindfulness => 'Mindfulness',
-      WellnessInterest.stepTracking => 'Step tracking',
-    };
+    switch (this) {
+      case WellnessInterest.sleepTracking:
+        return 'Sleep tracking';
+      case WellnessInterest.hydrationReminders:
+        return 'Hydration reminders';
+      case WellnessInterest.cycleTracking:
+        return 'Cycle tracking';
+      case WellnessInterest.mindfulness:
+        return 'Mindfulness';
+      case WellnessInterest.stepTracking:
+        return 'Step tracking';
+    }
   }
 }
 
@@ -134,60 +173,55 @@ class PersonalizationProfile {
   final PersonalizationGoal? goal;
   final WorkoutPreference? workoutPreference;
   final ExperienceLevel? experienceLevel;
-  final int? age;
+  final Set<WellnessInterest> interests;
   final double? heightCm;
   final double? weightKg;
-  final Set<WellnessInterest> interests;
-  final double? dailyStress;
-  final double? sleepQuality;
-  final double? energyLevel;
+  final int? age;
+  final String? gender;
+  final bool isCompleted;
 
-  PersonalizationProfile({
+  const PersonalizationProfile({
     this.name,
     this.goal,
     this.workoutPreference,
     this.experienceLevel,
-    this.age,
+    this.interests = const {},
     this.heightCm,
     this.weightKg,
-    Set<WellnessInterest>? interests,
-    this.dailyStress,
-    this.sleepQuality,
-    this.energyLevel,
-  }) : interests = Set.unmodifiable(interests ?? const {});
+    this.age,
+    this.gender,
+    this.isCompleted = false,
+  });
 
-  factory PersonalizationProfile.empty() => PersonalizationProfile();
+  factory PersonalizationProfile.empty() => const PersonalizationProfile();
+
+  bool get hasMetrics => heightCm != null && weightKg != null && age != null;
 
   PersonalizationProfile copyWith({
     String? name,
     PersonalizationGoal? goal,
     WorkoutPreference? workoutPreference,
     ExperienceLevel? experienceLevel,
-    int? age,
+    Set<WellnessInterest>? interests,
     double? heightCm,
     double? weightKg,
-    Set<WellnessInterest>? interests,
-    double? dailyStress,
-    double? sleepQuality,
-    double? energyLevel,
+    int? age,
+    String? gender,
+    bool? isCompleted,
   }) {
     return PersonalizationProfile(
       name: name ?? this.name,
       goal: goal ?? this.goal,
       workoutPreference: workoutPreference ?? this.workoutPreference,
       experienceLevel: experienceLevel ?? this.experienceLevel,
-      age: age ?? this.age,
+      interests: interests ?? this.interests,
       heightCm: heightCm ?? this.heightCm,
       weightKg: weightKg ?? this.weightKg,
-      interests: interests ?? this.interests,
-      dailyStress: dailyStress ?? this.dailyStress,
-      sleepQuality: sleepQuality ?? this.sleepQuality,
-      energyLevel: energyLevel ?? this.energyLevel,
+      age: age ?? this.age,
+      gender: gender ?? this.gender,
+      isCompleted: isCompleted ?? this.isCompleted,
     );
   }
-
-  bool get hasMetrics => age != null && heightCm != null && weightKg != null;
-  bool get hasLifestyle => dailyStress != null && sleepQuality != null && energyLevel != null;
 
   Map<String, dynamic> toJson() {
     return {
@@ -195,13 +229,12 @@ class PersonalizationProfile {
       'goal': goal?.name,
       'workoutPreference': workoutPreference?.name,
       'experienceLevel': experienceLevel?.name,
-      'age': age,
+      'interests': interests.map((e) => e.name).toList(),
       'heightCm': heightCm,
       'weightKg': weightKg,
-      'interests': interests.map((e) => e.name).toList(),
-      'dailyStress': dailyStress,
-      'sleepQuality': sleepQuality,
-      'energyLevel': energyLevel,
+      'age': age,
+      'gender': gender,
+      'isCompleted': isCompleted,
     };
   }
 
@@ -217,16 +250,15 @@ class PersonalizationProfile {
       experienceLevel: json['experienceLevel'] != null
           ? ExperienceLevel.values.byName(json['experienceLevel'] as String)
           : null,
-      age: json['age'] as int?,
-      heightCm: (json['heightCm'] as num?)?.toDouble(),
-      weightKg: (json['weightKg'] as num?)?.toDouble(),
       interests: (json['interests'] as List<dynamic>?)
               ?.map((e) => WellnessInterest.values.byName(e as String))
               .toSet() ??
-          {},
-      dailyStress: (json['dailyStress'] as num?)?.toDouble(),
-      sleepQuality: (json['sleepQuality'] as num?)?.toDouble(),
-      energyLevel: (json['energyLevel'] as num?)?.toDouble(),
+          const {},
+      heightCm: (json['heightCm'] as num?)?.toDouble(),
+      weightKg: (json['weightKg'] as num?)?.toDouble(),
+      age: json['age'] as int?,
+      gender: json['gender'] as String?,
+      isCompleted: json['isCompleted'] as bool? ?? false,
     );
   }
 }

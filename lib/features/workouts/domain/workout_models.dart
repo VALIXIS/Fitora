@@ -9,19 +9,25 @@ enum WorkoutCategory {
 
 extension WorkoutCategoryX on WorkoutCategory {
   String get label {
-    return switch (this) {
-      WorkoutCategory.home => 'Home',
-      WorkoutCategory.gym => 'Gym',
-      WorkoutCategory.wellness => 'Wellness',
-    };
+    switch (this) {
+      case WorkoutCategory.home:
+        return 'Home';
+      case WorkoutCategory.gym:
+        return 'Gym';
+      case WorkoutCategory.wellness:
+        return 'Wellness';
+    }
   }
 
   String get description {
-    return switch (this) {
-      WorkoutCategory.home => 'Sessions designed for minimal equipment.',
-      WorkoutCategory.gym => 'Structured strength and equipment-based plans.',
-      WorkoutCategory.wellness => 'Gentle flows for recovery and balance.',
-    };
+    switch (this) {
+      case WorkoutCategory.home:
+        return 'Sessions designed for minimal equipment.';
+      case WorkoutCategory.gym:
+        return 'Structured strength and equipment-based plans.';
+      case WorkoutCategory.wellness:
+        return 'Gentle flows for recovery and balance.';
+    }
   }
 }
 
@@ -33,11 +39,14 @@ enum WorkoutDifficulty {
 
 extension WorkoutDifficultyX on WorkoutDifficulty {
   String get label {
-    return switch (this) {
-      WorkoutDifficulty.beginner => 'Beginner',
-      WorkoutDifficulty.intermediate => 'Intermediate',
-      WorkoutDifficulty.advanced => 'Advanced',
-    };
+    switch (this) {
+      case WorkoutDifficulty.beginner:
+        return 'Beginner';
+      case WorkoutDifficulty.intermediate:
+        return 'Intermediate';
+      case WorkoutDifficulty.advanced:
+        return 'Advanced';
+    }
   }
 }
 

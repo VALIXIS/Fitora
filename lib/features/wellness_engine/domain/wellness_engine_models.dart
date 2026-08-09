@@ -9,21 +9,29 @@ enum ReadinessLevel {
 
 extension ReadinessLevelX on ReadinessLevel {
   String get label {
-    return switch (this) {
-      ReadinessLevel.optimal => 'Optimal Readiness',
-      ReadinessLevel.good => 'Good Balance',
-      ReadinessLevel.recovering => 'Active Recovery Needed',
-      ReadinessLevel.fatigued => 'Deep Rest Required',
-    };
+    switch (this) {
+      case ReadinessLevel.optimal:
+        return 'Optimal Readiness';
+      case ReadinessLevel.good:
+        return 'Good Balance';
+      case ReadinessLevel.recovering:
+        return 'Active Recovery Needed';
+      case ReadinessLevel.fatigued:
+        return 'Deep Rest Required';
+    }
   }
 
   String get description {
-    return switch (this) {
-      ReadinessLevel.optimal => 'Your body is fully primed for high-performance and intense training.',
-      ReadinessLevel.good => 'A balanced state. Good energy levels to maintain your routine.',
-      ReadinessLevel.recovering => 'Slight fatigue detected. Focus on stretching, light flow, or walking.',
-      ReadinessLevel.fatigued => 'Elevated physical stress. Prioritize deep sleep, hydration, and gentle breathing.',
-    };
+    switch (this) {
+      case ReadinessLevel.optimal:
+        return 'Your body is fully primed for high-performance and intense training.';
+      case ReadinessLevel.good:
+        return 'A balanced state. Good energy levels to maintain your routine.';
+      case ReadinessLevel.recovering:
+        return 'Slight fatigue detected. Focus on stretching, light flow, or walking.';
+      case ReadinessLevel.fatigued:
+        return 'Elevated physical stress. Prioritize deep sleep, hydration, and gentle breathing.';
+    }
   }
 }
 
