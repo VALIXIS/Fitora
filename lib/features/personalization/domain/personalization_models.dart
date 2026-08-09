@@ -173,55 +173,60 @@ class PersonalizationProfile {
   final PersonalizationGoal? goal;
   final WorkoutPreference? workoutPreference;
   final ExperienceLevel? experienceLevel;
-  final Set<WellnessInterest> interests;
+  final int? age;
   final double? heightCm;
   final double? weightKg;
-  final int? age;
-  final String? gender;
-  final bool isCompleted;
+  final Set<WellnessInterest> interests;
+  final double? dailyStress;
+  final double? sleepQuality;
+  final double? energyLevel;
 
-  const PersonalizationProfile({
+  PersonalizationProfile({
     this.name,
     this.goal,
     this.workoutPreference,
     this.experienceLevel,
-    this.interests = const {},
+    this.age,
     this.heightCm,
     this.weightKg,
-    this.age,
-    this.gender,
-    this.isCompleted = false,
-  });
+    Set<WellnessInterest>? interests,
+    this.dailyStress,
+    this.sleepQuality,
+    this.energyLevel,
+  }) : interests = Set.unmodifiable(interests ?? const {});
 
-  factory PersonalizationProfile.empty() => const PersonalizationProfile();
-
-  bool get hasMetrics => heightCm != null && weightKg != null && age != null;
+  factory PersonalizationProfile.empty() => PersonalizationProfile();
 
   PersonalizationProfile copyWith({
     String? name,
     PersonalizationGoal? goal,
     WorkoutPreference? workoutPreference,
     ExperienceLevel? experienceLevel,
-    Set<WellnessInterest>? interests,
+    int? age,
     double? heightCm,
     double? weightKg,
-    int? age,
-    String? gender,
-    bool? isCompleted,
+    Set<WellnessInterest>? interests,
+    double? dailyStress,
+    double? sleepQuality,
+    double? energyLevel,
   }) {
     return PersonalizationProfile(
       name: name ?? this.name,
       goal: goal ?? this.goal,
       workoutPreference: workoutPreference ?? this.workoutPreference,
       experienceLevel: experienceLevel ?? this.experienceLevel,
-      interests: interests ?? this.interests,
+      age: age ?? this.age,
       heightCm: heightCm ?? this.heightCm,
       weightKg: weightKg ?? this.weightKg,
-      age: age ?? this.age,
-      gender: gender ?? this.gender,
-      isCompleted: isCompleted ?? this.isCompleted,
+      interests: interests ?? this.interests,
+      dailyStress: dailyStress ?? this.dailyStress,
+      sleepQuality: sleepQuality ?? this.sleepQuality,
+      energyLevel: energyLevel ?? this.energyLevel,
     );
   }
+
+  bool get hasMetrics => age != null && heightCm != null && weightKg != null;
+  bool get hasLifestyle => dailyStress != null && sleepQuality != null && energyLevel != null;
 
   Map<String, dynamic> toJson() {
     return {
@@ -229,12 +234,13 @@ class PersonalizationProfile {
       'goal': goal?.name,
       'workoutPreference': workoutPreference?.name,
       'experienceLevel': experienceLevel?.name,
-      'interests': interests.map((e) => e.name).toList(),
+      'age': age,
       'heightCm': heightCm,
       'weightKg': weightKg,
-      'age': age,
-      'gender': gender,
-      'isCompleted': isCompleted,
+      'interests': interests.map((e) => e.name).toList(),
+      'dailyStress': dailyStress,
+      'sleepQuality': sleepQuality,
+      'energyLevel': energyLevel,
     };
   }
 
@@ -250,15 +256,16 @@ class PersonalizationProfile {
       experienceLevel: json['experienceLevel'] != null
           ? ExperienceLevel.values.byName(json['experienceLevel'] as String)
           : null,
+      age: json['age'] as int?,
+      heightCm: (json['heightCm'] as num?)?.toDouble(),
+      weightKg: (json['weightKg'] as num?)?.toDouble(),
       interests: (json['interests'] as List<dynamic>?)
               ?.map((e) => WellnessInterest.values.byName(e as String))
               .toSet() ??
-          const {},
-      heightCm: (json['heightCm'] as num?)?.toDouble(),
-      weightKg: (json['weightKg'] as num?)?.toDouble(),
-      age: json['age'] as int?,
-      gender: json['gender'] as String?,
-      isCompleted: json['isCompleted'] as bool? ?? false,
+          {},
+      dailyStress: (json['dailyStress'] as num?)?.toDouble(),
+      sleepQuality: (json['sleepQuality'] as num?)?.toDouble(),
+      energyLevel: (json['energyLevel'] as num?)?.toDouble(),
     );
   }
 }
