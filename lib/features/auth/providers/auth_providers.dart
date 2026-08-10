@@ -14,7 +14,9 @@ import 'package:fitora/features/auth/models/auth_user.dart';
 import 'package:fitora/features/auth/services/firebase_auth_service.dart';
 
 final firebaseAuthServiceProvider = Provider<FirebaseAuthService>((ref) {
-  return FirebaseAuthService(GoogleSignIn());
+  return FirebaseAuthService(GoogleSignIn(
+    serverClientId: '42856190078-jrnu3av6iuodp4glo0aggvl1d81ichob.apps.googleusercontent.com',
+  ));
 });
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
@@ -134,9 +136,16 @@ class AuthActionController extends StateNotifier<AuthActionState> {
       );
     } on PlatformException catch (error, stackTrace) {
       AppLogger.error(error, stackTrace);
+      final rawMsg = error.message ?? '';
+      String userMsg = 'Sign-in is unavailable right now.';
+      if (rawMsg.contains('10:') || error.code == 'sign_in_failed') {
+        userMsg = 'Google Sign-In SHA-1 configuration pending in Firebase. Please tap "Continue as Guest" to proceed.';
+      } else if (rawMsg.isNotEmpty) {
+        userMsg = rawMsg;
+      }
       state = state.copyWith(
         isLoading: false,
-        error: error.message ?? 'Sign-in is unavailable right now.',
+        error: userMsg,
         action: null,
       );
     } catch (error, stackTrace) {
