@@ -71,6 +71,10 @@ android {
                 // WARNING: Debug-signed APKs cannot be published to Google Play.
                 signingConfigs.getByName("debug")
             }
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
     }
 }
