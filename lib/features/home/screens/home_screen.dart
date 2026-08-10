@@ -450,6 +450,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     icon: Icons.water_drop_rounded,
                     color: Colors.blueAccent,
                     textTheme: textTheme,
+                    onTap: () => WaterLoggingModal.show(context),
                   ),
                 ),
               ],
@@ -468,8 +469,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     required IconData icon,
     required Color color,
     required TextTheme textTheme,
+    VoidCallback? onTap,
   }) {
-    return GlowContainer(
+    final card = GlowContainer(
       glowColor: color.withValues(alpha: 0.05),
       borderRadius: BorderRadius.circular(20),
       padding: EdgeInsets.zero,
@@ -527,6 +529,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
       ),
     );
+
+    return onTap != null ? GestureDetector(onTap: onTap, child: card) : card;
   }
 
   Widget _buildWeeklyActivity(
@@ -748,12 +752,43 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ],
                   ),
                 ),
-                Text(
-                  '${(progress * 100).toInt()}%',
-                  style: textTheme.labelLarge?.copyWith(
-                    color: color,
-                    fontWeight: FontWeight.w900,
-                  ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (title == 'Hydration Goal') ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        margin: const EdgeInsets.only(right: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.blueAccent.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.blueAccent.withValues(alpha: 0.3)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: const [
+                            Icon(Icons.add_rounded, color: Colors.blueAccent, size: 14),
+                            SizedBox(width: 2),
+                            Text(
+                              'Add Water',
+                              style: TextStyle(
+                                color: Colors.blueAccent,
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                    Text(
+                      '${(progress * 100).toInt()}%',
+                      style: textTheme.labelLarge?.copyWith(
+                        color: color,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
