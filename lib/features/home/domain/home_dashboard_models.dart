@@ -3,14 +3,12 @@ class HomeDashboardData {
   final String subtitle;
   final HomeStepProgress steps;
   final List<HomeMetricTileData> metrics;
-  final HomeWorkoutHighlight workout;
 
   const HomeDashboardData({
     required this.greeting,
     required this.subtitle,
     required this.steps,
     required this.metrics,
-    required this.workout,
   });
 
   HomeMetricTileData metric(HomeMetricType type) {
@@ -54,13 +52,6 @@ class HomeDashboardData {
           caption: 'personal best',
         ),
       ],
-      workout: const HomeWorkoutHighlight(
-        title: 'Sunset sculpt flow',
-        subtitle: 'Low-impact strength + mobility blend.',
-        durationLabel: '28 min',
-        difficultyLabel: 'Beginner',
-        ctaLabel: 'Start workout',
-      ),
     );
   }
 }
@@ -96,21 +87,5 @@ class HomeMetricTileData {
     required this.label,
     required this.value,
     required this.caption,
-  });
-}
-
-class HomeWorkoutHighlight {
-  final String title;
-  final String subtitle;
-  final String durationLabel;
-  final String difficultyLabel;
-  final String ctaLabel;
-
-  const HomeWorkoutHighlight({
-    required this.title,
-    required this.subtitle,
-    required this.durationLabel,
-    required this.difficultyLabel,
-    required this.ctaLabel,
   });
 }

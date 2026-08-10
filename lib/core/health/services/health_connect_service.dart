@@ -9,7 +9,6 @@ class HealthConnectService {
     HealthDataType.STEPS,
     HealthDataType.ACTIVE_ENERGY_BURNED,
     HealthDataType.DISTANCE_DELTA,
-    HealthDataType.WORKOUT,
     HealthDataType.SLEEP_SESSION,
   ];
 

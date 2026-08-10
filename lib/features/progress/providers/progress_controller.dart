@@ -4,8 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fitora/features/progress/data/progress_local_data_source.dart';
 import 'package:fitora/features/progress/data/progress_repository.dart';
 import 'package:fitora/features/progress/domain/progress_models.dart';
-import 'package:fitora/features/workouts/domain/workout_models.dart';
-import 'package:fitora/features/workouts/session/domain/workout_session_models.dart';
 
 final progressRepositoryProvider = Provider<ProgressRepository>((ref) {
   final local = ref.read(progressLocalDataSourceProvider);
@@ -62,32 +60,6 @@ class ProgressController extends StateNotifier<ProgressState> {
   }
 
   Future<void> ensureLoaded() => _loadFuture;
-
-  Future<void> recordWorkout({
-    required Workout workout,
-    required WorkoutSessionState session,
-  }) async {
-    await ensureLoaded();
-
-    final completed = session.completedExercises;
-    final total = session.totalExercises;
-    final completionRatio = total == 0 ? 0.0 : completed / total;
-    final calories = (workout.calories * completionRatio).round();
-
-    final entry = WorkoutHistoryEntry(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      workoutId: workout.id,
-      title: workout.title,
-      completedAt: DateTime.now(),
-      durationSeconds: session.totalElapsedSeconds,
-      calories: calories < 0 ? 0 : calories,
-      exercisesCompleted: completed,
-    );
-
-    final updated = [...state.history, entry];
-    state = _buildState(updated, isLoading: false);
-    unawaited(_repository.saveHistory(updated));
-  }
 
 
 

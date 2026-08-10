@@ -1,9 +1,6 @@
 class AppRoutes {
   static const String splash = '/';
   static const String home = '/home';
-  static const String workouts = '/workouts';
-  static const String workoutDetail = 'detail/:id';
-  static const String workoutSession = 'session/:id';
   static const String progress = '/progress';
   static const String profile = '/profile';
   static const String settings = 'settings';
@@ -26,9 +23,6 @@ class AppRouteNames {
   static const String authEmail = 'authEmail';
   static const String profileSetup = 'profileSetup';
   static const String home = 'home';
-  static const String workouts = 'workouts';
-  static const String workoutDetail = 'workoutDetail';
-  static const String workoutSession = 'workoutSession';
   static const String progress = 'progress';
   static const String profile = 'profile';
   static const String settings = 'settings';

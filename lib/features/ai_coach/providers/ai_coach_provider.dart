@@ -75,7 +75,7 @@ class AICoachNotifier extends StateNotifier<AICoachState> {
       timestamp: DateTime.now(),
       suggestedPrompts: const [
         'Analyze my sleep quality',
-        'Suggest a restorative workout',
+        'Suggest a recovery flow',
         'Check my weekly wellness trends',
       ],
     );

@@ -584,28 +584,27 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
                       Expanded(
-                        child: Alignment(
-                          0,
-                          1,
-                        ), // Align bar to bottom of container
-                        child: Container(
-                          width: 14,
-                          height: 80 * heightFactor,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(99),
-                            gradient: isToday
-                                ? const LinearGradient(
-                                    begin: Alignment.bottomCenter,
-                                    end: Alignment.topCenter,
-                                    colors: [
-                                      FitoraColors.mintGreen,
-                                      FitoraColors.brightTeal,
-                                    ],
-                                  )
-                                : null,
-                            color: isToday
-                                ? null
-                                : Colors.white.withValues(alpha: 0.1),
+                        child: Align(
+                          alignment: Alignment.bottomCenter,
+                          child: Container(
+                            width: 14,
+                            height: 80 * heightFactor,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(99),
+                              gradient: isToday
+                                  ? const LinearGradient(
+                                      begin: Alignment.bottomCenter,
+                                      end: Alignment.topCenter,
+                                      colors: [
+                                        FitoraColors.mintGreen,
+                                        FitoraColors.softEmerald,
+                                      ],
+                                    )
+                                  : null,
+                              color: isToday
+                                  ? null
+                                  : Colors.white.withValues(alpha: 0.1),
+                            ),
                           ),
                         ),
                       ),

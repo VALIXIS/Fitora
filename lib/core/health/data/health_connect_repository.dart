@@ -25,8 +25,6 @@ class HealthConnectRepository implements HealthRepository {
         calories += (p.value as NumericHealthValue).numericValue.toDouble();
       } else if (p.type == HealthDataType.DISTANCE_DELTA) {
         distance += (p.value as NumericHealthValue).numericValue.toDouble() / 1000.0;
-      } else if (p.type == HealthDataType.WORKOUT) {
-        activeMinutes += p.dateTo.difference(p.dateFrom).inMinutes;
       }
     }
 

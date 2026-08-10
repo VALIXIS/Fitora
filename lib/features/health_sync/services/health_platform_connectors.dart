@@ -39,16 +39,6 @@ class GoogleFitConnector implements HealthPlatformConnector {
       heartRate: 68.0 + random.nextDouble() * 15.0,
       activeCalories: 340.0 + random.nextInt(150),
       sleepHours: 7.2 + random.nextDouble() * 1.5,
-      workouts: [
-        HealthSyncWorkout(
-          id: 'gf_workout_${DateTime.now().millisecondsSinceEpoch}',
-          title: 'Morning Cardio Run',
-          category: 'cardio',
-          durationMinutes: 32,
-          caloriesBurned: 280,
-          completedAt: DateTime.now().subtract(const Duration(hours: 4)),
-        ),
-      ],
       timestamp: DateTime.now(),
     );
   }
@@ -85,16 +75,6 @@ class HealthConnectConnector implements HealthPlatformConnector {
       heartRate: 65.0 + random.nextDouble() * 12.0,
       activeCalories: 390.0 + random.nextInt(180),
       sleepHours: 6.8 + random.nextDouble() * 1.2,
-      workouts: [
-        HealthSyncWorkout(
-          id: 'hc_workout_${DateTime.now().millisecondsSinceEpoch}',
-          title: 'Intense HIIT Session',
-          category: 'gym',
-          durationMinutes: 45,
-          caloriesBurned: 350,
-          completedAt: DateTime.now().subtract(const Duration(hours: 2)),
-        ),
-      ],
       timestamp: DateTime.now(),
     );
   }
@@ -131,16 +111,6 @@ class SamsungHealthConnector implements HealthPlatformConnector {
       heartRate: 67.0 + random.nextDouble() * 14.0,
       activeCalories: 280.0 + random.nextInt(120),
       sleepHours: 7.0 + random.nextDouble() * 1.0,
-      workouts: [
-        HealthSyncWorkout(
-          id: 'sh_workout_${DateTime.now().millisecondsSinceEpoch}',
-          title: 'Samsung Active Walk',
-          category: 'cardio',
-          durationMinutes: 25,
-          caloriesBurned: 190,
-          completedAt: DateTime.now().subtract(const Duration(hours: 3)),
-        ),
-      ],
       timestamp: DateTime.now(),
     );
   }
@@ -177,16 +147,6 @@ class AppleHealthConnector implements HealthPlatformConnector {
       heartRate: 62.0 + random.nextDouble() * 10.0,
       activeCalories: 420.0 + random.nextInt(200),
       sleepHours: 7.8 + random.nextDouble() * 0.8,
-      workouts: [
-        HealthSyncWorkout(
-          id: 'ah_workout_${DateTime.now().millisecondsSinceEpoch}',
-          title: 'Sunset Hatha Yoga',
-          category: 'wellness',
-          durationMinutes: 50,
-          caloriesBurned: 180,
-          completedAt: DateTime.now().subtract(const Duration(hours: 1)),
-        ),
-      ],
       timestamp: DateTime.now(),
     );
   }

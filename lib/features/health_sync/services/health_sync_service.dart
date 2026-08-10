@@ -26,7 +26,6 @@ class HealthSyncService {
   static const String _kCacheHeart = 'fitora_health_cache_heart';
   static const String _kCacheCal = 'fitora_health_cache_calories';
   static const String _kCacheSleep = 'fitora_health_cache_sleep';
-  static const String _kCacheWorkouts = 'fitora_health_cache_workouts';
   static const String _kCacheTime = 'fitora_health_cache_time';
 
   // Load preferences and connections
@@ -100,16 +99,7 @@ class HealthSyncService {
     final heart = _prefs.getDouble(_kCacheHeart) ?? 72.0;
     final calories = _prefs.getDouble(_kCacheCal) ?? 320.0;
     final sleep = _prefs.getDouble(_kCacheSleep) ?? 7.2;
-    final rawWorkouts = _prefs.getString(_kCacheWorkouts);
     final rawTime = _prefs.getString(_kCacheTime);
-
-    List<HealthSyncWorkout> workouts = [];
-    if (rawWorkouts != null) {
-      try {
-        final List decoded = jsonDecode(rawWorkouts);
-        workouts = decoded.map((w) => HealthSyncWorkout.fromJson(w as Map<String, dynamic>)).toList();
-      } catch (_) {}
-    }
 
     final cacheTime = rawTime != null ? DateTime.tryParse(rawTime) : null;
 
@@ -118,7 +108,6 @@ class HealthSyncService {
       heartRate: heart,
       activeCalories: calories,
       sleepHours: sleep,
-      workouts: workouts,
       timestamp: cacheTime ?? DateTime.now(),
     );
   }
@@ -128,8 +117,6 @@ class HealthSyncService {
     await _prefs.setDouble(_kCacheHeart, data.heartRate);
     await _prefs.setDouble(_kCacheCal, data.activeCalories);
     await _prefs.setDouble(_kCacheSleep, data.sleepHours);
-    final workoutsJson = jsonEncode(data.workouts.map((w) => w.toJson()).toList());
-    await _prefs.setString(_kCacheWorkouts, workoutsJson);
     await _prefs.setString(_kCacheTime, data.timestamp.toIso8601String());
   }
 
@@ -141,16 +128,12 @@ class HealthSyncService {
     double finalHeartRate = 0.0;
     double finalCalories = 0.0;
     double finalSleep = 0.0;
-    final Map<String, HealthSyncWorkout> uniqueWorkouts = {};
 
     for (final metric in activeMetrics) {
       if (metric.steps > finalSteps) finalSteps = metric.steps;
       if (metric.heartRate > finalHeartRate) finalHeartRate = metric.heartRate;
       if (metric.activeCalories > finalCalories) finalCalories = metric.activeCalories;
       if (metric.sleepHours > finalSleep) finalSleep = metric.sleepHours;
-      for (final w in metric.workouts) {
-        uniqueWorkouts[w.id] = w;
-      }
     }
 
     return HealthMetricData(
@@ -158,7 +141,6 @@ class HealthSyncService {
       heartRate: finalHeartRate == 0 ? 72.0 : finalHeartRate,
       activeCalories: finalCalories == 0 ? 320.0 : finalCalories,
       sleepHours: finalSleep == 0 ? 7.2 : finalSleep,
-      workouts: uniqueWorkouts.values.toList(),
       timestamp: DateTime.now(),
     );
   }

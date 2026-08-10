@@ -196,26 +196,7 @@ class _SyncStatusHub extends StatelessWidget {
               ),
             ],
           ),
-          if (cachedData.workouts.isNotEmpty) ...[
-            const SizedBox(height: FitoraSpacing.md),
-            const Divider(height: 1),
-            const SizedBox(height: FitoraSpacing.sm),
-            Row(
-              children: [
-                Icon(Icons.fitness_center_rounded, size: 16, color: cs.primary),
-                const SizedBox(width: 8),
-                Text(
-                  'Synced: ${cachedData.workouts.first.title}',
-                  style: tt.bodySmall?.copyWith(fontWeight: FontWeight.w600),
-                ),
-                const Spacer(),
-                Text(
-                  '${cachedData.workouts.first.durationMinutes}m | ${cachedData.workouts.first.caloriesBurned} kcal',
-                  style: tt.labelSmall?.copyWith(color: cs.onSurfaceVariant),
-                ),
-              ],
-            ),
-          ],
+
         ],
       ),
     );
