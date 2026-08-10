@@ -9,6 +9,7 @@ import 'package:fitora/shared/widgets/glow_container.dart';
 import 'package:fitora/core/health/providers/health_providers.dart';
 import 'package:fitora/core/health/domain/health_models.dart';
 import 'package:fitora/features/wellness/providers/wellness_provider.dart';
+import 'package:fitora/features/wellness/widgets/water_logging_modal.dart';
 import 'package:fitora/features/personalization/providers/personalization_controller.dart';
 import 'package:fitora/features/profile/screens/profile_screen.dart';
 import 'package:fitora/core/utils/greeting_utils.dart';
@@ -673,6 +674,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           icon: Icons.water_drop_rounded,
           color: Colors.blueAccent,
           textTheme: textTheme,
+          onTap: () => WaterLoggingModal.show(context),
         ),
         if (hasSleep) ...[
           const SizedBox(height: FitoraSpacing.sm),

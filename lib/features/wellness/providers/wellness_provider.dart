@@ -143,36 +143,81 @@ class WellnessNotifier extends StateNotifier<WellnessState> {
 
   // ── Hydration actions ────────────────────────────────────────────────────────
   
-  Future<void> addHydration(double amount) async {
+  Future<void> addWaterLogEntry({required int amountMl, DateTime? timestamp}) async {
     _recordWellnessActivity();
+    final now = timestamp ?? DateTime.now();
     final today = _todayStr();
+    final id = '${now.microsecondsSinceEpoch}';
+
+    final entry = WaterLogEntry(
+      id: id,
+      amountMl: amountMl,
+      timestamp: now,
+      dateStr: today,
+    );
+
+    final updatedLogs = [entry, ...state.waterLogs];
     
-    double newHydration = (state.hydrationLiters + amount).clamp(0.0, 9.9);
+    final todayTotalMl = updatedLogs
+        .where((l) => l.dateStr == today)
+        .fold<int>(0, (sum, l) => sum + l.amountMl);
+
+    double newHydration = todayTotalMl / 1000.0;
     int newHydrationStreak = state.hydrationStreak;
-    
+
     if (newHydration >= state.hydrationGoalLiters && state.hydrationLiters < state.hydrationGoalLiters) {
-      // Met goal today for the first time
       final yesterday = DateTime.now().subtract(const Duration(days: 1));
       final yesterdayStr = "${yesterday.year}-${yesterday.month.toString().padLeft(2, '0')}-${yesterday.day.toString().padLeft(2, '0')}";
-      
+
       if (state.lastHydrationDate == yesterdayStr) {
         newHydrationStreak += 1;
       } else if (state.lastHydrationDate != today) {
         newHydrationStreak = 1;
       }
     }
-    
+
     state = state.copyWith(
+      waterLogs: updatedLogs,
       hydrationLiters: newHydration,
       hydrationStreak: newHydrationStreak,
       lastHydrationDate: today,
     );
     updateRecovery();
+    await _persist();
+  }
+
+  Future<void> deleteWaterLogEntry(String id) async {
+    final today = _todayStr();
+    final updatedLogs = state.waterLogs.where((l) => l.id != id).toList();
+
+    final todayTotalMl = updatedLogs
+        .where((l) => l.dateStr == today)
+        .fold<int>(0, (sum, l) => sum + l.amountMl);
+
+    double newHydration = todayTotalMl / 1000.0;
+
+    state = state.copyWith(
+      waterLogs: updatedLogs,
+      hydrationLiters: newHydration,
+    );
+    updateRecovery();
+    await _persist();
+  }
+
+  Future<void> addHydration(double amount) async {
+    final amountMl = (amount * 1000.0).round();
+    await addWaterLogEntry(amountMl: amountMl);
   }
 
   Future<void> resetHydration() async {
-    state = state.copyWith(hydrationLiters: 0.0);
+    final today = _todayStr();
+    final updatedLogs = state.waterLogs.where((l) => l.dateStr != today).toList();
+    state = state.copyWith(
+      waterLogs: updatedLogs,
+      hydrationLiters: 0.0,
+    );
     updateRecovery();
+    await _persist();
   }
 
   Future<void> setHydrationGoal(double goal) async {

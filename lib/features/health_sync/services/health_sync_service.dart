@@ -95,10 +95,10 @@ class HealthSyncService {
 
   // Local caching of sync metrics
   HealthMetricData loadCachedData() {
-    final steps = _prefs.getInt(_kCacheSteps) ?? 8420;
-    final heart = _prefs.getDouble(_kCacheHeart) ?? 72.0;
-    final calories = _prefs.getDouble(_kCacheCal) ?? 320.0;
-    final sleep = _prefs.getDouble(_kCacheSleep) ?? 7.2;
+    final steps = _prefs.getInt(_kCacheSteps) ?? 0;
+    final heart = _prefs.getDouble(_kCacheHeart) ?? 0.0;
+    final calories = _prefs.getDouble(_kCacheCal) ?? 0.0;
+    final sleep = _prefs.getDouble(_kCacheSleep) ?? 0.0;
     final rawTime = _prefs.getString(_kCacheTime);
 
     final cacheTime = rawTime != null ? DateTime.tryParse(rawTime) : null;
@@ -137,10 +137,10 @@ class HealthSyncService {
     }
 
     return HealthMetricData(
-      steps: finalSteps == 0 ? 8420 : finalSteps,
-      heartRate: finalHeartRate == 0 ? 72.0 : finalHeartRate,
-      activeCalories: finalCalories == 0 ? 320.0 : finalCalories,
-      sleepHours: finalSleep == 0 ? 7.2 : finalSleep,
+      steps: finalSteps,
+      heartRate: finalHeartRate,
+      activeCalories: finalCalories,
+      sleepHours: finalSleep,
       timestamp: DateTime.now(),
     );
   }

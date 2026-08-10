@@ -40,15 +40,15 @@ class HealthSyncController extends StateNotifier<HealthSyncState> with WidgetsBi
   }
 
   @override
-  void didChangeAppLifecycleState(AppLifecycleState appState) {
-    if (appState == AppLifecycleState.paused || appState == AppLifecycleState.detached) {
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.detached) {
       if (_saveDebounceTimer?.isActive ?? false) {
         _saveDebounceTimer?.cancel();
         if (_initialized) {
-          _service.saveCachedData(state.cachedData);
+          _service.saveCachedData(this.state.cachedData);
         }
       }
-    } else if (appState == AppLifecycleState.resumed) {
+    } else if (state == AppLifecycleState.resumed) {
       if (_initialized) {
         syncAllActive();
       }

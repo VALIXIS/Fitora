@@ -1,4 +1,7 @@
 import 'dart:math';
+import 'package:fitora/core/health/domain/health_models.dart';
+import 'package:fitora/core/health/services/health_connect_service.dart';
+import 'package:fitora/core/health/data/health_connect_repository.dart';
 import '../domain/health_sync_models.dart';
 
 abstract class HealthPlatformConnector {
@@ -45,36 +48,57 @@ class GoogleFitConnector implements HealthPlatformConnector {
 }
 
 class HealthConnectConnector implements HealthPlatformConnector {
+  final HealthConnectService _service = HealthConnectService();
+  late final HealthConnectRepository _repository = HealthConnectRepository(_service);
+
   @override
   HealthSource get source => HealthSource.healthConnect;
 
-  HealthPermissionStatus _status = HealthPermissionStatus.notDetermined;
-
   @override
   Future<HealthPermissionStatus> checkPermissionStatus() async {
-    return _status;
+    try {
+      final status = await _service.getStatus();
+      if (status == HealthConnectStatus.connected) {
+        return HealthPermissionStatus.authorized;
+      }
+      return HealthPermissionStatus.denied;
+    } catch (_) {
+      return HealthPermissionStatus.denied;
+    }
   }
 
   @override
   Future<HealthPermissionStatus> requestPermissions() async {
-    await Future.delayed(const Duration(milliseconds: 500));
-    _status = HealthPermissionStatus.authorized;
-    return _status;
+    try {
+      final granted = await _service.requestPermissions();
+      if (granted) {
+        return HealthPermissionStatus.authorized;
+      }
+      return HealthPermissionStatus.denied;
+    } catch (_) {
+      return HealthPermissionStatus.denied;
+    }
   }
 
   @override
   Future<HealthMetricData> fetchMetrics(DateTime startTime, DateTime endTime) async {
-    if (_status != HealthPermissionStatus.authorized) {
-      throw Exception('Permission to Health Connect not granted');
+    final status = await checkPermissionStatus();
+    if (status != HealthPermissionStatus.authorized) {
+      final requested = await requestPermissions();
+      if (requested != HealthPermissionStatus.authorized) {
+        return HealthMetricData.empty();
+      }
     }
-    await Future.delayed(const Duration(milliseconds: 300));
 
-    final random = Random();
+    final now = DateTime.now();
+    final daily = await _repository.getDailyActivity(now);
+    final sleep = await _repository.getSleepSummary(now);
+
     return HealthMetricData(
-      steps: 8100 + random.nextInt(2000),
-      heartRate: 65.0 + random.nextDouble() * 12.0,
-      activeCalories: 390.0 + random.nextInt(180),
-      sleepHours: 6.8 + random.nextDouble() * 1.2,
+      steps: daily.steps,
+      heartRate: 0.0,
+      activeCalories: daily.caloriesBurned,
+      sleepHours: sleep.totalSleep.inMinutes / 60.0,
       timestamp: DateTime.now(),
     );
   }

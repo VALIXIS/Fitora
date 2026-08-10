@@ -10,6 +10,7 @@ import 'package:fitora/core/health/providers/health_providers.dart';
 import 'package:fitora/core/health/domain/health_models.dart';
 import 'package:fitora/features/wellness/providers/wellness_provider.dart';
 import 'package:fitora/features/wellness/domain/wellness_models.dart';
+import 'package:fitora/features/wellness/widgets/water_logging_modal.dart';
 import 'package:fitora/features/personalization/providers/personalization_controller.dart';
 import 'package:fitora/shared/widgets/fitora_background.dart';
 
@@ -502,10 +503,20 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                         onPressed: () => ref.read(wellnessProvider.notifier).resetHydration(),
                         tooltip: 'Reset intake',
                       ),
-                    IconButton(
-                      icon: const Icon(Icons.add_circle_rounded, color: Colors.blueAccent, size: 24),
-                      onPressed: () => ref.read(wellnessProvider.notifier).addHydration(0.25),
-                      tooltip: 'Log 250ml',
+                    ElevatedButton.icon(
+                      onPressed: () => WaterLoggingModal.show(context),
+                      icon: const Icon(Icons.add_rounded, size: 18),
+                      label: const Text('+ Add Water'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blueAccent.withValues(alpha: 0.2),
+                        foregroundColor: Colors.blueAccent,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          side: BorderSide(color: Colors.blueAccent.withValues(alpha: 0.3)),
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      ),
                     ),
                   ],
                 ),
