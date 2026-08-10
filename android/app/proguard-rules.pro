@@ -5,6 +5,7 @@
 -keep class io.flutter.view.** { *; }
 -keep class io.flutter.embedding.** { *; }
 -keep class io.flutter.provider.** { *; }
+-dontwarn io.flutter.embedding.engine.deferredcomponents.**
 
 # Google Play Services & Google Sign-In
 -keep class com.google.android.gms.** { *; }
@@ -15,3 +16,6 @@
 # Firebase Auth
 -keep class com.google.firebase.** { *; }
 -dontwarn com.google.firebase.**
+
+# Google Play Core / Deferred Components
+-dontwarn com.google.android.play.core.**
