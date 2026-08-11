@@ -24,7 +24,9 @@ class MockHealthRepository implements HealthRepository {
   }
 
   @override
-  Future<List<DailyActivitySummary>> getWeeklyActivity(DateTime startDate) async {
+  Future<List<DailyActivitySummary>> getWeeklyActivity(
+    DateTime startDate,
+  ) async {
     return List.generate(7, (index) {
       final date = startDate.add(Duration(days: index));
       return DailyActivitySummary(

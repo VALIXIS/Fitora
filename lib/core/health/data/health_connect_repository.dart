@@ -11,11 +11,13 @@ class HealthConnectRepository implements HealthRepository {
   @override
   Future<DailyActivitySummary> getDailyActivity(DateTime date) async {
     final start = DateTime(date.year, date.month, date.day);
-    final end = start.add(const Duration(days: 1)).subtract(const Duration(milliseconds: 1));
-    
+    final end = start
+        .add(const Duration(days: 1))
+        .subtract(const Duration(milliseconds: 1));
+
     final points = await _service.getHealthData(start, end);
     int steps = (await _service.getSteps(start, end)) ?? 0;
-    
+
     double calories = 0;
     double distance = 0;
     int activeMinutes = 0;
@@ -24,7 +26,8 @@ class HealthConnectRepository implements HealthRepository {
       if (p.type == HealthDataType.ACTIVE_ENERGY_BURNED) {
         calories += (p.value as NumericHealthValue).numericValue.toDouble();
       } else if (p.type == HealthDataType.DISTANCE_DELTA) {
-        distance += (p.value as NumericHealthValue).numericValue.toDouble() / 1000.0;
+        distance +=
+            (p.value as NumericHealthValue).numericValue.toDouble() / 1000.0;
       } else if (p.type == HealthDataType.WORKOUT) {
         activeMinutes += p.dateTo.difference(p.dateFrom).inMinutes;
       }
@@ -46,7 +49,9 @@ class HealthConnectRepository implements HealthRepository {
   }
 
   @override
-  Future<List<DailyActivitySummary>> getWeeklyActivity(DateTime startDate) async {
+  Future<List<DailyActivitySummary>> getWeeklyActivity(
+    DateTime startDate,
+  ) async {
     final List<DailyActivitySummary> week = [];
     for (int i = 0; i < 7; i++) {
       week.add(await getDailyActivity(startDate.add(Duration(days: i))));
@@ -56,17 +61,25 @@ class HealthConnectRepository implements HealthRepository {
 
   @override
   Future<SleepSummary> getSleepSummary(DateTime date) async {
-    final start = DateTime(date.year, date.month, date.day, 12, 0).subtract(const Duration(days: 1)); // noon yesterday
+    final start = DateTime(
+      date.year,
+      date.month,
+      date.day,
+      12,
+      0,
+    ).subtract(const Duration(days: 1)); // noon yesterday
     final end = DateTime(date.year, date.month, date.day, 12, 0); // noon today
-    
+
     final points = await _service.getHealthData(start, end);
-    final sleepPoints = points.where((p) => p.type == HealthDataType.SLEEP_SESSION).toList();
-    
+    final sleepPoints = points
+        .where((p) => p.type == HealthDataType.SLEEP_SESSION)
+        .toList();
+
     int totalMinutes = 0;
     for (final p in sleepPoints) {
       totalMinutes += p.dateTo.difference(p.dateFrom).inMinutes;
     }
-    
+
     return SleepSummary(
       totalSleep: Duration(minutes: totalMinutes),
       remSleep: Duration.zero,
@@ -79,11 +92,20 @@ class HealthConnectRepository implements HealthRepository {
 
   @override
   Future<RecoverySummary> getRecoverySummary(DateTime date) async {
-    return RecoverySummary(recoveryScore: 0, hrv: 0, restingHeartRate: 0, date: date);
+    return RecoverySummary(
+      recoveryScore: 0,
+      hrv: 0,
+      restingHeartRate: 0,
+      date: date,
+    );
   }
 
   @override
   Future<HydrationSummary> getHydrationSummary(DateTime date) async {
-    return HydrationSummary(waterConsumedLiters: 0, waterGoalLiters: 2.5, date: date);
+    return HydrationSummary(
+      waterConsumedLiters: 0,
+      waterGoalLiters: 2.5,
+      date: date,
+    );
   }
 }

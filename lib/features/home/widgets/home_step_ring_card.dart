@@ -6,10 +6,7 @@ import 'package:fitora/shared/widgets/fitora_card.dart';
 class HomeStepRingCard extends StatelessWidget {
   final HomeStepProgress progress;
 
-  const HomeStepRingCard({
-    super.key,
-    required this.progress,
-  });
+  const HomeStepRingCard({super.key, required this.progress});
 
   @override
   Widget build(BuildContext context) {
@@ -18,7 +15,10 @@ class HomeStepRingCard extends StatelessWidget {
     final percent = progress.progress.clamp(0.0, 1.0);
 
     return FitoraCard(
-      padding: const EdgeInsets.symmetric(vertical: FitoraSpacing.md, horizontal: FitoraSpacing.md),
+      padding: const EdgeInsets.symmetric(
+        vertical: FitoraSpacing.md,
+        horizontal: FitoraSpacing.md,
+      ),
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -43,7 +43,9 @@ class HomeStepRingCard extends StatelessWidget {
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: colorScheme.primary.withValues(alpha: 0.06),
+                              color: colorScheme.primary.withValues(
+                                alpha: 0.06,
+                              ),
                               blurRadius: 16,
                               spreadRadius: 2,
                             ),
@@ -63,9 +65,7 @@ class HomeStepRingCard extends StatelessWidget {
                         strokeWidth: 12,
                         strokeCap: StrokeCap.round,
                         backgroundColor: Colors.transparent,
-                        valueColor: AlwaysStoppedAnimation(
-                          colorScheme.primary,
-                        ),
+                        valueColor: AlwaysStoppedAnimation(colorScheme.primary),
                       ),
                       // Text info centered in the ring
                       Column(

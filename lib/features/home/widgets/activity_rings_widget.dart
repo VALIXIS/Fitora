@@ -79,7 +79,11 @@ class _ConcentricRing extends StatelessWidget {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               boxShadow: [
-                BoxShadow(color: color.withValues(alpha: 0.2), blurRadius: 15, spreadRadius: 2),
+                BoxShadow(
+                  color: color.withValues(alpha: 0.2),
+                  blurRadius: 15,
+                  spreadRadius: 2,
+                ),
               ],
             ),
           ),

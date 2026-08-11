@@ -13,8 +13,8 @@ class SensorHealthRepository implements HealthRepository {
   SensorHealthRepository({
     required SensorRepository sensorRepo,
     required HealthRepository fallback,
-  })  : _sensorRepo = sensorRepo,
-        _fallback = fallback;
+  }) : _sensorRepo = sensorRepo,
+       _fallback = fallback;
 
   @override
   Future<DailyActivitySummary> getDailyActivity(DateTime date) async {
@@ -31,19 +31,21 @@ class SensorHealthRepository implements HealthRepository {
   }
 
   @override
-  Future<List<DailyActivitySummary>> getWeeklyActivity(DateTime startDate) async {
+  Future<List<DailyActivitySummary>> getWeeklyActivity(
+    DateTime startDate,
+  ) async {
     // For historical days we use mock data (sensor only has today's data)
     final week = await _fallback.getWeeklyActivity(startDate);
-    
+
     // Override the last day (today) with live sensor data
     final today = startDate.add(const Duration(days: 6));
     final liveSummary = await getDailyActivity(today);
-    
+
     final updatedWeek = List<DailyActivitySummary>.from(week);
     if (updatedWeek.isNotEmpty) {
       updatedWeek[updatedWeek.length - 1] = liveSummary;
     }
-    
+
     return updatedWeek;
   }
 
@@ -60,7 +62,10 @@ class SensorHealthRepository implements HealthRepository {
       _fallback.getHydrationSummary(date);
 
   /// Derives calories, distance, and active minutes from a step count.
-  DailyActivitySummary _buildSummary({required int steps, required DateTime date}) {
+  DailyActivitySummary _buildSummary({
+    required int steps,
+    required DateTime date,
+  }) {
     // Heuristic conversions (well-accepted approximations):
     //   1 step ≈ 0.762 m  (average stride for mixed population)
     //   ~1 kcal per 20 steps (moderate pace)

@@ -12,6 +12,7 @@ import 'package:fitora/features/wellness/providers/wellness_provider.dart';
 import 'package:fitora/features/wellness/domain/wellness_models.dart';
 import 'package:fitora/features/personalization/providers/personalization_controller.dart';
 import 'package:fitora/shared/widgets/fitora_background.dart';
+import 'package:fitora/features/home/providers/goals_streak_provider.dart';
 
 class ProgressScreen extends ConsumerStatefulWidget {
   const ProgressScreen({super.key});
@@ -28,10 +29,10 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     final mid = values.length ~/ 2;
     final firstHalf = values.sublist(0, mid);
     final secondHalf = values.sublist(mid);
-    
+
     final sum1 = firstHalf.fold<double>(0.0, (a, b) => a + b);
     final sum2 = secondHalf.fold<double>(0.0, (a, b) => a + b);
-    
+
     if (sum1 == 0.0) return sum2 > 0.0 ? 100.0 : 0.0;
     return ((sum2 - sum1) / sum1) * 100.0;
   }
@@ -46,9 +47,13 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
 
     final profile = ref.watch(personalizationControllerProvider).profile;
     final hasWeight = profile.weightKg != null && profile.weightKg! > 0;
-    
+
     final sleepValues = summaries.map((s) {
-      return ref.watch(sleepSummaryProvider(s.date)).totalSleep.inMinutes.toDouble();
+      return ref
+          .watch(sleepSummaryProvider(s.date))
+          .totalSleep
+          .inMinutes
+          .toDouble();
     }).toList();
     final hasSleepHistory = sleepValues.any((v) => v > 0);
 
@@ -59,44 +64,51 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
           physics: const BouncingScrollPhysics(),
           slivers: [
             // ── Premium SafeArea Header ─────────────────────────────────────────
-            SliverToBoxAdapter(
-              child: _buildHeader(textTheme),
-            ),
-            
+            SliverToBoxAdapter(child: _buildHeader(textTheme)),
+
             // ── Scrollable Content List ────────────────────────────────────────
             SliverPadding(
               padding: const EdgeInsets.symmetric(horizontal: FitoraSpacing.xl),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
                   const SizedBox(height: FitoraSpacing.sm),
-                  
+
                   // Time Filter Segmented Control
                   _buildTimeFilter(textTheme),
                   const SizedBox(height: FitoraSpacing.xl),
-                  
+
                   // Activity Summary Metrics
                   _buildSectionHeader(textTheme, 'OVERVIEW'),
                   const SizedBox(height: FitoraSpacing.md),
-                  if (summaries.isEmpty || summaries.last.lastSyncTime == null) ...[
+                  if (summaries.isEmpty ||
+                      summaries.last.lastSyncTime == null) ...[
                     _buildEmptyActivityCard(context, textTheme),
                   ] else ...[
                     _buildActivitySection(textTheme, summaries),
                   ],
                   const SizedBox(height: FitoraSpacing.xl),
-                  
+
                   // Recovery Stats Section
                   _buildSectionHeader(textTheme, 'RECOVERY'),
                   const SizedBox(height: FitoraSpacing.md),
                   _buildRecoverySection(context, textTheme),
                   const SizedBox(height: FitoraSpacing.xl),
-    
+
                   // Trends & Analytics Charts Section
                   _buildSectionHeader(textTheme, 'TRENDS & ANALYTICS'),
                   const SizedBox(height: FitoraSpacing.md),
-                  if (summaries.isEmpty || summaries.last.lastSyncTime == null) ...[
+                  if (summaries.isEmpty ||
+                      summaries.last.lastSyncTime == null) ...[
                     _buildEmptyTrendsCard(context, textTheme),
                   ] else ...[
-                    _buildTrendsSection(textTheme, summaries, hasSleepHistory, sleepValues, hasWeight, profile.weightKg),
+                    _buildTrendsSection(
+                      textTheme,
+                      summaries,
+                      hasSleepHistory,
+                      sleepValues,
+                      hasWeight,
+                      profile.weightKg,
+                    ),
                   ],
                   const SizedBox(height: 100), // Bottom scroll padding
                 ]),
@@ -138,7 +150,11 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.calendar_today_rounded, color: FitoraColors.mintGreen, size: 12),
+                  const Icon(
+                    Icons.calendar_today_rounded,
+                    color: FitoraColors.mintGreen,
+                    size: 12,
+                  ),
                   const SizedBox(width: 6),
                   Text(
                     'This Week',
@@ -184,7 +200,10 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                   borderRadius: BorderRadius.circular(12),
                   gradient: isSelected
                       ? const LinearGradient(
-                          colors: [FitoraColors.mintGreen, FitoraColors.calmCyan],
+                          colors: [
+                            FitoraColors.mintGreen,
+                            FitoraColors.calmCyan,
+                          ],
                         )
                       : null,
                 ),
@@ -215,14 +234,25 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     );
   }
 
-  Widget _buildActivitySection(TextTheme tt, List<DailyActivitySummary> summaries) {
+  Widget _buildActivitySection(
+    TextTheme tt,
+    List<DailyActivitySummary> summaries,
+  ) {
     final summary = summaries.last;
-    
+
     // Dynamic trend calculations
-    final stepsTrend = _calculateTrendPercentage(summaries.map((s) => s.steps.toDouble()).toList());
-    final caloriesTrend = _calculateTrendPercentage(summaries.map((s) => s.caloriesBurned).toList());
-    final activeTrend = _calculateTrendPercentage(summaries.map((s) => s.activeMinutes.toDouble()).toList());
-    final distanceTrend = _calculateTrendPercentage(summaries.map((s) => s.distanceKm).toList());
+    final stepsTrend = _calculateTrendPercentage(
+      summaries.map((s) => s.steps.toDouble()).toList(),
+    );
+    final caloriesTrend = _calculateTrendPercentage(
+      summaries.map((s) => s.caloriesBurned).toList(),
+    );
+    final activeTrend = _calculateTrendPercentage(
+      summaries.map((s) => s.activeMinutes.toDouble()).toList(),
+    );
+    final distanceTrend = _calculateTrendPercentage(
+      summaries.map((s) => s.distanceKm).toList(),
+    );
 
     return Column(
       children: [
@@ -233,7 +263,8 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                 label: 'Steps',
                 value: summary.steps.toString(),
                 unit: ' / ${summary.stepsGoal}',
-                trend: '${stepsTrend >= 0 ? "+" : ""}${stepsTrend.toStringAsFixed(0)}%',
+                trend:
+                    '${stepsTrend >= 0 ? "+" : ""}${stepsTrend.toStringAsFixed(0)}%',
                 isPositiveTrend: stepsTrend >= 0,
                 icon: Icons.directions_walk_rounded,
                 color: FitoraColors.mintGreen,
@@ -246,7 +277,8 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                 label: 'Calories',
                 value: summary.caloriesBurned.toInt().toString(),
                 unit: ' kcal',
-                trend: '${caloriesTrend >= 0 ? "+" : ""}${caloriesTrend.toStringAsFixed(0)}%',
+                trend:
+                    '${caloriesTrend >= 0 ? "+" : ""}${caloriesTrend.toStringAsFixed(0)}%',
                 isPositiveTrend: caloriesTrend >= 0,
                 icon: Icons.local_fire_department_rounded,
                 color: FitoraColors.softEmerald,
@@ -263,7 +295,8 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                 label: 'Active',
                 value: summary.activeMinutes.toString(),
                 unit: ' min',
-                trend: '${activeTrend >= 0 ? "+" : ""}${activeTrend.toStringAsFixed(0)}%',
+                trend:
+                    '${activeTrend >= 0 ? "+" : ""}${activeTrend.toStringAsFixed(0)}%',
                 isPositiveTrend: activeTrend >= 0,
                 icon: Icons.timer_rounded,
                 color: FitoraColors.calmCyan,
@@ -276,7 +309,8 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                 label: 'Distance',
                 value: summary.distanceKm.toStringAsFixed(1),
                 unit: ' km',
-                trend: '${distanceTrend >= 0 ? "+" : ""}${distanceTrend.toStringAsFixed(0)}%',
+                trend:
+                    '${distanceTrend >= 0 ? "+" : ""}${distanceTrend.toStringAsFixed(0)}%',
                 isPositiveTrend: distanceTrend >= 0,
                 icon: Icons.route_rounded,
                 color: Colors.purpleAccent,
@@ -325,24 +359,37 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                   child: Icon(icon, color: color, size: 20),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
-                    color: (isPositiveTrend ? FitoraColors.mintGreen : FitoraColors.errorRed).withValues(alpha: 0.1),
+                    color:
+                        (isPositiveTrend
+                                ? FitoraColors.mintGreen
+                                : FitoraColors.errorRed)
+                            .withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
-                        isPositiveTrend ? Icons.trending_up_rounded : Icons.trending_down_rounded,
-                        color: isPositiveTrend ? FitoraColors.mintGreen : FitoraColors.errorRed,
+                        isPositiveTrend
+                            ? Icons.trending_up_rounded
+                            : Icons.trending_down_rounded,
+                        color: isPositiveTrend
+                            ? FitoraColors.mintGreen
+                            : FitoraColors.errorRed,
                         size: 10,
                       ),
                       const SizedBox(width: 2),
                       Text(
                         trend,
                         style: textTheme.labelSmall?.copyWith(
-                          color: isPositiveTrend ? FitoraColors.mintGreen : FitoraColors.errorRed,
+                          color: isPositiveTrend
+                              ? FitoraColors.mintGreen
+                              : FitoraColors.errorRed,
                           fontWeight: FontWeight.bold,
                           fontSize: 9,
                         ),
@@ -401,56 +448,65 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
         final sleep = ref.watch(sleepSummaryProvider(DateTime.now()));
         final wellness = ref.watch(wellnessProvider);
         final now = DateTime.now();
-        final todayStr = "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
+        final todayStr =
+            "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
         final mood = wellness.loggedMoods[todayStr] ?? 'Not logged';
 
         return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _buildSleepCard(context, tt, sleep),
-            const SizedBox(height: FitoraSpacing.md),
-            _buildHydrationCard(context, ref, tt, wellness),
-            const SizedBox(height: FitoraSpacing.md),
-            Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Expanded(
-                  child: _buildOverviewCard(
-                    label: 'Mood',
-                    value: mood,
-                    unit: '',
-                    trend: 'Daily',
-                    isPositiveTrend: true,
-                    icon: Icons.sentiment_satisfied_rounded,
-                    color: Colors.amber,
-                    textTheme: tt,
-                  ),
-                ),
-                const SizedBox(width: FitoraSpacing.sm),
-                Expanded(
-                  child: _buildOverviewCard(
-                    label: 'Breathing',
-                    value: '${wellness.breathingMinutes} min',
-                    unit: '',
-                    trend: '+${wellness.breathingMinutes}m',
-                    isPositiveTrend: true,
-                    icon: Icons.air_rounded,
-                    color: FitoraColors.softEmerald,
-                    textTheme: tt,
-                  ),
+                _buildSleepCard(context, tt, sleep),
+                const SizedBox(height: FitoraSpacing.md),
+                _buildHydrationCard(context, ref, tt, wellness),
+                const SizedBox(height: FitoraSpacing.md),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildOverviewCard(
+                        label: 'Mood',
+                        value: mood,
+                        unit: '',
+                        trend: 'Daily',
+                        isPositiveTrend: true,
+                        icon: Icons.sentiment_satisfied_rounded,
+                        color: Colors.amber,
+                        textTheme: tt,
+                      ),
+                    ),
+                    const SizedBox(width: FitoraSpacing.sm),
+                    Expanded(
+                      child: _buildOverviewCard(
+                        label: 'Breathing',
+                        value: '${wellness.breathingMinutes} min',
+                        unit: '',
+                        trend: '+${wellness.breathingMinutes}m',
+                        isPositiveTrend: true,
+                        icon: Icons.air_rounded,
+                        color: FitoraColors.softEmerald,
+                        textTheme: tt,
+                      ),
+                    ),
+                  ],
                 ),
               ],
-            ),
-          ],
-        ).animate().fadeIn(delay: 150.ms, duration: 400.ms).slideY(begin: 0.05, end: 0);
+            )
+            .animate()
+            .fadeIn(delay: 150.ms, duration: 400.ms)
+            .slideY(begin: 0.05, end: 0);
       },
     );
   }
 
-  Widget _buildHydrationCard(BuildContext context, WidgetRef ref, TextTheme tt, WellnessState wellness) {
+  Widget _buildHydrationCard(
+    BuildContext context,
+    WidgetRef ref,
+    TextTheme tt,
+    WellnessState wellness,
+  ) {
     final liters = wellness.hydrationLiters;
     final goal = wellness.hydrationGoalLiters;
     final progress = goal > 0 ? (liters / goal).clamp(0.0, 1.0) : 0.0;
-    
+
     const double glassSize = 0.25;
     final totalGlasses = goal > 0 ? (goal / glassSize).ceil() : 8;
     final filledGlasses = (liters / glassSize).floor();
@@ -480,7 +536,11 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                         color: Colors.blueAccent.withValues(alpha: 0.1),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.water_drop_rounded, color: Colors.blueAccent, size: 20),
+                      child: const Icon(
+                        Icons.water_drop_rounded,
+                        color: Colors.blueAccent,
+                        size: 20,
+                      ),
                     ),
                     const SizedBox(width: FitoraSpacing.md),
                     Text(
@@ -498,13 +558,25 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                   children: [
                     if (liters > 0)
                       IconButton(
-                        icon: const Icon(Icons.refresh_rounded, color: Colors.white30, size: 20),
-                        onPressed: () => ref.read(wellnessProvider.notifier).resetHydration(),
+                        icon: const Icon(
+                          Icons.refresh_rounded,
+                          color: Colors.white30,
+                          size: 20,
+                        ),
+                        onPressed: () => ref
+                            .read(wellnessProvider.notifier)
+                            .resetHydration(),
                         tooltip: 'Reset intake',
                       ),
                     IconButton(
-                      icon: const Icon(Icons.add_circle_rounded, color: Colors.blueAccent, size: 24),
-                      onPressed: () => ref.read(wellnessProvider.notifier).addHydration(0.25),
+                      icon: const Icon(
+                        Icons.add_circle_rounded,
+                        color: Colors.blueAccent,
+                        size: 24,
+                      ),
+                      onPressed: () => ref
+                          .read(wellnessProvider.notifier)
+                          .addHydration(0.25),
                       tooltip: 'Log 250ml',
                     ),
                   ],
@@ -524,7 +596,9 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                         value: progress,
                         strokeWidth: 7,
                         backgroundColor: Colors.white.withValues(alpha: 0.05),
-                        valueColor: const AlwaysStoppedAnimation<Color>(Colors.blueAccent),
+                        valueColor: const AlwaysStoppedAnimation<Color>(
+                          Colors.blueAccent,
+                        ),
                         strokeCap: StrokeCap.round,
                       ),
                     ),
@@ -551,7 +625,9 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        goal > 0 ? 'Goal: ${goal.toStringAsFixed(1)} L (1 glass = 250ml)' : 'Set Daily Water Goal',
+                        goal > 0
+                            ? 'Goal: ${goal.toStringAsFixed(1)} L (1 glass = 250ml)'
+                            : 'Set Daily Water Goal',
                         style: tt.bodySmall?.copyWith(color: Colors.white54),
                       ),
                     ],
@@ -569,7 +645,9 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                   width: 16,
                   height: 22,
                   decoration: BoxDecoration(
-                    color: isFilled ? Colors.blueAccent.withValues(alpha: 0.8) : Colors.white.withValues(alpha: 0.05),
+                    color: isFilled
+                        ? Colors.blueAccent.withValues(alpha: 0.8)
+                        : Colors.white.withValues(alpha: 0.05),
                     borderRadius: const BorderRadius.only(
                       bottomLeft: Radius.circular(4),
                       bottomRight: Radius.circular(4),
@@ -599,11 +677,15 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     );
   }
 
-  Widget _buildSleepCard(BuildContext context, TextTheme tt, SleepSummary sleep) {
+  Widget _buildSleepCard(
+    BuildContext context,
+    TextTheme tt,
+    SleepSummary sleep,
+  ) {
     final totalMinutes = sleep.totalSleep.inMinutes;
     final hours = sleep.totalSleep.inHours;
     final minutes = sleep.totalSleep.inMinutes.remainder(60);
-    
+
     const double sleepGoalMinutes = 480.0;
     final progress = (totalMinutes / sleepGoalMinutes).clamp(0.0, 1.0);
 
@@ -625,7 +707,10 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
       }
     }
 
-    final hasStages = sleep.deepSleep.inMinutes > 0 || sleep.remSleep.inMinutes > 0 || sleep.lightSleep.inMinutes > 0;
+    final hasStages =
+        sleep.deepSleep.inMinutes > 0 ||
+        sleep.remSleep.inMinutes > 0 ||
+        sleep.lightSleep.inMinutes > 0;
 
     return GlowContainer(
       glowColor: FitoraColors.calmCyan.withValues(alpha: 0.05),
@@ -652,7 +737,11 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                         color: FitoraColors.calmCyan.withValues(alpha: 0.1),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.bedtime_rounded, color: FitoraColors.calmCyan, size: 20),
+                      child: const Icon(
+                        Icons.bedtime_rounded,
+                        color: FitoraColors.calmCyan,
+                        size: 20,
+                      ),
                     ),
                     const SizedBox(width: FitoraSpacing.md),
                     Text(
@@ -667,11 +756,16 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                 ),
                 if (totalMinutes > 0)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: qualityColor.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: qualityColor.withValues(alpha: 0.3)),
+                      border: Border.all(
+                        color: qualityColor.withValues(alpha: 0.3),
+                      ),
                     ),
                     child: Text(
                       qualityText.toUpperCase(),
@@ -703,7 +797,9 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                           value: progress,
                           strokeWidth: 7,
                           backgroundColor: Colors.white.withValues(alpha: 0.05),
-                          valueColor: const AlwaysStoppedAnimation<Color>(FitoraColors.calmCyan),
+                          valueColor: const AlwaysStoppedAnimation<Color>(
+                            FitoraColors.calmCyan,
+                          ),
                           strokeCap: StrokeCap.round,
                         ),
                       ),
@@ -770,11 +866,26 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     if (sleep.deepSleep.inMinutes > 0)
-                      _buildSleepStageLabel(tt, 'Deep', '${sleep.deepSleep.inHours}h ${sleep.deepSleep.inMinutes.remainder(60)}m', Colors.indigoAccent),
+                      _buildSleepStageLabel(
+                        tt,
+                        'Deep',
+                        '${sleep.deepSleep.inHours}h ${sleep.deepSleep.inMinutes.remainder(60)}m',
+                        Colors.indigoAccent,
+                      ),
                     if (sleep.remSleep.inMinutes > 0)
-                      _buildSleepStageLabel(tt, 'REM', '${sleep.remSleep.inHours}h ${sleep.remSleep.inMinutes.remainder(60)}m', FitoraColors.calmCyan),
+                      _buildSleepStageLabel(
+                        tt,
+                        'REM',
+                        '${sleep.remSleep.inHours}h ${sleep.remSleep.inMinutes.remainder(60)}m',
+                        FitoraColors.calmCyan,
+                      ),
                     if (sleep.lightSleep.inMinutes > 0)
-                      _buildSleepStageLabel(tt, 'Light', '${sleep.lightSleep.inHours}h ${sleep.lightSleep.inMinutes.remainder(60)}m', FitoraColors.lavender),
+                      _buildSleepStageLabel(
+                        tt,
+                        'Light',
+                        '${sleep.lightSleep.inHours}h ${sleep.lightSleep.inMinutes.remainder(60)}m',
+                        FitoraColors.lavender,
+                      ),
                   ],
                 ),
               ],
@@ -785,16 +896,38 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     );
   }
 
-  Widget _buildSleepStageLabel(TextTheme tt, String label, String duration, Color color) {
+  Widget _buildSleepStageLabel(
+    TextTheme tt,
+    String label,
+    String duration,
+    Color color,
+  ) {
     return Row(
       children: [
-        Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+        Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
         const SizedBox(width: 6),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(label, style: tt.labelSmall?.copyWith(color: Colors.white30, fontSize: 9)),
-            Text(duration, style: tt.labelSmall?.copyWith(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.bold)),
+            Text(
+              label,
+              style: tt.labelSmall?.copyWith(
+                color: Colors.white30,
+                fontSize: 9,
+              ),
+            ),
+            Text(
+              duration,
+              style: tt.labelSmall?.copyWith(
+                color: Colors.white70,
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ],
         ),
       ],
@@ -810,53 +943,64 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     double? weight,
   ) {
     return Column(
-      children: [
-        // Modern Weekly Steps Gradient Bar Chart
-        _buildStepsGraph(tt, summaries),
-        const SizedBox(height: FitoraSpacing.lg),
-        
-        Row(
           children: [
-            Expanded(
-              child: _buildTrendCard(
-                tt,
-                'Calories',
-                Icons.local_fire_department_rounded,
-                FitoraColors.softEmerald,
-                summaries.map((s) => s.caloriesBurned).toList(),
-              ),
+            // Modern Weekly Steps Gradient Bar Chart
+            _buildStepsGraph(tt, summaries),
+            const SizedBox(height: FitoraSpacing.lg),
+
+            Row(
+              children: [
+                Expanded(
+                  child: _buildTrendCard(
+                    tt,
+                    'Calories',
+                    Icons.local_fire_department_rounded,
+                    FitoraColors.softEmerald,
+                    summaries.map((s) => s.caloriesBurned).toList(),
+                  ),
+                ),
+                const SizedBox(width: FitoraSpacing.md),
+                Expanded(
+                  child: _buildTrendCard(
+                    tt,
+                    'Active',
+                    Icons.timer_rounded,
+                    FitoraColors.calmCyan,
+                    summaries.map((s) => s.activeMinutes.toDouble()).toList(),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(width: FitoraSpacing.md),
-            Expanded(
-              child: _buildTrendCard(
+            if (hasSleepHistory) ...[
+              const SizedBox(height: FitoraSpacing.lg),
+              _buildTrendCard(
                 tt,
-                'Active',
-                Icons.timer_rounded,
-                FitoraColors.calmCyan,
-                summaries.map((s) => s.activeMinutes.toDouble()).toList(),
+                'Sleep History',
+                Icons.bedtime_rounded,
+                FitoraColors.mintGreen,
+                sleepValues,
               ),
-            ),
+            ],
+            if (hasWeight && weight != null) ...[
+              const SizedBox(height: FitoraSpacing.lg),
+              _buildWeightTrend(tt, weight),
+            ],
+            const SizedBox(height: FitoraSpacing.lg),
+            _buildStreakCard(tt),
           ],
-        ),
-        if (hasSleepHistory) ...[
-          const SizedBox(height: FitoraSpacing.lg),
-          _buildTrendCard(tt, 'Sleep History', Icons.bedtime_rounded, FitoraColors.mintGreen, sleepValues),
-        ],
-        if (hasWeight && weight != null) ...[
-          const SizedBox(height: FitoraSpacing.lg),
-          _buildWeightTrend(tt, weight),
-        ],
-        const SizedBox(height: FitoraSpacing.lg),
-        _buildStreakCard(tt),
-      ],
-    ).animate().fadeIn(delay: 200.ms, duration: 400.ms).slideY(begin: 0.05, end: 0);
+        )
+        .animate()
+        .fadeIn(delay: 200.ms, duration: 400.ms)
+        .slideY(begin: 0.05, end: 0);
   }
 
   Widget _buildStepsGraph(TextTheme tt, List<DailyActivitySummary> summaries) {
     final stepValues = summaries.map((s) => s.steps.toDouble()).toList();
-    final maxSteps = stepValues.isEmpty ? 1.0 : stepValues.reduce((curr, next) => curr > next ? curr : next);
+    final maxSteps = stepValues.isEmpty
+        ? 1.0
+        : stepValues.reduce((curr, next) => curr > next ? curr : next);
     final maxStepsChecked = maxSteps == 0 ? 1.0 : maxSteps;
-    
+
     final trendPct = _calculateTrendPercentage(stepValues);
     final isPositive = trendPct >= 0;
     final trendText = '${isPositive ? "+" : ""}${trendPct.toStringAsFixed(0)}%';
@@ -895,15 +1039,21 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                     Row(
                       children: [
                         Icon(
-                          isPositive ? Icons.trending_up_rounded : Icons.trending_down_rounded,
-                          color: isPositive ? FitoraColors.mintGreen : FitoraColors.errorRed,
+                          isPositive
+                              ? Icons.trending_up_rounded
+                              : Icons.trending_down_rounded,
+                          color: isPositive
+                              ? FitoraColors.mintGreen
+                              : FitoraColors.errorRed,
                           size: 14,
                         ),
                         const SizedBox(width: 4),
                         Text(
                           '$trendText vs last period',
                           style: TextStyle(
-                            color: isPositive ? FitoraColors.mintGreen : FitoraColors.errorRed,
+                            color: isPositive
+                                ? FitoraColors.mintGreen
+                                : FitoraColors.errorRed,
                             fontWeight: FontWeight.bold,
                             fontSize: 11,
                           ),
@@ -918,7 +1068,11 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                     color: FitoraColors.mintGreen.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.directions_walk_rounded, color: FitoraColors.mintGreen, size: 20),
+                  child: const Icon(
+                    Icons.directions_walk_rounded,
+                    color: FitoraColors.mintGreen,
+                    size: 20,
+                  ),
                 ),
               ],
             ),
@@ -927,8 +1081,16 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               crossAxisAlignment: CrossAxisAlignment.end,
               children: summaries.map((s) {
-                final isToday = s.date.day == now.day && s.date.month == now.month && s.date.year == now.year;
-                return _buildBar(_getDayName(s.date), s.steps / maxStepsChecked, isToday, FitoraColors.mintGreen);
+                final isToday =
+                    s.date.day == now.day &&
+                    s.date.month == now.month &&
+                    s.date.year == now.year;
+                return _buildBar(
+                  _getDayName(s.date),
+                  s.steps / maxStepsChecked,
+                  isToday,
+                  FitoraColors.mintGreen,
+                );
               }).toList(),
             ),
           ],
@@ -944,9 +1106,11 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     Color color,
     List<double> values,
   ) {
-    final maxVal = values.isEmpty ? 1.0 : values.reduce((curr, next) => curr > next ? curr : next);
+    final maxVal = values.isEmpty
+        ? 1.0
+        : values.reduce((curr, next) => curr > next ? curr : next);
     final maxValChecked = maxVal == 0 ? 1.0 : maxVal;
-    
+
     final trendPct = _calculateTrendPercentage(values);
     final isPositive = trendPct >= 0;
     final trendText = '${isPositive ? "+" : ""}${trendPct.toStringAsFixed(0)}%';
@@ -992,7 +1156,9 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                 Text(
                   trendText,
                   style: TextStyle(
-                    color: isPositive ? FitoraColors.mintGreen : FitoraColors.errorRed,
+                    color: isPositive
+                        ? FitoraColors.mintGreen
+                        : FitoraColors.errorRed,
                     fontWeight: FontWeight.bold,
                     fontSize: 10,
                   ),
@@ -1027,7 +1193,10 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
             const SizedBox(height: FitoraSpacing.sm),
             Text(
               'Compared to last period',
-              style: tt.labelSmall?.copyWith(color: Colors.white30, fontSize: 9),
+              style: tt.labelSmall?.copyWith(
+                color: Colors.white30,
+                fontSize: 9,
+              ),
             ),
           ],
         ),
@@ -1061,7 +1230,11 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                     color: Colors.white54,
                   ),
                 ),
-                const Icon(Icons.monitor_weight_rounded, color: FitoraColors.lavender, size: 20),
+                const Icon(
+                  Icons.monitor_weight_rounded,
+                  color: FitoraColors.lavender,
+                  size: 20,
+                ),
               ],
             ),
             const SizedBox(height: FitoraSpacing.md),
@@ -1070,11 +1243,17 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
               children: [
                 Text(
                   currentWeight.toStringAsFixed(1),
-                  style: tt.headlineMedium?.copyWith(fontWeight: FontWeight.w900, color: Colors.white),
+                  style: tt.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.w900,
+                    color: Colors.white,
+                  ),
                 ),
                 Padding(
                   padding: const EdgeInsets.only(bottom: 6, left: 4),
-                  child: Text('kg', style: tt.bodySmall?.copyWith(color: Colors.white54)),
+                  child: Text(
+                    'kg',
+                    style: tt.bodySmall?.copyWith(color: Colors.white54),
+                  ),
                 ),
               ],
             ),
@@ -1109,7 +1288,9 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                   ),
             borderRadius: BorderRadius.circular(99),
             border: Border.all(
-              color: isToday ? FitoraColors.mintGreen.withValues(alpha: 0.8) : Colors.transparent,
+              color: isToday
+                  ? FitoraColors.mintGreen.withValues(alpha: 0.8)
+                  : Colors.transparent,
               width: 1.5,
             ),
             boxShadow: isToday
@@ -1118,7 +1299,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                       color: FitoraColors.mintGreen.withValues(alpha: 0.3),
                       blurRadius: 8,
                       spreadRadius: 1,
-                    )
+                    ),
                   ]
                 : null,
           ),
@@ -1137,8 +1318,8 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
   }
 
   Widget _buildStreakCard(TextTheme tt) {
-    final wellness = ref.watch(wellnessProvider);
-    if (wellness.wellnessStreak == 0) return const SizedBox.shrink();
+    final streakState = ref.watch(goalsStreakProvider);
+    if (streakState.currentStreak == 0) return const SizedBox.shrink();
 
     return GlowContainer(
       glowColor: FitoraColors.warningOrange.withValues(alpha: 0.08),
@@ -1159,7 +1340,11 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                 color: FitoraColors.warningOrange.withValues(alpha: 0.2),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.local_fire_department_rounded, color: FitoraColors.warningOrange, size: 28),
+              child: const Icon(
+                Icons.local_fire_department_rounded,
+                color: FitoraColors.warningOrange,
+                size: 28,
+              ),
             ),
             const SizedBox(width: FitoraSpacing.lg),
             Expanded(
@@ -1167,7 +1352,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '${wellness.wellnessStreak} DAY STREAK',
+                    '${streakState.currentStreak} DAY STREAK',
                     style: tt.labelSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                       letterSpacing: 1.0,
@@ -1177,10 +1362,14 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                   const SizedBox(height: 4),
                   Text(
                     'You are unstoppable!',
-                    style: tt.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: Colors.white),
+                    style: tt.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
                   ),
+                  const SizedBox(height: 2),
                   Text(
-                    'Keep the momentum going.',
+                    'Longest streak: ${streakState.longestStreak} days',
                     style: tt.bodySmall?.copyWith(color: Colors.white70),
                   ),
                 ],
@@ -1211,11 +1400,18 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
         ),
         child: Column(
           children: [
-            const Icon(Icons.sync_disabled_rounded, color: Colors.white30, size: 36),
+            const Icon(
+              Icons.sync_disabled_rounded,
+              color: Colors.white30,
+              size: 36,
+            ),
             const SizedBox(height: FitoraSpacing.md),
             Text(
               'No activity recorded yet.',
-              style: tt.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: Colors.white),
+              style: tt.titleSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
             ),
             const SizedBox(height: FitoraSpacing.xs),
             Text(
@@ -1231,7 +1427,9 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
               style: FilledButton.styleFrom(
                 backgroundColor: FitoraColors.mintGreen,
                 foregroundColor: Colors.black,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             ),
           ],
@@ -1254,11 +1452,18 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
         ),
         child: Column(
           children: [
-            const Icon(Icons.bar_chart_rounded, color: FitoraColors.lavender, size: 40),
+            const Icon(
+              Icons.bar_chart_rounded,
+              color: FitoraColors.lavender,
+              size: 40,
+            ),
             const SizedBox(height: FitoraSpacing.md),
             Text(
               'No Trend Data Yet',
-              style: tt.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: Colors.white),
+              style: tt.titleSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
             ),
             const SizedBox(height: FitoraSpacing.xs),
             Text(
@@ -1274,7 +1479,9 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
               style: FilledButton.styleFrom(
                 backgroundColor: FitoraColors.lavender,
                 foregroundColor: Colors.black,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             ),
           ],

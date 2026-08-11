@@ -74,10 +74,7 @@ class _TabletDashboardGrid extends StatelessWidget {
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
-              flex: 5,
-              child: HomeStepRingCard(progress: data.steps),
-            ),
+            Expanded(flex: 5, child: HomeStepRingCard(progress: data.steps)),
             const SizedBox(width: FitoraSpacing.md),
             Expanded(
               flex: 6,
@@ -90,7 +87,10 @@ class _TabletDashboardGrid extends StatelessWidget {
                 childAspectRatio: 1.35,
                 children: [
                   _metricTile(context, data.metric(HomeMetricType.calories)),
-                  _metricTile(context, data.metric(HomeMetricType.activeMinutes)),
+                  _metricTile(
+                    context,
+                    data.metric(HomeMetricType.activeMinutes),
+                  ),
                   _metricTile(context, data.metric(HomeMetricType.water)),
                   _metricTile(context, data.metric(HomeMetricType.sleep)),
                 ],
@@ -194,9 +194,5 @@ Widget _metricTile(BuildContext context, HomeMetricTileData data) {
       break;
   }
 
-  return HomeMetricTile(
-    data: data,
-    icon: icon,
-    accentColor: accent,
-  );
+  return HomeMetricTile(data: data, icon: icon, accentColor: accent);
 }

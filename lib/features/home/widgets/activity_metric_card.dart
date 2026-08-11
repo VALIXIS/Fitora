@@ -37,14 +37,21 @@ class ActivityMetricCard extends StatelessWidget {
               children: [
                 Container(
                   padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(color: color.withValues(alpha: 0.2), shape: BoxShape.circle),
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.2),
+                    shape: BoxShape.circle,
+                  ),
                   child: Icon(icon, color: color, size: 16),
                 ),
                 const SizedBox(width: FitoraSpacing.sm),
                 Expanded(
                   child: Text(
                     title.toUpperCase(),
-                    style: tt.labelSmall?.copyWith(color: Colors.white70, fontWeight: FontWeight.bold, letterSpacing: 1.0),
+                    style: tt.labelSmall?.copyWith(
+                      color: Colors.white70,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.0,
+                    ),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -57,7 +64,10 @@ class ActivityMetricCard extends StatelessWidget {
                 Flexible(
                   child: Text(
                     value,
-                    style: tt.headlineSmall?.copyWith(fontWeight: FontWeight.w900, color: Colors.white),
+                    style: tt.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white,
+                    ),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),

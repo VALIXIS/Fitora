@@ -42,7 +42,9 @@ class HealthCacheService {
     if (jsonStr != null) {
       try {
         final List<dynamic> decoded = jsonDecode(jsonStr);
-        return decoded.map((json) => DailyActivitySummary.fromJson(json)).toList();
+        return decoded
+            .map((json) => DailyActivitySummary.fromJson(json))
+            .toList();
       } catch (e) {
         // Corrupted cache
         _prefs.remove(_weeklyActivityKey);

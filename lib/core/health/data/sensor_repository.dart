@@ -25,12 +25,12 @@ class SensorDebugSnapshot {
   });
 
   factory SensorDebugSnapshot.empty() => const SensorDebugSnapshot(
-        rawSteps: -1,
-        todaySteps: 0,
-        baseline: -1,
-        lastEventTime: null,
-        sensorAvailable: false,
-      );
+    rawSteps: -1,
+    todaySteps: 0,
+    baseline: -1,
+    lastEventTime: null,
+    sensorAvailable: false,
+  );
 }
 
 /// Exposes the native Android TYPE_STEP_COUNTER sensor as a Dart stream.
@@ -67,8 +67,10 @@ class SensorRepository {
       if (snap.rawSteps >= 0 && snap.todaySteps >= 0) return snap.todaySteps;
 
       // Fallback if snapshot is missing but stream works; return null on timeout rather than 0
-      final steps = await stepStream.first
-          .timeout(const Duration(seconds: 4), onTimeout: () => -1);
+      final steps = await stepStream.first.timeout(
+        const Duration(seconds: 4),
+        onTimeout: () => -1,
+      );
       return steps >= 0 ? steps : null;
     } catch (_) {
       return null;
@@ -79,7 +81,9 @@ class SensorRepository {
   /// Returns [SensorDebugSnapshot.empty()] on any error.
   Future<SensorDebugSnapshot> getDebugSnapshot() async {
     try {
-      final raw = await _debugMethodChannel.invokeMethod<Map>('getDebugSnapshot');
+      final raw = await _debugMethodChannel.invokeMethod<Map>(
+        'getDebugSnapshot',
+      );
       if (raw == null) return SensorDebugSnapshot.empty();
 
       final lastEventMs = raw['lastEventMs'] as int? ?? 0;

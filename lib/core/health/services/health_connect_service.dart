@@ -38,7 +38,10 @@ class HealthConnectService {
     }
   }
 
-  Future<List<HealthDataPoint>> getHealthData(DateTime start, DateTime end) async {
+  Future<List<HealthDataPoint>> getHealthData(
+    DateTime start,
+    DateTime end,
+  ) async {
     try {
       return await _health.getHealthDataFromTypes(
         startTime: start,

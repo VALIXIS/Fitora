@@ -81,7 +81,10 @@ class HealthSyncService extends StateNotifier<SyncStatus>
       final existingSteps = cachedSummary?.steps ?? 0;
 
       if (hcSummary != null && sensorSummary != null) {
-        final calcSteps = max(existingSteps, max(hcSummary.steps, sensorSummary.steps));
+        final calcSteps = max(
+          existingSteps,
+          max(hcSummary.steps, sensorSummary.steps),
+        );
         mergedSummary = hcSummary.copyWith(
           steps: calcSteps,
           dataSource: DataSource.healthConnectAndSensor,

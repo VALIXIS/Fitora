@@ -30,21 +30,22 @@ class WorkoutHistoryEntry {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'workoutId': workoutId,
-        'title': title,
-        'completedAt': completedAt.toIso8601String(),
-        'durationSeconds': durationSeconds,
-        'calories': calories,
-        'exercisesCompleted': exercisesCompleted,
-      };
+    'id': id,
+    'workoutId': workoutId,
+    'title': title,
+    'completedAt': completedAt.toIso8601String(),
+    'durationSeconds': durationSeconds,
+    'calories': calories,
+    'exercisesCompleted': exercisesCompleted,
+  };
 
   factory WorkoutHistoryEntry.fromJson(Map<String, dynamic> json) {
     return WorkoutHistoryEntry(
       id: json['id'] as String? ?? '',
       workoutId: json['workoutId'] as String? ?? '',
       title: json['title'] as String? ?? 'Workout',
-      completedAt: DateTime.tryParse(json['completedAt'] as String? ?? '') ??
+      completedAt:
+          DateTime.tryParse(json['completedAt'] as String? ?? '') ??
           DateTime.now(),
       durationSeconds: json['durationSeconds'] as int? ?? 0,
       calories: json['calories'] as int? ?? 0,
@@ -65,10 +66,10 @@ class StreakInfo {
   });
 
   factory StreakInfo.empty() => const StreakInfo(
-        currentStreak: 0,
-        longestStreak: 0,
-        lastCompletedDate: null,
-      );
+    currentStreak: 0,
+    longestStreak: 0,
+    lastCompletedDate: null,
+  );
 }
 
 class ProgressSummary {
@@ -91,14 +92,14 @@ class ProgressSummary {
   });
 
   factory ProgressSummary.empty() => const ProgressSummary(
-        totalWorkouts: 0,
-        totalMinutes: 0,
-        totalCalories: 0,
-        totalExercises: 0,
-        weeklyWorkouts: 0,
-        weeklyMinutes: 0,
-        weeklyCalories: 0,
-      );
+    totalWorkouts: 0,
+    totalMinutes: 0,
+    totalCalories: 0,
+    totalExercises: 0,
+    weeklyWorkouts: 0,
+    weeklyMinutes: 0,
+    weeklyCalories: 0,
+  );
 }
 
 class DailyActivity {

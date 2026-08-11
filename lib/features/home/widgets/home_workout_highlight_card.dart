@@ -53,7 +53,9 @@ class HomeWorkoutHighlightCard extends StatelessWidget {
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: FitoraSpacing.md),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: FitoraSpacing.md,
+                  ),
                   child: Row(
                     children: [
                       Container(
@@ -77,7 +79,9 @@ class HomeWorkoutHighlightCard extends StatelessWidget {
                             Text(
                               "RECOMMENDED SESSION",
                               style: textTheme.labelSmall?.copyWith(
-                                color: colorScheme.onPrimary.withValues(alpha: 0.7),
+                                color: colorScheme.onPrimary.withValues(
+                                  alpha: 0.7,
+                                ),
                                 fontWeight: FontWeight.bold,
                                 letterSpacing: 1.2,
                               ),
@@ -107,7 +111,9 @@ class HomeWorkoutHighlightCard extends StatelessWidget {
               children: [
                 Text(
                   highlight.title,
-                  style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                  style: textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: FitoraSpacing.xs),
                 Text(
