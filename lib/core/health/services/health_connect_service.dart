@@ -13,13 +13,21 @@ class HealthConnectService {
   static const _stepsTypes = [HealthDataType.STEPS];
   static const _stepsPerms = [HealthDataAccess.READ];
 
-  final _dataTypes = [
+  // Activity types — steps, calories, distance (most devices grant these together)
+  static const _activityTypes = [
     HealthDataType.STEPS,
     HealthDataType.ACTIVE_ENERGY_BURNED,
     HealthDataType.TOTAL_CALORIES_BURNED,
     HealthDataType.DISTANCE_DELTA,
+  ];
+
+  // Sleep types — separate permission bucket, may not be granted
+  static const _sleepTypes = [
     HealthDataType.SLEEP_SESSION,
   ];
+
+  // All types used during permission request
+  List<HealthDataType> get _dataTypes => [..._activityTypes, ..._sleepTypes];
 
   HealthConnectService._internal() {
     _health.configure();
@@ -168,21 +176,37 @@ class HealthConnectService {
     }
   }
 
-  Future<List<HealthDataPoint>> getHealthData(DateTime start, DateTime end) async {
+  /// Reads activity data only (steps, calories, distance) — not sleep.
+  Future<List<HealthDataPoint>> getActivityData(DateTime start, DateTime end) async {
     try {
       final points = await _health.getHealthDataFromTypes(
         startTime: start,
         endTime: end,
-        types: _dataTypes,
+        types: _activityTypes,
       );
-      if (kDebugMode) print('[HC_DEBUG] getHealthData returned ${points.length} points');
+      if (kDebugMode) print('[HC_DEBUG] getActivityData returned ${points.length} points');
       return points;
     } catch (e, st) {
-      AppLogger.error('Health Connect getHealthData error: $e', st);
-      if (kDebugMode) print('[HC_DEBUG] getHealthData THREW: $e');
+      AppLogger.error('Health Connect getActivityData error: $e', st);
+      if (kDebugMode) print('[HC_DEBUG] getActivityData THREW: $e');
       return [];
     }
   }
+
+  /// Reads sleep data only — throws if sleep permission not granted.
+  Future<List<HealthDataPoint>> getSleepData(DateTime start, DateTime end) async {
+    final points = await _health.getHealthDataFromTypes(
+      startTime: start,
+      endTime: end,
+      types: _sleepTypes,
+    );
+    if (kDebugMode) print('[HC_DEBUG] getSleepData returned ${points.length} points');
+    return points;
+  }
+
+  /// Legacy alias — reads only activity data (no sleep) to avoid permission issues.
+  Future<List<HealthDataPoint>> getHealthData(DateTime start, DateTime end) =>
+      getActivityData(start, end);
 
   Future<int?> getSteps(DateTime start, DateTime end) async {
     try {

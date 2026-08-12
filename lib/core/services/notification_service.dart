@@ -21,7 +21,7 @@ class NotificationService {
 
     await _plugin.initialize(
       settings: const InitializationSettings(
-        android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+        android: AndroidInitializationSettings('@drawable/ic_notification'),
         iOS: DarwinInitializationSettings(
           requestAlertPermission: false,
           requestBadgePermission: false,
@@ -144,7 +144,7 @@ class NotificationService {
             channelDescription: 'Periodic reminders to drink water throughout the day',
             importance: Importance.defaultImportance,
             priority: Priority.defaultPriority,
-            icon: '@mipmap/ic_launcher',
+            icon: '@drawable/ic_notification',
           ),
           iOS: DarwinNotificationDetails(),
         ),
@@ -179,7 +179,7 @@ class NotificationService {
           channelDescription: 'Periodic reminders to drink water throughout the day',
           importance: Importance.high,
           priority: Priority.high,
-          icon: '@mipmap/ic_launcher',
+          icon: '@drawable/ic_notification',
         ),
         iOS: DarwinNotificationDetails(),
       ),

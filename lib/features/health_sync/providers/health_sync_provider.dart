@@ -242,20 +242,29 @@ class HealthSyncController extends StateNotifier<HealthSyncState> with WidgetsBi
 
       if (kDebugMode) print('[HC_DEBUG] Reading from HealthConnectRepository...');
 
-      // Use the shared singleton repo (same instance as platform connectors)
+      // Step read — MUST succeed for any useful data
       final hcDaily = await sharedHcRepo.getDailyActivity(now);
-      final hcSleep = await sharedHcRepo.getSleepSummary(now);
 
       if (kDebugMode) {
-        print('[HC_DEBUG] HC read complete: steps=${hcDaily.steps}, cal=${hcDaily.caloriesBurned}, dist=${hcDaily.distanceKm}');
-        print('[HC_DEBUG] HC sleep: ${hcSleep.totalSleep.inMinutes} min');
+        print('[HC_DEBUG] HC steps read: steps=${hcDaily.steps}, cal=${hcDaily.caloriesBurned}, dist=${hcDaily.distanceKm}');
       }
+
+      // Sleep read — optional, don't let failure kill the sync
+      SleepSummary? hcSleep;
+      try {
+        hcSleep = await sharedHcRepo.getSleepSummary(now);
+        if (kDebugMode) print('[HC_DEBUG] HC sleep: ${hcSleep.totalSleep.inMinutes} min');
+      } catch (e) {
+        if (kDebugMode) print('[HC_DEBUG] Sleep read failed (non-fatal): $e');
+      }
+
+      final sleepHours = (hcSleep?.totalSleep.inMinutes ?? 0) / 60.0;
 
       final blended = HealthMetricData(
         steps: hcDaily.steps,
         heartRate: 0.0,
         activeCalories: hcDaily.caloriesBurned,
-        sleepHours: hcSleep.totalSleep.inMinutes / 60.0,
+        sleepHours: sleepHours,
         timestamp: now,
       );
 

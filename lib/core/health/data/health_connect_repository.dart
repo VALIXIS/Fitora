@@ -86,7 +86,7 @@ class HealthConnectRepository implements HealthRepository {
       end = now;
     }
 
-    final points = await _service.getHealthData(start, end);
+    final points = await _service.getSleepData(start, end);
     int sleepMinutes = 0;
 
     for (final p in points) {
