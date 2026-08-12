@@ -1,31 +1,3 @@
-class WaterLogEntry {
-  final String id;
-  final int amountMl;
-  final DateTime timestamp;
-  final String dateStr;
-
-  const WaterLogEntry({
-    required this.id,
-    required this.amountMl,
-    required this.timestamp,
-    required this.dateStr,
-  });
-
-  Map<String, dynamic> toJson() => {
-        'id': id,
-        'amountMl': amountMl,
-        'timestamp': timestamp.toIso8601String(),
-        'dateStr': dateStr,
-      };
-
-  factory WaterLogEntry.fromJson(Map<String, dynamic> json) => WaterLogEntry(
-        id: json['id'] as String,
-        amountMl: (json['amountMl'] as num).toInt(),
-        timestamp: DateTime.parse(json['timestamp'] as String),
-        dateStr: json['dateStr'] as String,
-      );
-}
-
 class WellnessState {
   // Hydration
   final double hydrationLiters;
@@ -34,7 +6,6 @@ class WellnessState {
   final String? lastHydrationDate;
   final bool hydrationRemindersEnabled;
   final int hydrationReminderFrequencyMinutes; // e.g. 60, 90, 120
-  final List<WaterLogEntry> waterLogs;
 
   // Guided Breathing
   final int breathingMinutes;
@@ -73,7 +44,6 @@ class WellnessState {
     this.lastHydrationDate,
     required this.hydrationRemindersEnabled,
     required this.hydrationReminderFrequencyMinutes,
-    required this.waterLogs,
     required this.breathingMinutes,
     required this.inhaleSeconds,
     required this.exhaleSeconds,
@@ -101,7 +71,6 @@ class WellnessState {
         lastHydrationDate: null,
         hydrationRemindersEnabled: false,
         hydrationReminderFrequencyMinutes: 60,
-        waterLogs: const [],
         breathingMinutes: 0,
         inhaleSeconds: 4,
         exhaleSeconds: 4,
@@ -129,7 +98,6 @@ class WellnessState {
     String? lastHydrationDate,
     bool? hydrationRemindersEnabled,
     int? hydrationReminderFrequencyMinutes,
-    List<WaterLogEntry>? waterLogs,
     int? breathingMinutes,
     int? inhaleSeconds,
     int? exhaleSeconds,
@@ -156,7 +124,6 @@ class WellnessState {
       lastHydrationDate: lastHydrationDate ?? this.lastHydrationDate,
       hydrationRemindersEnabled: hydrationRemindersEnabled ?? this.hydrationRemindersEnabled,
       hydrationReminderFrequencyMinutes: hydrationReminderFrequencyMinutes ?? this.hydrationReminderFrequencyMinutes,
-      waterLogs: waterLogs ?? this.waterLogs,
       breathingMinutes: breathingMinutes ?? this.breathingMinutes,
       inhaleSeconds: inhaleSeconds ?? this.inhaleSeconds,
       exhaleSeconds: exhaleSeconds ?? this.exhaleSeconds,
@@ -186,7 +153,6 @@ class WellnessState {
       'lastHydrationDate': lastHydrationDate,
       'hydrationRemindersEnabled': hydrationRemindersEnabled,
       'hydrationReminderFrequencyMinutes': hydrationReminderFrequencyMinutes,
-      'waterLogs': waterLogs.map((e) => e.toJson()).toList(),
       'breathingMinutes': breathingMinutes,
       'inhaleSeconds': inhaleSeconds,
       'exhaleSeconds': exhaleSeconds,
@@ -216,10 +182,6 @@ class WellnessState {
       lastHydrationDate: map['lastHydrationDate'] as String?,
       hydrationRemindersEnabled: map['hydrationRemindersEnabled'] as bool? ?? false,
       hydrationReminderFrequencyMinutes: (map['hydrationReminderFrequencyMinutes'] as num?)?.toInt() ?? 60,
-      waterLogs: (map['waterLogs'] as List<dynamic>?)
-              ?.map((e) => WaterLogEntry.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          const [],
       breathingMinutes: (map['breathingMinutes'] as num?)?.toInt() ?? 0,
       inhaleSeconds: (map['inhaleSeconds'] as num?)?.toInt() ?? 4,
       exhaleSeconds: (map['exhaleSeconds'] as num?)?.toInt() ?? 4,
@@ -236,12 +198,15 @@ class WellnessState {
           const {},
       cycleLengthDays: (map['cycleLengthDays'] as num?)?.toInt() ?? 28,
       periodDurationDays: (map['periodDurationDays'] as num?)?.toInt() ?? 5,
-      periodStartDates: (map['periodStartDates'] as List<dynamic>?)?.cast<String>() ?? const [],
+      periodStartDates: (map['periodStartDates'] as List<dynamic>?)?.map((e) => e as String).toList() ?? const [],
       loggedSymptoms: (map['loggedSymptoms'] as Map<String, dynamic>?)?.map(
-            (k, v) => MapEntry(k, (v as List<dynamic>).cast<String>()),
+            (k, v) => MapEntry(k, (v as List<dynamic>).map((e) => e as String).toList()),
           ) ??
           const {},
-      loggedMoods: (map['loggedMoods'] as Map<String, dynamic>?)?.cast<String, String>() ?? const {},
+      loggedMoods: (map['loggedMoods'] as Map<String, dynamic>?)?.map(
+            (k, v) => MapEntry(k, v as String),
+          ) ??
+          const {},
       loggedEnergy: (map['loggedEnergy'] as Map<String, dynamic>?)?.map(
             (k, v) => MapEntry(k, (v as num).toInt()),
           ) ??

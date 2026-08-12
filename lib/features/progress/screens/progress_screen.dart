@@ -10,7 +10,6 @@ import 'package:fitora/core/health/providers/health_providers.dart';
 import 'package:fitora/core/health/domain/health_models.dart';
 import 'package:fitora/features/wellness/providers/wellness_provider.dart';
 import 'package:fitora/features/wellness/domain/wellness_models.dart';
-import 'package:fitora/features/wellness/widgets/water_logging_modal.dart';
 import 'package:fitora/features/personalization/providers/personalization_controller.dart';
 import 'package:fitora/shared/widgets/fitora_background.dart';
 
@@ -78,7 +77,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                   // Activity Summary Metrics
                   _buildSectionHeader(textTheme, 'OVERVIEW'),
                   const SizedBox(height: FitoraSpacing.md),
-                  if (summaries.isEmpty || summaries.last.lastSyncTime == null) ...[
+                  if (summaries.isEmpty) ...[
                     _buildEmptyActivityCard(context, textTheme),
                   ] else ...[
                     _buildActivitySection(textTheme, summaries),
@@ -94,7 +93,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                   // Trends & Analytics Charts Section
                   _buildSectionHeader(textTheme, 'TRENDS & ANALYTICS'),
                   const SizedBox(height: FitoraSpacing.md),
-                  if (summaries.isEmpty || summaries.last.lastSyncTime == null) ...[
+                  if (summaries.isEmpty) ...[
                     _buildEmptyTrendsCard(context, textTheme),
                   ] else ...[
                     _buildTrendsSection(textTheme, summaries, hasSleepHistory, sleepValues, hasWeight, profile.weightKg),
@@ -504,9 +503,9 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                         tooltip: 'Reset intake',
                       ),
                     ElevatedButton.icon(
-                      onPressed: () => WaterLoggingModal.show(context),
+                      onPressed: () => ref.read(wellnessProvider.notifier).addHydration(0.25),
                       icon: const Icon(Icons.add_rounded, size: 18),
-                      label: const Text('+ Add Water'),
+                      label: const Text('+ 250ml'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.blueAccent.withValues(alpha: 0.2),
                         foregroundColor: Colors.blueAccent,
@@ -939,7 +938,9 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: summaries.map((s) {
                 final isToday = s.date.day == now.day && s.date.month == now.month && s.date.year == now.year;
-                return _buildBar(_getDayName(s.date), s.steps / maxStepsChecked, isToday, FitoraColors.mintGreen);
+                return Expanded(
+                  child: _buildBar(_getDayName(s.date), s.steps / maxStepsChecked, isToday, FitoraColors.mintGreen),
+                );
               }).toList(),
             ),
           ],
@@ -1019,16 +1020,19 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                 children: values.map((val) {
                   final heightRatio = (val / maxValChecked).clamp(0.05, 1.0);
                   return Expanded(
-                    child: Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 3),
-                      height: 70 * heightRatio,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [color, color.withValues(alpha: 0.3)],
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
+                    child: Align(
+                      alignment: Alignment.bottomCenter,
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 3),
+                        height: 70 * heightRatio,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [color, color.withValues(alpha: 0.3)],
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                          ),
+                          borderRadius: BorderRadius.circular(99),
                         ),
-                        borderRadius: BorderRadius.circular(99),
                       ),
                     ),
                   );
@@ -1098,6 +1102,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
   Widget _buildBar(String day, double heightRatio, bool isToday, Color color) {
     final double clampedRatio = heightRatio.clamp(0.04, 1.0);
     return Column(
+      mainAxisSize: MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
         Container(

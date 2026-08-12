@@ -9,7 +9,7 @@ class PedometerService {
 
   StreamController<int>? _stepStreamController;
   Timer? _simulationTimer;
-  int _currentSteps = 8420; // Starting steps count
+  int _currentSteps = 0; // Starts at 0, no hardcoded health fallback
   bool _isWalking = false;
   HealthPermissionStatus _permissionStatus = HealthPermissionStatus.notDetermined;
 
@@ -29,7 +29,7 @@ class PedometerService {
   }
 
   void setInitialSteps(int steps) {
-    if (steps > _currentSteps) {
+    if (steps >= 0) {
       _currentSteps = steps;
       _emitCurrentSteps();
     }

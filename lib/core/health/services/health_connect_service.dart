@@ -8,6 +8,7 @@ class HealthConnectService {
   final _dataTypes = [
     HealthDataType.STEPS,
     HealthDataType.ACTIVE_ENERGY_BURNED,
+    HealthDataType.TOTAL_CALORIES_BURNED,
     HealthDataType.DISTANCE_DELTA,
     HealthDataType.SLEEP_SESSION,
   ];
@@ -16,21 +17,52 @@ class HealthConnectService {
     _health.configure();
   }
 
+  List<HealthDataAccess> get _permissions =>
+      _dataTypes.map((_) => HealthDataAccess.READ).toList();
+
   Future<HealthConnectStatus> getStatus() async {
     try {
-      final available = await _health.hasPermissions(_dataTypes);
-      if (available == null) return HealthConnectStatus.permissionRequired;
-      if (available) return HealthConnectStatus.connected;
+      final sdkStatus = await _health.getHealthConnectSdkStatus();
+      if (sdkStatus != HealthConnectSdkStatus.sdkAvailable) {
+        return HealthConnectStatus.notInstalled;
+      }
+
+      final stepsPerm = await _health.hasPermissions(
+        [HealthDataType.STEPS],
+        permissions: [HealthDataAccess.READ],
+      );
+
+      if (stepsPerm == true) {
+        return HealthConnectStatus.connected;
+      }
+
       return HealthConnectStatus.permissionRequired;
     } catch (e, st) {
       AppLogger.error('Health Connect status error: $e', st);
-      return HealthConnectStatus.error;
+      return HealthConnectStatus.permissionRequired;
     }
   }
 
   Future<bool> requestPermissions() async {
     try {
-      return await _health.requestAuthorization(_dataTypes);
+      final sdkStatus = await _health.getHealthConnectSdkStatus();
+      if (sdkStatus == HealthConnectSdkStatus.sdkUnavailable) {
+        return false;
+      }
+
+      final granted = await _health.requestAuthorization(
+        _dataTypes,
+        permissions: _permissions,
+      );
+
+      if (granted) return true;
+
+      final stepsPerm = await _health.hasPermissions(
+        [HealthDataType.STEPS],
+        permissions: [HealthDataAccess.READ],
+      );
+
+      return stepsPerm ?? false;
     } catch (e, st) {
       AppLogger.error('Health Connect permission error: $e', st);
       return false;

@@ -9,7 +9,6 @@ import 'package:fitora/shared/widgets/glow_container.dart';
 import 'package:fitora/core/health/providers/health_providers.dart';
 import 'package:fitora/core/health/domain/health_models.dart';
 import 'package:fitora/features/wellness/providers/wellness_provider.dart';
-import 'package:fitora/features/wellness/widgets/water_logging_modal.dart';
 import 'package:fitora/features/personalization/providers/personalization_controller.dart';
 import 'package:fitora/features/profile/screens/profile_screen.dart';
 import 'package:fitora/core/utils/greeting_utils.dart';
@@ -450,7 +449,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     icon: Icons.water_drop_rounded,
                     color: Colors.blueAccent,
                     textTheme: textTheme,
-                    onTap: () => WaterLoggingModal.show(context),
                   ),
                 ),
               ],
@@ -678,7 +676,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           icon: Icons.water_drop_rounded,
           color: Colors.blueAccent,
           textTheme: textTheme,
-          onTap: () => WaterLoggingModal.show(context),
         ),
         if (hasSleep) ...[
           const SizedBox(height: FitoraSpacing.sm),
@@ -752,43 +749,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ],
                   ),
                 ),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (title == 'Hydration Goal') ...[
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        margin: const EdgeInsets.only(right: 8),
-                        decoration: BoxDecoration(
-                          color: Colors.blueAccent.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.blueAccent.withValues(alpha: 0.3)),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: const [
-                            Icon(Icons.add_rounded, color: Colors.blueAccent, size: 14),
-                            SizedBox(width: 2),
-                            Text(
-                              'Add Water',
-                              style: TextStyle(
-                                color: Colors.blueAccent,
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                    Text(
-                      '${(progress * 100).toInt()}%',
-                      style: textTheme.labelLarge?.copyWith(
-                        color: color,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                  ],
+                Text(
+                  '${(progress * 100).toInt()}%',
+                  style: textTheme.labelLarge?.copyWith(
+                    color: color,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
               ],
             ),

@@ -1,4 +1,3 @@
-import 'dart:math';
 import 'package:fitora/core/health/domain/health_models.dart';
 import 'package:fitora/core/health/services/health_connect_service.dart';
 import 'package:fitora/core/health/data/health_connect_repository.dart';
@@ -9,42 +8,6 @@ abstract class HealthPlatformConnector {
   Future<HealthPermissionStatus> checkPermissionStatus();
   Future<HealthPermissionStatus> requestPermissions();
   Future<HealthMetricData> fetchMetrics(DateTime startTime, DateTime endTime);
-}
-
-class GoogleFitConnector implements HealthPlatformConnector {
-  @override
-  HealthSource get source => HealthSource.googleFit;
-
-  HealthPermissionStatus _status = HealthPermissionStatus.notDetermined;
-
-  @override
-  Future<HealthPermissionStatus> checkPermissionStatus() async {
-    return _status;
-  }
-
-  @override
-  Future<HealthPermissionStatus> requestPermissions() async {
-    await Future.delayed(const Duration(milliseconds: 600)); // Simulate OS popup delay
-    _status = HealthPermissionStatus.authorized;
-    return _status;
-  }
-
-  @override
-  Future<HealthMetricData> fetchMetrics(DateTime startTime, DateTime endTime) async {
-    if (_status != HealthPermissionStatus.authorized) {
-      throw Exception('Permission to Google Fit not granted');
-    }
-    await Future.delayed(const Duration(milliseconds: 400)); // Simulate query delay
-
-    final random = Random();
-    return HealthMetricData(
-      steps: 7200 + random.nextInt(2500),
-      heartRate: 68.0 + random.nextDouble() * 15.0,
-      activeCalories: 340.0 + random.nextInt(150),
-      sleepHours: 7.2 + random.nextDouble() * 1.5,
-      timestamp: DateTime.now(),
-    );
-  }
 }
 
 class HealthConnectConnector implements HealthPlatformConnector {
@@ -61,9 +24,12 @@ class HealthConnectConnector implements HealthPlatformConnector {
       if (status == HealthConnectStatus.connected) {
         return HealthPermissionStatus.authorized;
       }
+      if (status == HealthConnectStatus.permissionRequired) {
+        return HealthPermissionStatus.notDetermined;
+      }
       return HealthPermissionStatus.denied;
     } catch (_) {
-      return HealthPermissionStatus.denied;
+      return HealthPermissionStatus.notDetermined;
     }
   }
 
@@ -104,74 +70,68 @@ class HealthConnectConnector implements HealthPlatformConnector {
   }
 }
 
-class SamsungHealthConnector implements HealthPlatformConnector {
-  @override
-  HealthSource get source => HealthSource.samsungHealth;
+class GoogleFitConnector implements HealthPlatformConnector {
+  final HealthConnectConnector _hcConnector = HealthConnectConnector();
 
-  HealthPermissionStatus _status = HealthPermissionStatus.notDetermined;
+  @override
+  HealthSource get source => HealthSource.googleFit;
 
   @override
   Future<HealthPermissionStatus> checkPermissionStatus() async {
-    return _status;
+    return await _hcConnector.checkPermissionStatus();
   }
 
   @override
   Future<HealthPermissionStatus> requestPermissions() async {
-    await Future.delayed(const Duration(milliseconds: 500));
-    _status = HealthPermissionStatus.authorized;
-    return _status;
+    return await _hcConnector.requestPermissions();
   }
 
   @override
   Future<HealthMetricData> fetchMetrics(DateTime startTime, DateTime endTime) async {
-    if (_status != HealthPermissionStatus.authorized) {
-      throw Exception('Permission to Samsung Health not granted');
-    }
-    await Future.delayed(const Duration(milliseconds: 300));
+    return await _hcConnector.fetchMetrics(startTime, endTime);
+  }
+}
 
-    final random = Random();
-    return HealthMetricData(
-      steps: 6400 + random.nextInt(2100),
-      heartRate: 67.0 + random.nextDouble() * 14.0,
-      activeCalories: 280.0 + random.nextInt(120),
-      sleepHours: 7.0 + random.nextDouble() * 1.0,
-      timestamp: DateTime.now(),
-    );
+class SamsungHealthConnector implements HealthPlatformConnector {
+  final HealthConnectConnector _hcConnector = HealthConnectConnector();
+
+  @override
+  HealthSource get source => HealthSource.samsungHealth;
+
+  @override
+  Future<HealthPermissionStatus> checkPermissionStatus() async {
+    return await _hcConnector.checkPermissionStatus();
+  }
+
+  @override
+  Future<HealthPermissionStatus> requestPermissions() async {
+    return await _hcConnector.requestPermissions();
+  }
+
+  @override
+  Future<HealthMetricData> fetchMetrics(DateTime startTime, DateTime endTime) async {
+    return await _hcConnector.fetchMetrics(startTime, endTime);
   }
 }
 
 class AppleHealthConnector implements HealthPlatformConnector {
+  final HealthConnectConnector _hcConnector = HealthConnectConnector();
+
   @override
   HealthSource get source => HealthSource.appleHealth;
 
-  HealthPermissionStatus _status = HealthPermissionStatus.notDetermined;
-
   @override
   Future<HealthPermissionStatus> checkPermissionStatus() async {
-    return _status;
+    return await _hcConnector.checkPermissionStatus();
   }
 
   @override
   Future<HealthPermissionStatus> requestPermissions() async {
-    await Future.delayed(const Duration(milliseconds: 700));
-    _status = HealthPermissionStatus.authorized;
-    return _status;
+    return await _hcConnector.requestPermissions();
   }
 
   @override
   Future<HealthMetricData> fetchMetrics(DateTime startTime, DateTime endTime) async {
-    if (_status != HealthPermissionStatus.authorized) {
-      throw Exception('Permission to Apple Health not granted');
-    }
-    await Future.delayed(const Duration(milliseconds: 500));
-
-    final random = Random();
-    return HealthMetricData(
-      steps: 9400 + random.nextInt(1500),
-      heartRate: 62.0 + random.nextDouble() * 10.0,
-      activeCalories: 420.0 + random.nextInt(200),
-      sleepHours: 7.8 + random.nextDouble() * 0.8,
-      timestamp: DateTime.now(),
-    );
+    return await _hcConnector.fetchMetrics(startTime, endTime);
   }
 }
