@@ -13,6 +13,7 @@ import 'package:fitora/core/health/services/health_permissions_service.dart';
 import 'package:fitora/core/constants/storage_keys.dart';
 import 'package:fitora/core/health/utils/goal_calculator.dart';
 import 'package:fitora/features/personalization/providers/personalization_controller.dart';
+import 'package:fitora/features/health_sync/providers/health_sync_provider.dart';
 
 // ---------------------------------------------------------------------------
 // Core Services
@@ -164,7 +165,8 @@ final dailyActivityProvider = Provider.family<DailyActivitySummary, DateTime>((
   ref,
   date,
 ) {
-  // Rebuild UI when background sync completes
+  // Rebuild UI when health sync state updates
+  ref.watch(healthSyncProvider);
   ref.watch(healthSyncServiceProvider);
 
   final profile = ref.watch(personalizationControllerProvider).profile;
@@ -202,6 +204,7 @@ final dailyActivityProvider = Provider.family<DailyActivitySummary, DateTime>((
 
 final weeklyActivityProvider =
     Provider.family<List<DailyActivitySummary>, DateTime>((ref, startDate) {
+      ref.watch(healthSyncProvider);
       ref.watch(healthSyncServiceProvider);
       final cache = ref.watch(healthCacheServiceProvider);
 

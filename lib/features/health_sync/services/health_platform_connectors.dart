@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:fitora/core/health/domain/health_models.dart';
 import 'package:fitora/core/health/services/health_connect_service.dart';
 import 'package:fitora/core/health/data/health_connect_repository.dart';
@@ -21,6 +22,9 @@ class HealthConnectConnector implements HealthPlatformConnector {
   Future<HealthPermissionStatus> checkPermissionStatus() async {
     try {
       final status = await _service.getStatus();
+      if (kDebugMode) {
+        print('[HC_DEBUG] Health Connect status: $status');
+      }
       if (status == HealthConnectStatus.connected) {
         return HealthPermissionStatus.authorized;
       }
@@ -28,7 +32,10 @@ class HealthConnectConnector implements HealthPlatformConnector {
         return HealthPermissionStatus.notDetermined;
       }
       return HealthPermissionStatus.denied;
-    } catch (_) {
+    } catch (e) {
+      if (kDebugMode) {
+        print('[HC_DEBUG] Health Connect status error: $e');
+      }
       return HealthPermissionStatus.notDetermined;
     }
   }
@@ -37,11 +44,17 @@ class HealthConnectConnector implements HealthPlatformConnector {
   Future<HealthPermissionStatus> requestPermissions() async {
     try {
       final granted = await _service.requestPermissions();
+      if (kDebugMode) {
+        print('[HC_DEBUG] Health Connect requestPermissions result: $granted');
+      }
       if (granted) {
         return HealthPermissionStatus.authorized;
       }
       return HealthPermissionStatus.denied;
-    } catch (_) {
+    } catch (e) {
+      if (kDebugMode) {
+        print('[HC_DEBUG] Health Connect requestPermissions exception: $e');
+      }
       return HealthPermissionStatus.denied;
     }
   }
@@ -49,24 +62,27 @@ class HealthConnectConnector implements HealthPlatformConnector {
   @override
   Future<HealthMetricData> fetchMetrics(DateTime startTime, DateTime endTime) async {
     final status = await checkPermissionStatus();
-    if (status != HealthPermissionStatus.authorized) {
-      final requested = await requestPermissions();
-      if (requested != HealthPermissionStatus.authorized) {
-        return HealthMetricData.empty();
-      }
+    if (kDebugMode) {
+      print('[HC_DEBUG] HealthConnectConnector.fetchMetrics status check: $status');
     }
 
     final now = DateTime.now();
     final daily = await _repository.getDailyActivity(now);
     final sleep = await _repository.getSleepSummary(now);
 
-    return HealthMetricData(
+    final result = HealthMetricData(
       steps: daily.steps,
       heartRate: 0.0,
       activeCalories: daily.caloriesBurned,
       sleepHours: sleep.totalSleep.inMinutes / 60.0,
-      timestamp: DateTime.now(),
+      timestamp: now,
     );
+
+    if (kDebugMode) {
+      print('[HC_DEBUG] Connector result: steps=${result.steps}, cal=${result.activeCalories}, sleep=${result.sleepHours}');
+    }
+
+    return result;
   }
 }
 
@@ -78,7 +94,11 @@ class GoogleFitConnector implements HealthPlatformConnector {
 
   @override
   Future<HealthPermissionStatus> checkPermissionStatus() async {
-    return await _hcConnector.checkPermissionStatus();
+    final status = await _hcConnector.checkPermissionStatus();
+    if (kDebugMode) {
+      print('[HC_DEBUG] Google Fit status: $status');
+    }
+    return status;
   }
 
   @override

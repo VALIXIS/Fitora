@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fitora/core/health/domain/health_models.dart' hide SyncStatus;
@@ -221,6 +222,10 @@ class HealthSyncController extends StateNotifier<HealthSyncState> with WidgetsBi
   Future<void> syncAllActive() async {
     await load();
     final activeSources = state.connections.values.where((c) => c.isConnected).map((c) => c.source).toList();
+    if (kDebugMode) {
+      print('[HC_DEBUG] Sync started');
+      print('[HC_DEBUG] Selected sources: ${activeSources.map((s) => s.label).join(", ")}');
+    }
     if (activeSources.isEmpty) return;
 
     state = state.copyWith(isSyncing: true, syncError: null);
@@ -233,12 +238,19 @@ class HealthSyncController extends StateNotifier<HealthSyncState> with WidgetsBi
         final metric = await _service.syncSource(src);
         results.add(metric);
 
+        if (kDebugMode) {
+          print('[HC_DEBUG] Sync metric for ${src.label}: steps=${metric.steps}, cal=${metric.activeCalories}, sleep=${metric.sleepHours}');
+        }
+
         final conn = updatedConnections[src]!;
         updatedConnections[src] = conn.copyWith(
           lastSyncStatus: SyncStatus.success,
           lastSyncTime: DateTime.now(),
         );
       } catch (e) {
+        if (kDebugMode) {
+          print('[HC_DEBUG] Sync error for ${src.label}: $e');
+        }
         final conn = updatedConnections[src]!;
         updatedConnections[src] = conn.copyWith(
           lastSyncStatus: SyncStatus.error,
@@ -258,6 +270,10 @@ class HealthSyncController extends StateNotifier<HealthSyncState> with WidgetsBi
     }
 
     final blended = _service.blendMetrics(results, state.priorities);
+
+    if (kDebugMode) {
+      print('[HC_DEBUG] Controller result: steps=${blended.steps}, cal=${blended.activeCalories}, sleep=${blended.sleepHours}');
+    }
 
     state = state.copyWith(
       connections: updatedConnections,
@@ -280,8 +296,8 @@ class HealthSyncController extends StateNotifier<HealthSyncState> with WidgetsBi
       final hcDaily = await hcRepo.getDailyActivity(today);
 
       final updatedDaily = existingDaily.copyWith(
-        steps: blended.steps > 0 ? blended.steps : hcDaily.steps,
-        caloriesBurned: blended.activeCalories > 0 ? blended.activeCalories : hcDaily.caloriesBurned,
+        steps: max(blended.steps, hcDaily.steps),
+        caloriesBurned: max(blended.activeCalories, hcDaily.caloriesBurned),
         distanceKm: hcDaily.distanceKm,
         activeMinutes: hcDaily.activeMinutes,
         date: today,
@@ -290,7 +306,16 @@ class HealthSyncController extends StateNotifier<HealthSyncState> with WidgetsBi
         lastSyncTime: now,
       );
 
+      if (kDebugMode) {
+        print('[HC_DEBUG] Cache saving updatedDaily: steps=${updatedDaily.steps}, cal=${updatedDaily.caloriesBurned}, dist=${updatedDaily.distanceKm}');
+      }
+
       await cacheService.saveDailyActivity(updatedDaily);
+
+      final readDaily = cacheService.getDailyActivity(today);
+      if (kDebugMode) {
+        print('[HC_DEBUG] Cache saved verification read: steps=${readDaily?.steps}, cal=${readDaily?.caloriesBurned}');
+      }
 
       final weekly = cacheService.getWeeklyActivity() ??
           List.generate(7, (i) => DailyActivitySummary.empty(date: today.subtract(Duration(days: 6 - i))));
@@ -316,7 +341,11 @@ class HealthSyncController extends StateNotifier<HealthSyncState> with WidgetsBi
         );
         await cacheService.saveSleepSummary(sleepSummary);
       }
-    } catch (_) {}
+    } catch (e) {
+      if (kDebugMode) {
+        print('[HC_DEBUG] Cache bridge error: $e');
+      }
+    }
   }
 
   Future<void> updatePriorities(List<HealthSource> newOrder) async {
