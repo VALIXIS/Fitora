@@ -221,85 +221,69 @@ class HealthSyncController extends StateNotifier<HealthSyncState> with WidgetsBi
 
   Future<void> syncAllActive() async {
     await load();
-    final activeSources = state.connections.values.where((c) => c.isConnected).map((c) => c.source).toList();
+
+    final connectedSources = state.connections.values
+        .where((c) => c.isConnected)
+        .map((c) => c.source)
+        .toList();
+
     if (kDebugMode) {
-      print('[HC_DEBUG] Sync started');
-      print('[HC_DEBUG] Selected sources: ${activeSources.map((s) => s.label).join(", ")}');
+      print('[HC_DEBUG] Sync started, connected sources: ${connectedSources.map((s) => s.label).join(", ")}');
     }
-    if (activeSources.isEmpty) return;
 
     state = state.copyWith(isSyncing: true, syncError: null);
 
-    final List<HealthMetricData> results = [];
     final updatedConnections = Map<HealthSource, HealthSourceConnectionState>.from(state.connections);
 
-    for (final src in activeSources) {
-      try {
-        final metric = await _service.syncSource(src);
-        results.add(metric);
-
-        if (kDebugMode) {
-          print('[HC_DEBUG] Sync metric for ${src.label}: steps=${metric.steps}, cal=${metric.activeCalories}, sleep=${metric.sleepHours}');
-        }
-
-        final conn = updatedConnections[src]!;
-        updatedConnections[src] = conn.copyWith(
-          lastSyncStatus: SyncStatus.success,
-          lastSyncTime: DateTime.now(),
-        );
-      } catch (e) {
-        if (kDebugMode) {
-          print('[HC_DEBUG] Sync error for ${src.label}: $e');
-        }
-        final conn = updatedConnections[src]!;
-        updatedConnections[src] = conn.copyWith(
-          lastSyncStatus: SyncStatus.error,
-          errorMessage: e.toString(),
-        );
-      }
-    }
-
-    if (results.isEmpty) {
-      state = state.copyWith(
-        connections: updatedConnections,
-        isSyncing: false,
-        syncError: 'No sources synced successfully.',
-      );
-      await _service.saveConnections(updatedConnections);
-      return;
-    }
-
-    final blended = _service.blendMetrics(results, state.priorities);
-
-    if (kDebugMode) {
-      print('[HC_DEBUG] Controller result: steps=${blended.steps}, cal=${blended.activeCalories}, sleep=${blended.sleepHours}');
-    }
-
-    state = state.copyWith(
-      connections: updatedConnections,
-      cachedData: blended,
-      isSyncing: false,
-    );
-
-    await _service.saveConnections(updatedConnections);
-    await _service.saveCachedData(blended);
-
-    // ── Canonical Cache Bridge for Home & Progress Screens ───────────────────
     try {
-      final cacheService = HealthCacheService(AppPreferences.prefs);
+      // Single direct read from Health Connect regardless of which sources are toggled.
+      // All Android sources (Google Fit, Samsung, HC) share the same HC backend.
       final now = DateTime.now();
       final today = DateTime(now.year, now.month, now.day);
-      final existingDaily = cacheService.getDailyActivity(today) ?? DailyActivitySummary.empty(date: today);
 
-      final hcService = HealthConnectService();
-      final hcRepo = HealthConnectRepository(hcService);
-      final hcDaily = await hcRepo.getDailyActivity(today);
+      if (kDebugMode) print('[HC_DEBUG] Reading from HealthConnectRepository...');
 
-      final updatedDaily = existingDaily.copyWith(
-        steps: max(blended.steps, hcDaily.steps),
-        caloriesBurned: max(blended.activeCalories, hcDaily.caloriesBurned),
-        distanceKm: hcDaily.distanceKm,
-        activeMinutes: hcDaily.activeMinutes,
+      // Use the shared singleton repo (same instance as platform connectors)
+      final hcDaily = await _sharedHcRepo.getDailyActivity(now);
+      final hcSleep = await _sharedHcRepo.getSleepSummary(now);
+
+      if (kDebugMode) {
+        print('[HC_DEBUG] HC read complete: steps=${hcDaily.steps}, cal=${hcDaily.caloriesBurned}, dist=${hcDaily.distanceKm}');
+        print('[HC_DEBUG] HC sleep: ${hcSleep.totalSleep.inMinutes} min');
+      }
+
+      final blended = HealthMetricData(
+        steps: hcDaily.steps,
+        heartRate: 0.0,
+        activeCalories: hcDaily.caloriesBurned,
+        sleepHours: hcSleep.totalSleep.inMinutes / 60.0,
+        timestamp: now,
+      );
+
+      // Mark all connected sources as synced
+      for (final src in connectedSources) {
+        final conn = updatedConnections[src];
+        if (conn != null) {
+          updatedConnections[src] = conn.copyWith(
+            lastSyncStatus: SyncStatus.success,
+            lastSyncTime: now,
+          );
+        }
+      }
+
+      state = state.copyWith(
+        connections: updatedConnections,
+        cachedData: blended,
+        isSyncing: false,
+      );
+
+      await _service.saveConnections(updatedConnections);
+      await _service.saveCachedData(blended);
+
+      // ── Write to canonical HealthCacheService so Home & Progress update ────
+      final cacheService = HealthCacheService(AppPreferences.prefs);
+
+      final updatedDaily = hcDaily.copyWith(
         date: today,
         healthConnectStatus: HealthConnectStatus.connected,
         dataSource: DataSource.healthConnectOnly,
@@ -307,44 +291,57 @@ class HealthSyncController extends StateNotifier<HealthSyncState> with WidgetsBi
       );
 
       if (kDebugMode) {
-        print('[HC_DEBUG] Cache saving updatedDaily: steps=${updatedDaily.steps}, cal=${updatedDaily.caloriesBurned}, dist=${updatedDaily.distanceKm}');
+        print('[HC_CACHE] saving: steps=${updatedDaily.steps}, cal=${updatedDaily.caloriesBurned}, dist=${updatedDaily.distanceKm}');
       }
 
       await cacheService.saveDailyActivity(updatedDaily);
 
-      final readDaily = cacheService.getDailyActivity(today);
+      final verify = cacheService.getDailyActivity(today);
       if (kDebugMode) {
-        print('[HC_DEBUG] Cache saved verification read: steps=${readDaily?.steps}, cal=${readDaily?.caloriesBurned}');
+        print('[HC_CACHE] verification read: steps=${verify?.steps}, cal=${verify?.caloriesBurned}');
       }
 
-      final weekly = cacheService.getWeeklyActivity() ??
+      // Update today's slot in weekly
+      final existingWeekly = cacheService.getWeeklyActivity() ??
           List.generate(7, (i) => DailyActivitySummary.empty(date: today.subtract(Duration(days: 6 - i))));
-
-      final updatedWeekly = weekly.map((s) {
+      final updatedWeekly = existingWeekly.map((s) {
         if (s.date.year == today.year && s.date.month == today.month && s.date.day == today.day) {
           return updatedDaily;
         }
         return s;
       }).toList();
-
       await cacheService.saveWeeklyActivity(updatedWeekly);
 
-      if (blended.sleepHours > 0) {
-        final totalMins = (blended.sleepHours * 60).round();
-        final sleepSummary = SleepSummary(
+      if (hcSleep.totalSleep.inMinutes > 0) {
+        final totalMins = hcSleep.totalSleep.inMinutes;
+        await cacheService.saveSleepSummary(SleepSummary(
           totalSleep: Duration(minutes: totalMins),
           remSleep: Duration.zero,
           deepSleep: Duration.zero,
           lightSleep: Duration(minutes: totalMins),
-          sleepScore: totalMins > 0 ? 80 : 0,
+          sleepScore: 80,
           date: today,
-        );
-        await cacheService.saveSleepSummary(sleepSummary);
+        ));
       }
     } catch (e) {
-      if (kDebugMode) {
-        print('[HC_DEBUG] Cache bridge error: $e');
+      if (kDebugMode) print('[HC_DEBUG] syncAllActive EXCEPTION: $e');
+
+      for (final src in connectedSources) {
+        final conn = updatedConnections[src];
+        if (conn != null) {
+          updatedConnections[src] = conn.copyWith(
+            lastSyncStatus: SyncStatus.error,
+            errorMessage: e.toString(),
+          );
+        }
       }
+
+      state = state.copyWith(
+        connections: updatedConnections,
+        isSyncing: false,
+        syncError: e.toString(),
+      );
+      await _service.saveConnections(updatedConnections);
     }
   }
 

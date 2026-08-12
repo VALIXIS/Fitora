@@ -145,15 +145,13 @@ class HealthSyncService {
     );
   }
 
-  // Sync with a specific source
+  // Sync with a specific source — go direct to fetchMetrics.
+  // Permission must be granted via the UI button before syncing.
+  // Calling requestPermissions() here (background context) fails silently on Android 14+.
   Future<HealthMetricData> syncSource(HealthSource source) async {
     final connector = _connectors.firstWhere((c) => c.source == source);
-    final status = await connector.checkPermissionStatus();
-    if (status != HealthPermissionStatus.authorized) {
-      await connector.requestPermissions();
-    }
     final now = DateTime.now();
-    final start = now.subtract(const Duration(days: 1));
+    final start = DateTime(now.year, now.month, now.day);
     return await connector.fetchMetrics(start, now);
   }
 }

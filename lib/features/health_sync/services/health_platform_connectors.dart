@@ -11,31 +11,24 @@ abstract class HealthPlatformConnector {
   Future<HealthMetricData> fetchMetrics(DateTime startTime, DateTime endTime);
 }
 
-class HealthConnectConnector implements HealthPlatformConnector {
-  final HealthConnectService _service = HealthConnectService();
-  late final HealthConnectRepository _repository = HealthConnectRepository(_service);
+// Singleton HealthConnectService so configure() is only called once
+final _sharedHcService = HealthConnectService();
+final _sharedHcRepo = HealthConnectRepository(_sharedHcService);
 
+class HealthConnectConnector implements HealthPlatformConnector {
   @override
   HealthSource get source => HealthSource.healthConnect;
 
   @override
   Future<HealthPermissionStatus> checkPermissionStatus() async {
     try {
-      final status = await _service.getStatus();
-      if (kDebugMode) {
-        print('[HC_DEBUG] Health Connect status: $status');
-      }
-      if (status == HealthConnectStatus.connected) {
-        return HealthPermissionStatus.authorized;
-      }
-      if (status == HealthConnectStatus.permissionRequired) {
-        return HealthPermissionStatus.notDetermined;
-      }
+      final status = await _sharedHcService.getStatus();
+      if (kDebugMode) print('[HC_DEBUG] HealthConnectConnector status: $status');
+      if (status == HealthConnectStatus.connected) return HealthPermissionStatus.authorized;
+      if (status == HealthConnectStatus.permissionRequired) return HealthPermissionStatus.notDetermined;
       return HealthPermissionStatus.denied;
     } catch (e) {
-      if (kDebugMode) {
-        print('[HC_DEBUG] Health Connect status error: $e');
-      }
+      if (kDebugMode) print('[HC_DEBUG] HealthConnectConnector status error: $e');
       return HealthPermissionStatus.notDetermined;
     }
   }
@@ -43,115 +36,94 @@ class HealthConnectConnector implements HealthPlatformConnector {
   @override
   Future<HealthPermissionStatus> requestPermissions() async {
     try {
-      final granted = await _service.requestPermissions();
-      if (kDebugMode) {
-        print('[HC_DEBUG] Health Connect requestPermissions result: $granted');
-      }
-      if (granted) {
-        return HealthPermissionStatus.authorized;
-      }
-      return HealthPermissionStatus.denied;
+      final granted = await _sharedHcService.requestPermissions();
+      if (kDebugMode) print('[HC_DEBUG] HealthConnectConnector requestPermissions: $granted');
+      return granted ? HealthPermissionStatus.authorized : HealthPermissionStatus.denied;
     } catch (e) {
-      if (kDebugMode) {
-        print('[HC_DEBUG] Health Connect requestPermissions exception: $e');
-      }
+      if (kDebugMode) print('[HC_DEBUG] HealthConnectConnector requestPermissions error: $e');
       return HealthPermissionStatus.denied;
     }
   }
 
   @override
   Future<HealthMetricData> fetchMetrics(DateTime startTime, DateTime endTime) async {
-    final status = await checkPermissionStatus();
-    if (kDebugMode) {
-      print('[HC_DEBUG] HealthConnectConnector.fetchMetrics status check: $status');
+    // DIRECT READ — do not gate on permission check here.
+    // Permissions must already be granted via the UI button.
+    // If not granted, the read will throw and we'll see the real error.
+    try {
+      final now = DateTime.now();
+      if (kDebugMode) print('[HC_DEBUG] Connector.fetchMetrics calling repo');
+      final daily = await _sharedHcRepo.getDailyActivity(now);
+      final sleep = await _sharedHcRepo.getSleepSummary(now);
+
+      final result = HealthMetricData(
+        steps: daily.steps,
+        heartRate: 0.0,
+        activeCalories: daily.caloriesBurned,
+        sleepHours: sleep.totalSleep.inMinutes / 60.0,
+        timestamp: now,
+      );
+      if (kDebugMode) {
+        print('[HC_DEBUG] Connector result: steps=${result.steps}, cal=${result.activeCalories}, sleep=${result.sleepHours}');
+      }
+      return result;
+    } catch (e) {
+      if (kDebugMode) print('[HC_DEBUG] Connector.fetchMetrics EXCEPTION: $e');
+      rethrow;
     }
-
-    final now = DateTime.now();
-    final daily = await _repository.getDailyActivity(now);
-    final sleep = await _repository.getSleepSummary(now);
-
-    final result = HealthMetricData(
-      steps: daily.steps,
-      heartRate: 0.0,
-      activeCalories: daily.caloriesBurned,
-      sleepHours: sleep.totalSleep.inMinutes / 60.0,
-      timestamp: now,
-    );
-
-    if (kDebugMode) {
-      print('[HC_DEBUG] Connector result: steps=${result.steps}, cal=${result.activeCalories}, sleep=${result.sleepHours}');
-    }
-
-    return result;
   }
 }
 
+/// On Android, Google Fit is NOT a separate native source (deprecated in health pkg v11+).
+/// Google Fit data flows through Health Connect. This connector delegates to HC.
 class GoogleFitConnector implements HealthPlatformConnector {
-  final HealthConnectConnector _hcConnector = HealthConnectConnector();
+  final _hc = HealthConnectConnector();
 
   @override
   HealthSource get source => HealthSource.googleFit;
 
   @override
-  Future<HealthPermissionStatus> checkPermissionStatus() async {
-    final status = await _hcConnector.checkPermissionStatus();
-    if (kDebugMode) {
-      print('[HC_DEBUG] Google Fit status: $status');
-    }
-    return status;
-  }
+  Future<HealthPermissionStatus> checkPermissionStatus() => _hc.checkPermissionStatus();
 
   @override
-  Future<HealthPermissionStatus> requestPermissions() async {
-    return await _hcConnector.requestPermissions();
-  }
+  Future<HealthPermissionStatus> requestPermissions() => _hc.requestPermissions();
 
   @override
-  Future<HealthMetricData> fetchMetrics(DateTime startTime, DateTime endTime) async {
-    return await _hcConnector.fetchMetrics(startTime, endTime);
-  }
+  Future<HealthMetricData> fetchMetrics(DateTime startTime, DateTime endTime) =>
+      _hc.fetchMetrics(startTime, endTime);
 }
 
+/// Samsung Health on Android also flows through Health Connect.
 class SamsungHealthConnector implements HealthPlatformConnector {
-  final HealthConnectConnector _hcConnector = HealthConnectConnector();
+  final _hc = HealthConnectConnector();
 
   @override
   HealthSource get source => HealthSource.samsungHealth;
 
   @override
-  Future<HealthPermissionStatus> checkPermissionStatus() async {
-    return await _hcConnector.checkPermissionStatus();
-  }
+  Future<HealthPermissionStatus> checkPermissionStatus() => _hc.checkPermissionStatus();
 
   @override
-  Future<HealthPermissionStatus> requestPermissions() async {
-    return await _hcConnector.requestPermissions();
-  }
+  Future<HealthPermissionStatus> requestPermissions() => _hc.requestPermissions();
 
   @override
-  Future<HealthMetricData> fetchMetrics(DateTime startTime, DateTime endTime) async {
-    return await _hcConnector.fetchMetrics(startTime, endTime);
-  }
+  Future<HealthMetricData> fetchMetrics(DateTime startTime, DateTime endTime) =>
+      _hc.fetchMetrics(startTime, endTime);
 }
 
 class AppleHealthConnector implements HealthPlatformConnector {
-  final HealthConnectConnector _hcConnector = HealthConnectConnector();
+  final _hc = HealthConnectConnector();
 
   @override
   HealthSource get source => HealthSource.appleHealth;
 
   @override
-  Future<HealthPermissionStatus> checkPermissionStatus() async {
-    return await _hcConnector.checkPermissionStatus();
-  }
+  Future<HealthPermissionStatus> checkPermissionStatus() => _hc.checkPermissionStatus();
 
   @override
-  Future<HealthPermissionStatus> requestPermissions() async {
-    return await _hcConnector.requestPermissions();
-  }
+  Future<HealthPermissionStatus> requestPermissions() => _hc.requestPermissions();
 
   @override
-  Future<HealthMetricData> fetchMetrics(DateTime startTime, DateTime endTime) async {
-    return await _hcConnector.fetchMetrics(startTime, endTime);
-  }
+  Future<HealthMetricData> fetchMetrics(DateTime startTime, DateTime endTime) =>
+      _hc.fetchMetrics(startTime, endTime);
 }
