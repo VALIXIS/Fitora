@@ -333,6 +333,7 @@ class _HealthSourceCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: FitoraSpacing.md),
       child: FitoraCard(
+        onTap: isSyncing ? null : onToggle,
         padding: const EdgeInsets.all(FitoraSpacing.md),
         child: Row(
           children: [
