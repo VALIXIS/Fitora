@@ -244,8 +244,8 @@ class HealthSyncController extends StateNotifier<HealthSyncState> with WidgetsBi
       if (kDebugMode) print('[HC_DEBUG] Reading from HealthConnectRepository...');
 
       // Use the shared singleton repo (same instance as platform connectors)
-      final hcDaily = await _sharedHcRepo.getDailyActivity(now);
-      final hcSleep = await _sharedHcRepo.getSleepSummary(now);
+      final hcDaily = await sharedHcRepo.getDailyActivity(now);
+      final hcSleep = await sharedHcRepo.getSleepSummary(now);
 
       if (kDebugMode) {
         print('[HC_DEBUG] HC read complete: steps=${hcDaily.steps}, cal=${hcDaily.caloriesBurned}, dist=${hcDaily.distanceKm}');
@@ -304,7 +304,7 @@ class HealthSyncController extends StateNotifier<HealthSyncState> with WidgetsBi
       // Update today's slot in weekly
       final existingWeekly = cacheService.getWeeklyActivity() ??
           List.generate(7, (i) => DailyActivitySummary.empty(date: today.subtract(Duration(days: 6 - i))));
-      final updatedWeekly = existingWeekly.map((s) {
+      final updatedWeekly = existingWeekly.map<DailyActivitySummary>((s) {
         if (s.date.year == today.year && s.date.month == today.month && s.date.day == today.day) {
           return updatedDaily;
         }

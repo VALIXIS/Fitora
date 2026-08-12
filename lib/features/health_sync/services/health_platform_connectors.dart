@@ -12,8 +12,8 @@ abstract class HealthPlatformConnector {
 }
 
 // Singleton HealthConnectService so configure() is only called once
-final _sharedHcService = HealthConnectService();
-final _sharedHcRepo = HealthConnectRepository(_sharedHcService);
+final sharedHcService = HealthConnectService();
+final sharedHcRepo = HealthConnectRepository(sharedHcService);
 
 class HealthConnectConnector implements HealthPlatformConnector {
   @override
