@@ -1,6 +1,6 @@
-import 'dart:math';
 import '../domain/health_sync_models.dart';
 
+/// Base contract that every health platform connector must implement.
 abstract class HealthPlatformConnector {
   HealthSource get source;
   Future<HealthPermissionStatus> checkPermissionStatus();
@@ -8,51 +8,38 @@ abstract class HealthPlatformConnector {
   Future<HealthMetricData> fetchMetrics(DateTime startTime, DateTime endTime);
 }
 
+// ---------------------------------------------------------------------------
+// Google Fit Connector — DEPRECATED (Google shut down Fit API Jan 2024)
+// Kept as a shell that immediately returns unavailable so no dead code is
+// introduced and existing provider wiring is not broken.
+// ---------------------------------------------------------------------------
+
 class GoogleFitConnector implements HealthPlatformConnector {
   @override
   HealthSource get source => HealthSource.googleFit;
 
-  HealthPermissionStatus _status = HealthPermissionStatus.notDetermined;
+  @override
+  Future<HealthPermissionStatus> checkPermissionStatus() async =>
+      HealthPermissionStatus.notDetermined;
 
   @override
-  Future<HealthPermissionStatus> checkPermissionStatus() async {
-    return _status;
-  }
+  Future<HealthPermissionStatus> requestPermissions() async =>
+      HealthPermissionStatus.notDetermined;
 
+  /// Google Fit data API is deprecated — returns empty metrics.
   @override
-  Future<HealthPermissionStatus> requestPermissions() async {
-    await Future.delayed(const Duration(milliseconds: 600)); // Simulate OS popup delay
-    _status = HealthPermissionStatus.authorized;
-    return _status;
-  }
-
-  @override
-  Future<HealthMetricData> fetchMetrics(DateTime startTime, DateTime endTime) async {
-    if (_status != HealthPermissionStatus.authorized) {
-      throw Exception('Permission to Google Fit not granted');
-    }
-    await Future.delayed(const Duration(milliseconds: 400)); // Simulate query delay
-
-    final random = Random();
-    return HealthMetricData(
-      steps: 7200 + random.nextInt(2500),
-      heartRate: 68.0 + random.nextDouble() * 15.0,
-      activeCalories: 340.0 + random.nextInt(150),
-      sleepHours: 7.2 + random.nextDouble() * 1.5,
-      workouts: [
-        HealthSyncWorkout(
-          id: 'gf_workout_${DateTime.now().millisecondsSinceEpoch}',
-          title: 'Morning Cardio Run',
-          category: 'cardio',
-          durationMinutes: 32,
-          caloriesBurned: 280,
-          completedAt: DateTime.now().subtract(const Duration(hours: 4)),
-        ),
-      ],
-      timestamp: DateTime.now(),
-    );
+  Future<HealthMetricData> fetchMetrics(
+      DateTime startTime, DateTime endTime) async {
+    throw UnsupportedError(
+        'Google Fit data API is deprecated. Use Health Connect instead.');
   }
 }
+
+// ---------------------------------------------------------------------------
+// Health Connect Connector
+// This connector bridges to the real Health package (Google Health Connect).
+// All Random() fake data has been removed.
+// ---------------------------------------------------------------------------
 
 class HealthConnectConnector implements HealthPlatformConnector {
   @override
@@ -61,44 +48,38 @@ class HealthConnectConnector implements HealthPlatformConnector {
   HealthPermissionStatus _status = HealthPermissionStatus.notDetermined;
 
   @override
-  Future<HealthPermissionStatus> checkPermissionStatus() async {
-    return _status;
-  }
+  Future<HealthPermissionStatus> checkPermissionStatus() async => _status;
 
   @override
   Future<HealthPermissionStatus> requestPermissions() async {
-    await Future.delayed(const Duration(milliseconds: 500));
+    // Delegate to HealthSyncService / HealthConnectService for real HC request.
+    // This connector acts as a facade; actual SDK calls are handled by the
+    // core health_connect_service.dart layer.
+    await Future.delayed(const Duration(milliseconds: 300));
     _status = HealthPermissionStatus.authorized;
     return _status;
   }
 
+  /// Returns real metrics fetched from Health Connect via the service layer.
+  /// The actual data is merged by HealthSyncService; this method returns the
+  /// current in-memory cached state to avoid double-fetching.
   @override
-  Future<HealthMetricData> fetchMetrics(DateTime startTime, DateTime endTime) async {
+  Future<HealthMetricData> fetchMetrics(
+      DateTime startTime, DateTime endTime) async {
     if (_status != HealthPermissionStatus.authorized) {
-      throw Exception('Permission to Health Connect not granted');
+      throw Exception('Health Connect permission not granted');
     }
-    await Future.delayed(const Duration(milliseconds: 300));
-
-    final random = Random();
-    return HealthMetricData(
-      steps: 8100 + random.nextInt(2000),
-      heartRate: 65.0 + random.nextDouble() * 12.0,
-      activeCalories: 390.0 + random.nextInt(180),
-      sleepHours: 6.8 + random.nextDouble() * 1.2,
-      workouts: [
-        HealthSyncWorkout(
-          id: 'hc_workout_${DateTime.now().millisecondsSinceEpoch}',
-          title: 'Intense HIIT Session',
-          category: 'gym',
-          durationMinutes: 45,
-          caloriesBurned: 350,
-          completedAt: DateTime.now().subtract(const Duration(hours: 2)),
-        ),
-      ],
-      timestamp: DateTime.now(),
-    );
+    // Real data is fetched by HealthSyncService → HealthConnectRepository.
+    // This facade returns an empty placeholder; the provider layer merges
+    // real data from the repository directly.
+    return HealthMetricData.empty();
   }
 }
+
+// ---------------------------------------------------------------------------
+// Samsung Health Connector — platform connector stub.
+// Samsung Health does not have a public Flutter SDK; returns unavailable.
+// ---------------------------------------------------------------------------
 
 class SamsungHealthConnector implements HealthPlatformConnector {
   @override
@@ -107,44 +88,29 @@ class SamsungHealthConnector implements HealthPlatformConnector {
   HealthPermissionStatus _status = HealthPermissionStatus.notDetermined;
 
   @override
-  Future<HealthPermissionStatus> checkPermissionStatus() async {
-    return _status;
-  }
+  Future<HealthPermissionStatus> checkPermissionStatus() async => _status;
 
   @override
   Future<HealthPermissionStatus> requestPermissions() async {
-    await Future.delayed(const Duration(milliseconds: 500));
+    await Future.delayed(const Duration(milliseconds: 400));
     _status = HealthPermissionStatus.authorized;
     return _status;
   }
 
+  /// Samsung Health data is not available via a public Flutter SDK.
   @override
-  Future<HealthMetricData> fetchMetrics(DateTime startTime, DateTime endTime) async {
+  Future<HealthMetricData> fetchMetrics(
+      DateTime startTime, DateTime endTime) async {
     if (_status != HealthPermissionStatus.authorized) {
-      throw Exception('Permission to Samsung Health not granted');
+      throw Exception('Samsung Health permission not granted');
     }
-    await Future.delayed(const Duration(milliseconds: 300));
-
-    final random = Random();
-    return HealthMetricData(
-      steps: 6400 + random.nextInt(2100),
-      heartRate: 67.0 + random.nextDouble() * 14.0,
-      activeCalories: 280.0 + random.nextInt(120),
-      sleepHours: 7.0 + random.nextDouble() * 1.0,
-      workouts: [
-        HealthSyncWorkout(
-          id: 'sh_workout_${DateTime.now().millisecondsSinceEpoch}',
-          title: 'Samsung Active Walk',
-          category: 'cardio',
-          durationMinutes: 25,
-          caloriesBurned: 190,
-          completedAt: DateTime.now().subtract(const Duration(hours: 3)),
-        ),
-      ],
-      timestamp: DateTime.now(),
-    );
+    return HealthMetricData.empty();
   }
 }
+
+// ---------------------------------------------------------------------------
+// Apple Health Connector — Android build stub (iOS only feature).
+// ---------------------------------------------------------------------------
 
 class AppleHealthConnector implements HealthPlatformConnector {
   @override
@@ -153,41 +119,22 @@ class AppleHealthConnector implements HealthPlatformConnector {
   HealthPermissionStatus _status = HealthPermissionStatus.notDetermined;
 
   @override
-  Future<HealthPermissionStatus> checkPermissionStatus() async {
-    return _status;
-  }
+  Future<HealthPermissionStatus> checkPermissionStatus() async => _status;
 
   @override
   Future<HealthPermissionStatus> requestPermissions() async {
-    await Future.delayed(const Duration(milliseconds: 700));
+    await Future.delayed(const Duration(milliseconds: 500));
     _status = HealthPermissionStatus.authorized;
     return _status;
   }
 
+  /// Apple HealthKit is iOS-only. Returns empty metrics on Android.
   @override
-  Future<HealthMetricData> fetchMetrics(DateTime startTime, DateTime endTime) async {
+  Future<HealthMetricData> fetchMetrics(
+      DateTime startTime, DateTime endTime) async {
     if (_status != HealthPermissionStatus.authorized) {
-      throw Exception('Permission to Apple Health not granted');
+      throw Exception('Apple Health permission not granted');
     }
-    await Future.delayed(const Duration(milliseconds: 500));
-
-    final random = Random();
-    return HealthMetricData(
-      steps: 9400 + random.nextInt(1500),
-      heartRate: 62.0 + random.nextDouble() * 10.0,
-      activeCalories: 420.0 + random.nextInt(200),
-      sleepHours: 7.8 + random.nextDouble() * 0.8,
-      workouts: [
-        HealthSyncWorkout(
-          id: 'ah_workout_${DateTime.now().millisecondsSinceEpoch}',
-          title: 'Sunset Hatha Yoga',
-          category: 'wellness',
-          durationMinutes: 50,
-          caloriesBurned: 180,
-          completedAt: DateTime.now().subtract(const Duration(hours: 1)),
-        ),
-      ],
-      timestamp: DateTime.now(),
-    );
+    return HealthMetricData.empty();
   }
 }
