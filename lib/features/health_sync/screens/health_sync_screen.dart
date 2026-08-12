@@ -65,6 +65,11 @@ class HealthSyncScreen extends ConsumerWidget {
                 .fadeIn(delay: 100.ms)
                 .slideY(begin: 0.05, end: 0, duration: 350.ms),
 
+            const SizedBox(height: FitoraSpacing.md),
+
+            // ── Direct Health Connect Diagnostic ────────────────────────────
+            const _DirectHealthConnectDiagnostic(),
+
             const SizedBox(height: FitoraSpacing.lg),
 
             // ── Connected Sources Section ─────────────────────────────────────
@@ -383,16 +388,24 @@ class _HealthSourceCard extends StatelessWidget {
                         Container(
                           width: 6,
                           height: 6,
-                          decoration: const BoxDecoration(
+                          decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: FitoraColors.mintGreen,
+                            color: connection.lastSyncStatus == SyncStatus.error
+                                ? FitoraColors.softPink
+                                : (isSyncing ? FitoraColors.calmCyan : FitoraColors.mintGreen),
                           ),
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          'Authorized & Syncing',
+                          isSyncing
+                              ? 'Syncing…'
+                              : (connection.lastSyncStatus == SyncStatus.error
+                                  ? 'Sync failed'
+                                  : 'Connected / Authorized'),
                           style: tt.labelSmall?.copyWith(
-                            color: FitoraColors.mintGreen,
+                            color: connection.lastSyncStatus == SyncStatus.error
+                                ? FitoraColors.softPink
+                                : (isSyncing ? FitoraColors.calmCyan : FitoraColors.mintGreen),
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -556,6 +569,98 @@ class _LiveActivitySimulatorState extends State<_LiveActivitySimulator> {
           ),
         );
       },
+    );
+  }
+}
+
+// ── Direct Health Connect Diagnostic Widget ──────────────────────────────────
+
+class _DirectHealthConnectDiagnostic extends StatefulWidget {
+  const _DirectHealthConnectDiagnostic();
+
+  @override
+  State<_DirectHealthConnectDiagnostic> createState() => _DirectHealthConnectDiagnosticState();
+}
+
+class _DirectHealthConnectDiagnosticState extends State<_DirectHealthConnectDiagnostic> {
+  bool _isRunning = false;
+  Map<String, dynamic>? _diagnosticResult;
+
+  Future<void> _runDiagnostic() async {
+    setState(() {
+      _isRunning = true;
+      _diagnosticResult = null;
+    });
+
+    final res = await HealthConnectService().runDirectDiagnostic();
+
+    setState(() {
+      _isRunning = false;
+      _diagnosticResult = res;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(FitoraSpacing.md),
+      decoration: BoxDecoration(
+        color: FitoraColors.darkCard,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: FitoraColors.mintGreen.withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.bug_report_rounded, color: FitoraColors.mintGreen, size: 20),
+              const SizedBox(width: 8),
+              const Text(
+                'Direct Health Connect Test',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white),
+              ),
+              const Spacer(),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: FitoraColors.mintGreen,
+                  foregroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                ),
+                onPressed: _isRunning ? null : _runDiagnostic,
+                child: _isRunning
+                    ? const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
+                      )
+                    : const Text('Test Health Connect', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+              ),
+            ],
+          ),
+          if (_diagnosticResult != null) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.black54,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: SelectableText(
+                'SDK Status: ${_diagnosticResult!['sdkStatus']}\n'
+                'hasPermissions: ${_diagnosticResult!['hasPermissionsSteps']}\n'
+                'requestAuthorization: ${_diagnosticResult!['authorizationResult']}\n'
+                'getTotalStepsInInterval: ${_diagnosticResult!['totalSteps']}\n'
+                'rawRecordCount: ${_diagnosticResult!['rawRecordCount']}\n'
+                '${_diagnosticResult!['exception'] != null ? "EXCEPTION: ${_diagnosticResult!['exception']}\n" : ""}'
+                'Records:\n'
+                '${(_diagnosticResult!['records'] as List<dynamic>? ?? []).map((r) => "- ${r['val']} steps (${r['sourceName']} / ${r['sourceId']})").join('\n')}',
+                style: const TextStyle(fontFamily: 'monospace', fontSize: 11, color: FitoraColors.mintGreen),
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }

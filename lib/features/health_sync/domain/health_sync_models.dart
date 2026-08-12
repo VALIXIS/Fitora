@@ -51,9 +51,8 @@ enum HealthSource {
       return [HealthSource.appleHealth];
     } else {
       return [
-        HealthSource.googleFit,
         HealthSource.healthConnect,
-        HealthSource.samsungHealth,
+        HealthSource.googleFit,
       ];
     }
   }
