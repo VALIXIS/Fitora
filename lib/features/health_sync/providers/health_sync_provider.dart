@@ -5,8 +5,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fitora/core/health/domain/health_models.dart' hide SyncStatus;
 import 'package:fitora/core/health/services/health_cache_service.dart';
-import 'package:fitora/core/health/services/health_connect_service.dart';
-import 'package:fitora/core/health/data/health_connect_repository.dart';
+
 import '../../../core/storage/app_preferences.dart';
 import '../domain/health_sync_models.dart';
 import '../services/health_sync_service.dart';

@@ -22,7 +22,7 @@ class HealthConnectConnector implements HealthPlatformConnector {
   @override
   Future<HealthPermissionStatus> checkPermissionStatus() async {
     try {
-      final status = await _sharedHcService.getStatus();
+      final status = await sharedHcService.getStatus();
       if (kDebugMode) print('[HC_DEBUG] HealthConnectConnector status: $status');
       if (status == HealthConnectStatus.connected) return HealthPermissionStatus.authorized;
       if (status == HealthConnectStatus.permissionRequired) return HealthPermissionStatus.notDetermined;
@@ -36,7 +36,7 @@ class HealthConnectConnector implements HealthPlatformConnector {
   @override
   Future<HealthPermissionStatus> requestPermissions() async {
     try {
-      final granted = await _sharedHcService.requestPermissions();
+      final granted = await sharedHcService.requestPermissions();
       if (kDebugMode) print('[HC_DEBUG] HealthConnectConnector requestPermissions: $granted');
       return granted ? HealthPermissionStatus.authorized : HealthPermissionStatus.denied;
     } catch (e) {
@@ -53,8 +53,8 @@ class HealthConnectConnector implements HealthPlatformConnector {
     try {
       final now = DateTime.now();
       if (kDebugMode) print('[HC_DEBUG] Connector.fetchMetrics calling repo');
-      final daily = await _sharedHcRepo.getDailyActivity(now);
-      final sleep = await _sharedHcRepo.getSleepSummary(now);
+      final daily = await sharedHcRepo.getDailyActivity(now);
+      final sleep = await sharedHcRepo.getSleepSummary(now);
 
       final result = HealthMetricData(
         steps: daily.steps,
