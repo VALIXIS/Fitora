@@ -72,10 +72,6 @@ class ProfileScreen extends ConsumerWidget {
                     _buildHealthOverview(textTheme, profile),
                     const SizedBox(height: FitoraSpacing.xl),
 
-                    _buildSectionTitle(textTheme, 'SENSOR STATUS'),
-                    _buildSensorStatusCard(context, textTheme, ref),
-                    const SizedBox(height: FitoraSpacing.xl),
-
                     _buildSectionTitle(textTheme, 'PERSONALIZATION'),
                     _buildPersonalizationDetails(textTheme, profile),
                     const SizedBox(height: FitoraSpacing.xl),
@@ -88,12 +84,6 @@ class ProfileScreen extends ConsumerWidget {
                       activity,
                       wellness,
                     ),
-                    const SizedBox(height: FitoraSpacing.xl),
-
-                    _buildSectionTitle(textTheme, 'INTEGRATIONS & SYNC'),
-                    _buildHealthSyncCard(context, textTheme, ref),
-                    const SizedBox(height: FitoraSpacing.md),
-                    _buildOtherIntegrations(context, textTheme),
                     const SizedBox(height: FitoraSpacing.xl),
 
                     _buildSectionTitle(textTheme, 'QUICK ACTIONS'),

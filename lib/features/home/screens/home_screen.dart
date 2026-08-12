@@ -148,9 +148,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ),
                     const SizedBox(height: FitoraSpacing.xl),
 
-                    // Connection Prompt (if never synced before)
-                    _buildSyncPrompt(context, textTheme, activity),
-
                     const SizedBox(height: 100), // Bottom scroll padding
                   ]),
                 ),
@@ -213,33 +210,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(height: 2),
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.sync_rounded,
-                              color: Colors.white38,
-                              size: 10,
-                            ),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              child: Text(
-                                _buildSyncLabel(
-                                  syncStatus,
-                                  activity.lastSyncTime,
-                                ),
-                                style: textTheme.labelSmall?.copyWith(
-                                  color: syncStatus == SyncStatus.syncing
-                                      ? const Color(0xFF06B6D4)
-                                      : syncStatus == SyncStatus.error
-                                      ? Colors.redAccent
-                                      : Colors.white38,
-                                  fontSize: 10,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
+                        Text(
+                          'Live Step Counter',
+                          style: textTheme.labelSmall?.copyWith(
+                            color: FitoraColors.mintGreen,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 11,
+                          ),
                         ),
                       ],
                     ),

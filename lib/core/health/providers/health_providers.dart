@@ -190,8 +190,22 @@ final dailyActivityProvider = Provider.family<DailyActivitySummary, DateTime>((
     final liveSteps = ref.watch(liveStepsProvider);
     return liveSteps.when(
       data: (sensorSteps) {
+        final totalSteps = max(summaryWithDynamicGoals.steps, sensorSteps);
+        final dist = summaryWithDynamicGoals.distanceKm > 0
+            ? summaryWithDynamicGoals.distanceKm
+            : double.parse((totalSteps * 0.00075).toStringAsFixed(2));
+        final cal = summaryWithDynamicGoals.caloriesBurned > 0
+            ? summaryWithDynamicGoals.caloriesBurned
+            : double.parse((totalSteps * 0.04).toStringAsFixed(1));
+        final activeMins = summaryWithDynamicGoals.activeMinutes > 0
+            ? summaryWithDynamicGoals.activeMinutes
+            : (totalSteps / 100).round();
+
         return summaryWithDynamicGoals.copyWith(
-          steps: max(summaryWithDynamicGoals.steps, sensorSteps),
+          steps: totalSteps,
+          distanceKm: dist,
+          caloriesBurned: cal,
+          activeMinutes: activeMins,
         );
       },
       loading: () => summaryWithDynamicGoals,
