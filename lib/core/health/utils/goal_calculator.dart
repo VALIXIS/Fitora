@@ -68,7 +68,6 @@ class HealthGoalCalculator {
           baseSteps = 7500;
           break;
         case null:
-        default:
           baseSteps = 10000;
           break;
       }
@@ -119,7 +118,6 @@ class HealthGoalCalculator {
         goalMultiplier = 0.85;
         break;
       case null:
-      default:
         goalMultiplier = 1.0;
         break;
     }

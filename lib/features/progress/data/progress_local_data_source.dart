@@ -5,8 +5,9 @@ import 'package:fitora/core/constants/storage_keys.dart';
 import 'package:fitora/core/storage/app_preferences.dart';
 import 'package:fitora/features/progress/domain/progress_models.dart';
 
-final progressLocalDataSourceProvider =
-    Provider<ProgressLocalDataSource>((ref) {
+final progressLocalDataSourceProvider = Provider<ProgressLocalDataSource>((
+  ref,
+) {
   return ProgressLocalDataSource();
 });
 

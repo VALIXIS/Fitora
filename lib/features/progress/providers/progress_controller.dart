@@ -14,9 +14,9 @@ final progressRepositoryProvider = Provider<ProgressRepository>((ref) {
 
 final progressControllerProvider =
     StateNotifierProvider<ProgressController, ProgressState>((ref) {
-  final repository = ref.read(progressRepositoryProvider);
-  return ProgressController(repository);
-});
+      final repository = ref.read(progressRepositoryProvider);
+      return ProgressController(repository);
+    });
 
 class ProgressState {
   final bool isLoading;
@@ -38,14 +38,14 @@ class ProgressState {
   });
 
   factory ProgressState.initial() => ProgressState(
-        isLoading: true,
-        history: const [],
-        summary: ProgressSummary.empty(),
-        streak: StreakInfo.empty(),
-        weeklyActivity: const [],
-        weeklyTrends: const [],
-        recentWorkouts: const [],
-      );
+    isLoading: true,
+    history: const [],
+    summary: ProgressSummary.empty(),
+    streak: StreakInfo.empty(),
+    weeklyActivity: const [],
+    weeklyTrends: const [],
+    recentWorkouts: const [],
+  );
 }
 
 class ProgressController extends StateNotifier<ProgressState> {
@@ -88,8 +88,6 @@ class ProgressController extends StateNotifier<ProgressState> {
     state = _buildState(updated, isLoading: false);
     unawaited(_repository.saveHistory(updated));
   }
-
-
 
   ProgressState _buildState(
     List<WorkoutHistoryEntry> history, {
@@ -155,9 +153,8 @@ class ProgressController extends StateNotifier<ProgressState> {
     }
 
     final uniqueDays = {
-      for (final entry in history) _dateOnly(entry.completedAt)
-    }.toList()
-      ..sort();
+      for (final entry in history) _dateOnly(entry.completedAt),
+    }.toList()..sort();
 
     final lastDay = uniqueDays.last;
     final today = _dateOnly(DateTime.now());
@@ -285,10 +282,7 @@ class _DailyTotals {
     required this.calories,
   });
 
-  const _DailyTotals.empty()
-      : workouts = 0,
-        minutes = 0,
-        calories = 0;
+  const _DailyTotals.empty() : workouts = 0, minutes = 0, calories = 0;
 
   _DailyTotals add(WorkoutHistoryEntry entry) {
     return _DailyTotals(

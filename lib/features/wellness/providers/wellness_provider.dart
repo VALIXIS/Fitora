@@ -162,16 +162,21 @@ class WellnessNotifier extends StateNotifier<WellnessState> {
       }
     }
     
+    final updatedHistory = Map<String, double>.from(state.waterLogHistory)..[today] = newHydration;
+
     state = state.copyWith(
       hydrationLiters: newHydration,
       hydrationStreak: newHydrationStreak,
       lastHydrationDate: today,
+      waterLogHistory: updatedHistory,
     );
     updateRecovery();
   }
 
   Future<void> resetHydration() async {
-    state = state.copyWith(hydrationLiters: 0.0);
+    final today = _todayStr();
+    final updatedHistory = Map<String, double>.from(state.waterLogHistory)..[today] = 0.0;
+    state = state.copyWith(hydrationLiters: 0.0, waterLogHistory: updatedHistory);
     updateRecovery();
   }
 
