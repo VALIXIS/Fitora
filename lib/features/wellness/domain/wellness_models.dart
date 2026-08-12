@@ -1,3 +1,31 @@
+class WaterLogEntry {
+  final String id;
+  final int amountMl;
+  final DateTime timestamp;
+
+  const WaterLogEntry({
+    required this.id,
+    required this.amountMl,
+    required this.timestamp,
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'amountMl': amountMl,
+      'timestamp': timestamp.toIso8601String(),
+    };
+  }
+
+  factory WaterLogEntry.fromJson(Map<String, dynamic> map) {
+    return WaterLogEntry(
+      id: map['id'] as String,
+      amountMl: (map['amountMl'] as num).toInt(),
+      timestamp: DateTime.parse(map['timestamp'] as String),
+    );
+  }
+}
+
 class WellnessState {
   // Hydration
   final double hydrationLiters;
@@ -6,6 +34,7 @@ class WellnessState {
   final String? lastHydrationDate;
   final bool hydrationRemindersEnabled;
   final int hydrationReminderFrequencyMinutes; // e.g. 60, 90, 120
+  final List<WaterLogEntry> waterLogs;
 
   // Guided Breathing
   final int breathingMinutes;
@@ -22,8 +51,10 @@ class WellnessState {
   // Women's Cycle Tracking
   final int cycleLengthDays;
   final int periodDurationDays;
-  final List<String> periodStartDates; // List of period start dates (YYYY-MM-DD)
-  final Map<String, List<String>> loggedSymptoms; // date string -> list of symptoms
+  final List<String>
+  periodStartDates; // List of period start dates (YYYY-MM-DD)
+  final Map<String, List<String>>
+  loggedSymptoms; // date string -> list of symptoms
 
   // Mood & Energy
   final Map<String, String> loggedMoods; // date string -> mood name
@@ -44,6 +75,7 @@ class WellnessState {
     this.lastHydrationDate,
     required this.hydrationRemindersEnabled,
     required this.hydrationReminderFrequencyMinutes,
+    this.waterLogs = const [],
     required this.breathingMinutes,
     required this.inhaleSeconds,
     required this.exhaleSeconds,
@@ -65,31 +97,32 @@ class WellnessState {
   });
 
   factory WellnessState.initial() => WellnessState(
-        hydrationLiters: 0.0,
-        hydrationGoalLiters: 2.5,
-        hydrationStreak: 0,
-        lastHydrationDate: null,
-        hydrationRemindersEnabled: false,
-        hydrationReminderFrequencyMinutes: 60,
-        breathingMinutes: 0,
-        inhaleSeconds: 4,
-        exhaleSeconds: 4,
-        breathingHapticsEnabled: true,
-        sleepMinutes: 0,
-        sleepQualityScore: 0,
-        sleepLogHistory: const {},
-        sleepScoreHistory: const {},
-        cycleLengthDays: 28,
-        periodDurationDays: 5,
-        periodStartDates: const [],
-        loggedSymptoms: const {},
-        loggedMoods: const {},
-        loggedEnergy: const {},
-        recoveryScore: 82,
-        muscleFatigue: 'Low',
-        wellnessStreak: 0,
-        lastActiveDate: null,
-      );
+    hydrationLiters: 0.0,
+    hydrationGoalLiters: 2.5,
+    hydrationStreak: 0,
+    lastHydrationDate: null,
+    hydrationRemindersEnabled: false,
+    hydrationReminderFrequencyMinutes: 60,
+    waterLogs: const [],
+    breathingMinutes: 0,
+    inhaleSeconds: 4,
+    exhaleSeconds: 4,
+    breathingHapticsEnabled: true,
+    sleepMinutes: 0,
+    sleepQualityScore: 0,
+    sleepLogHistory: const {},
+    sleepScoreHistory: const {},
+    cycleLengthDays: 28,
+    periodDurationDays: 5,
+    periodStartDates: const [],
+    loggedSymptoms: const {},
+    loggedMoods: const {},
+    loggedEnergy: const {},
+    recoveryScore: 82,
+    muscleFatigue: 'Low',
+    wellnessStreak: 0,
+    lastActiveDate: null,
+  );
 
   WellnessState copyWith({
     double? hydrationLiters,
@@ -98,6 +131,7 @@ class WellnessState {
     String? lastHydrationDate,
     bool? hydrationRemindersEnabled,
     int? hydrationReminderFrequencyMinutes,
+    List<WaterLogEntry>? waterLogs,
     int? breathingMinutes,
     int? inhaleSeconds,
     int? exhaleSeconds,
@@ -122,12 +156,17 @@ class WellnessState {
       hydrationGoalLiters: hydrationGoalLiters ?? this.hydrationGoalLiters,
       hydrationStreak: hydrationStreak ?? this.hydrationStreak,
       lastHydrationDate: lastHydrationDate ?? this.lastHydrationDate,
-      hydrationRemindersEnabled: hydrationRemindersEnabled ?? this.hydrationRemindersEnabled,
-      hydrationReminderFrequencyMinutes: hydrationReminderFrequencyMinutes ?? this.hydrationReminderFrequencyMinutes,
+      hydrationRemindersEnabled:
+          hydrationRemindersEnabled ?? this.hydrationRemindersEnabled,
+      hydrationReminderFrequencyMinutes:
+          hydrationReminderFrequencyMinutes ??
+          this.hydrationReminderFrequencyMinutes,
+      waterLogs: waterLogs ?? this.waterLogs,
       breathingMinutes: breathingMinutes ?? this.breathingMinutes,
       inhaleSeconds: inhaleSeconds ?? this.inhaleSeconds,
       exhaleSeconds: exhaleSeconds ?? this.exhaleSeconds,
-      breathingHapticsEnabled: breathingHapticsEnabled ?? this.breathingHapticsEnabled,
+      breathingHapticsEnabled:
+          breathingHapticsEnabled ?? this.breathingHapticsEnabled,
       sleepMinutes: sleepMinutes ?? this.sleepMinutes,
       sleepQualityScore: sleepQualityScore ?? this.sleepQualityScore,
       sleepLogHistory: sleepLogHistory ?? this.sleepLogHistory,
@@ -153,6 +192,7 @@ class WellnessState {
       'lastHydrationDate': lastHydrationDate,
       'hydrationRemindersEnabled': hydrationRemindersEnabled,
       'hydrationReminderFrequencyMinutes': hydrationReminderFrequencyMinutes,
+      'waterLogs': waterLogs.map((e) => e.toJson()).toList(),
       'breathingMinutes': breathingMinutes,
       'inhaleSeconds': inhaleSeconds,
       'exhaleSeconds': exhaleSeconds,
@@ -177,37 +217,51 @@ class WellnessState {
   factory WellnessState.fromJson(Map<String, dynamic> map) {
     return WellnessState(
       hydrationLiters: (map['hydrationLiters'] as num?)?.toDouble() ?? 0.0,
-      hydrationGoalLiters: (map['hydrationGoalLiters'] as num?)?.toDouble() ?? 2.5,
+      hydrationGoalLiters:
+          (map['hydrationGoalLiters'] as num?)?.toDouble() ?? 2.5,
       hydrationStreak: (map['hydrationStreak'] as num?)?.toInt() ?? 0,
       lastHydrationDate: map['lastHydrationDate'] as String?,
-      hydrationRemindersEnabled: map['hydrationRemindersEnabled'] as bool? ?? false,
-      hydrationReminderFrequencyMinutes: (map['hydrationReminderFrequencyMinutes'] as num?)?.toInt() ?? 60,
+      hydrationRemindersEnabled:
+          map['hydrationRemindersEnabled'] as bool? ?? false,
+      hydrationReminderFrequencyMinutes:
+          (map['hydrationReminderFrequencyMinutes'] as num?)?.toInt() ?? 60,
+      waterLogs:
+          (map['waterLogs'] as List<dynamic>?)
+              ?.map((e) => WaterLogEntry.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const [],
       breathingMinutes: (map['breathingMinutes'] as num?)?.toInt() ?? 0,
       inhaleSeconds: (map['inhaleSeconds'] as num?)?.toInt() ?? 4,
       exhaleSeconds: (map['exhaleSeconds'] as num?)?.toInt() ?? 4,
       breathingHapticsEnabled: map['breathingHapticsEnabled'] as bool? ?? true,
       sleepMinutes: (map['sleepMinutes'] as num?)?.toInt() ?? 0,
       sleepQualityScore: (map['sleepQualityScore'] as num?)?.toInt() ?? 0,
-      sleepLogHistory: (map['sleepLogHistory'] as Map<String, dynamic>?)?.map(
+      sleepLogHistory:
+          (map['sleepLogHistory'] as Map<String, dynamic>?)?.map(
             (k, v) => MapEntry(k, (v as num).toInt()),
           ) ??
           const {},
-      sleepScoreHistory: (map['sleepScoreHistory'] as Map<String, dynamic>?)?.map(
+      sleepScoreHistory:
+          (map['sleepScoreHistory'] as Map<String, dynamic>?)?.map(
             (k, v) => MapEntry(k, (v as num).toInt()),
           ) ??
           const {},
       cycleLengthDays: (map['cycleLengthDays'] as num?)?.toInt() ?? 28,
       periodDurationDays: (map['periodDurationDays'] as num?)?.toInt() ?? 5,
-      periodStartDates: (map['periodStartDates'] as List<dynamic>?)?.map((e) => e as String).toList() ?? const [],
-      loggedSymptoms: (map['loggedSymptoms'] as Map<String, dynamic>?)?.map(
-            (k, v) => MapEntry(k, (v as List<dynamic>).map((e) => e as String).toList()),
+      periodStartDates:
+          (map['periodStartDates'] as List<dynamic>?)?.cast<String>() ??
+          const [],
+      loggedSymptoms:
+          (map['loggedSymptoms'] as Map<String, dynamic>?)?.map(
+            (k, v) => MapEntry(k, (v as List<dynamic>).cast<String>()),
           ) ??
           const {},
-      loggedMoods: (map['loggedMoods'] as Map<String, dynamic>?)?.map(
-            (k, v) => MapEntry(k, v as String),
-          ) ??
+      loggedMoods:
+          (map['loggedMoods'] as Map<String, dynamic>?)
+              ?.cast<String, String>() ??
           const {},
-      loggedEnergy: (map['loggedEnergy'] as Map<String, dynamic>?)?.map(
+      loggedEnergy:
+          (map['loggedEnergy'] as Map<String, dynamic>?)?.map(
             (k, v) => MapEntry(k, (v as num).toInt()),
           ) ??
           const {},
