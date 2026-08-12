@@ -329,8 +329,9 @@ class WellnessNotifier extends StateNotifier<WellnessState> {
   // ── High fidelity predictions helper functions ───────────────────────────────
 
   int get currentCycleDay {
-    if (state.periodStartDates.isEmpty)
+    if (state.periodStartDates.isEmpty) {
       return 14; // default baseline middle day
+    }
 
     final sorted = List<String>.from(state.periodStartDates)
       ..sort((a, b) => b.compareTo(a));
