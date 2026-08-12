@@ -16,19 +16,22 @@ class HealthConnectRepository implements HealthRepository {
     final points = await _service.getHealthData(start, end);
     int steps = (await _service.getSteps(start, end)) ?? 0;
     
-    double calories = 0;
+    double activeCal = 0;
+    double totalCal = 0;
     double distance = 0;
     int activeMinutes = 0;
 
     for (final p in points) {
       if (p.type == HealthDataType.ACTIVE_ENERGY_BURNED) {
-        calories += (p.value as NumericHealthValue).numericValue.toDouble();
+        activeCal += (p.value as NumericHealthValue).numericValue.toDouble();
+      } else if (p.type == HealthDataType.TOTAL_CALORIES_BURNED) {
+        totalCal += (p.value as NumericHealthValue).numericValue.toDouble();
       } else if (p.type == HealthDataType.DISTANCE_DELTA) {
         distance += (p.value as NumericHealthValue).numericValue.toDouble() / 1000.0;
-      } else if (p.type == HealthDataType.WORKOUT) {
-        activeMinutes += p.dateTo.difference(p.dateFrom).inMinutes;
       }
     }
+
+    double calories = activeCal > 0 ? activeCal : totalCal;
 
     return DailyActivitySummary(
       steps: steps,

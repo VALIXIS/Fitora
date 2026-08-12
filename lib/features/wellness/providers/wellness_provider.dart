@@ -3,9 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fitora/core/storage/app_preferences.dart';
 import 'package:fitora/features/wellness/domain/wellness_models.dart';
 
-final wellnessProvider = StateNotifierProvider<WellnessNotifier, WellnessState>((ref) {
-  return WellnessNotifier()..load();
-});
+final wellnessProvider = StateNotifierProvider<WellnessNotifier, WellnessState>(
+  (ref) {
+    return WellnessNotifier()..load();
+  },
+);
 
 class WellnessNotifier extends StateNotifier<WellnessState> {
   WellnessNotifier() : super(WellnessState.initial());
@@ -42,11 +44,12 @@ class WellnessNotifier extends StateNotifier<WellnessState> {
       // Check if they met hydration goal yesterday to maintain hydration streak
       double previousHydration = state.hydrationLiters;
       double previousGoal = state.hydrationGoalLiters;
-      
+
       int newHydrationStreak = state.hydrationStreak;
       final yesterday = DateTime.now().subtract(const Duration(days: 1));
-      final yesterdayStr = "${yesterday.year}-${yesterday.month.toString().padLeft(2, '0')}-${yesterday.day.toString().padLeft(2, '0')}";
-      
+      final yesterdayStr =
+          "${yesterday.year}-${yesterday.month.toString().padLeft(2, '0')}-${yesterday.day.toString().padLeft(2, '0')}";
+
       if (state.lastHydrationDate == yesterdayStr) {
         if (previousHydration < previousGoal) {
           newHydrationStreak = 0; // Broke streak
@@ -57,7 +60,8 @@ class WellnessNotifier extends StateNotifier<WellnessState> {
 
       // Wellness streak: check if active yesterday
       int newWellnessStreak = state.wellnessStreak;
-      if (state.lastActiveDate != yesterdayStr && state.lastActiveDate != today) {
+      if (state.lastActiveDate != yesterdayStr &&
+          state.lastActiveDate != today) {
         newWellnessStreak = 0; // Broke streak
       }
 
@@ -79,19 +83,17 @@ class WellnessNotifier extends StateNotifier<WellnessState> {
     final today = _todayStr();
     if (state.lastActiveDate != today) {
       final yesterday = DateTime.now().subtract(const Duration(days: 1));
-      final yesterdayStr = "${yesterday.year}-${yesterday.month.toString().padLeft(2, '0')}-${yesterday.day.toString().padLeft(2, '0')}";
-      
+      final yesterdayStr =
+          "${yesterday.year}-${yesterday.month.toString().padLeft(2, '0')}-${yesterday.day.toString().padLeft(2, '0')}";
+
       int newStreak = state.wellnessStreak;
       if (state.lastActiveDate == yesterdayStr) {
         newStreak += 1;
       } else {
         newStreak = 1; // start new
       }
-      
-      state = state.copyWith(
-        wellnessStreak: newStreak,
-        lastActiveDate: today,
-      );
+
+      state = state.copyWith(wellnessStreak: newStreak, lastActiveDate: today);
     }
   }
 
@@ -106,17 +108,17 @@ class WellnessNotifier extends StateNotifier<WellnessState> {
     final goal = hydrationGoalLiters ?? state.hydrationGoalLiters;
     final sq = sleepQualityScore ?? state.sleepQualityScore;
     final fatigue = muscleFatigue ?? state.muscleFatigue;
-    
+
     double hydrationPct = goal > 0 ? (hyd / goal).clamp(0.0, 1.0) : 0.0;
-    
+
     int score = 0;
-    
+
     // Sleep contribution: up to 40% (using quality score)
     score += (sq * 0.4).round();
-    
+
     // Hydration contribution: up to 25%
     score += (hydrationPct * 25).round();
-    
+
     // Fatigue contribution: up to 25%
     if (fatigue == 'Low') {
       score += 25;
@@ -125,44 +127,40 @@ class WellnessNotifier extends StateNotifier<WellnessState> {
     } else {
       score += 3;
     }
-    
+
     // Energy/Mood contribution: up to 10%
     final today = _todayStr();
     final energy = energyLevel ?? state.loggedEnergy[today] ?? 5;
     score += (energy * 1.0).round();
-    
+
     return score.clamp(10, 100);
   }
 
   void updateRecovery() {
-    state = state.copyWith(
-      recoveryScore: _calculateRecoveryScore(),
-    );
+    state = state.copyWith(recoveryScore: _calculateRecoveryScore());
     _persist();
   }
 
   // ── Hydration actions ────────────────────────────────────────────────────────
-  
+
   Future<void> addHydration(double amount) async {
     _recordWellnessActivity();
     final today = _todayStr();
-    
-    double newHydration = (state.hydrationLiters + amount).clamp(0.0, 9.9);
+    final newHydration = (state.hydrationLiters + amount).clamp(0.0, 10.0);
     int newHydrationStreak = state.hydrationStreak;
-    
-    if (newHydration >= state.hydrationGoalLiters && state.hydrationLiters < state.hydrationGoalLiters) {
-      // Met goal today for the first time
+
+    if (newHydration >= state.hydrationGoalLiters &&
+        state.hydrationLiters < state.hydrationGoalLiters) {
       final yesterday = DateTime.now().subtract(const Duration(days: 1));
-      final yesterdayStr = "${yesterday.year}-${yesterday.month.toString().padLeft(2, '0')}-${yesterday.day.toString().padLeft(2, '0')}";
-      
+      final yesterdayStr =
+          "${yesterday.year}-${yesterday.month.toString().padLeft(2, '0')}-${yesterday.day.toString().padLeft(2, '0')}";
+
       if (state.lastHydrationDate == yesterdayStr) {
         newHydrationStreak += 1;
-      } else if (state.lastHydrationDate != today) {
-        newHydrationStreak = 1;
       }
     }
-    
-    final updatedHistory = Map<String, double>.from(state.waterLogHistory)..[today] = newHydration;
+    final updatedHistory = Map<String, double>.from(state.waterLogHistory)
+      ..[today] = newHydration;
 
     state = state.copyWith(
       hydrationLiters: newHydration,
@@ -171,13 +169,19 @@ class WellnessNotifier extends StateNotifier<WellnessState> {
       waterLogHistory: updatedHistory,
     );
     updateRecovery();
+    await _persist();
   }
 
   Future<void> resetHydration() async {
     final today = _todayStr();
-    final updatedHistory = Map<String, double>.from(state.waterLogHistory)..[today] = 0.0;
-    state = state.copyWith(hydrationLiters: 0.0, waterLogHistory: updatedHistory);
+    final updatedHistory = Map<String, double>.from(state.waterLogHistory)
+      ..[today] = 0.0;
+    state = state.copyWith(
+      hydrationLiters: 0.0,
+      waterLogHistory: updatedHistory,
+    );
     updateRecovery();
+    await _persist();
   }
 
   Future<void> setHydrationGoal(double goal) async {
@@ -191,17 +195,17 @@ class WellnessNotifier extends StateNotifier<WellnessState> {
   }
 
   Future<void> setHydrationReminderFrequency(int minutes) async {
-    state = state.copyWith(hydrationReminderFrequencyMinutes: minutes.clamp(15, 480));
+    state = state.copyWith(
+      hydrationReminderFrequencyMinutes: minutes.clamp(15, 480),
+    );
     await _persist();
   }
 
   // ── Guided Breathing actions ──────────────────────────────────────────────────
-  
+
   Future<void> addBreathingMinutes(int amount) async {
     _recordWellnessActivity();
-    state = state.copyWith(
-      breathingMinutes: state.breathingMinutes + amount,
-    );
+    state = state.copyWith(breathingMinutes: state.breathingMinutes + amount);
     await _persist();
   }
 
@@ -219,14 +223,19 @@ class WellnessNotifier extends StateNotifier<WellnessState> {
   }
 
   // ── Sleep logging actions ─────────────────────────────────────────────────────
-  
-  Future<void> logSleep({required int minutes, required int qualityScore}) async {
+
+  Future<void> logSleep({
+    required int minutes,
+    required int qualityScore,
+  }) async {
     _recordWellnessActivity();
     final today = _todayStr();
-    
-    final updatedHistory = Map<String, int>.from(state.sleepLogHistory)..[today] = minutes;
-    final updatedScores = Map<String, int>.from(state.sleepScoreHistory)..[today] = qualityScore;
-    
+
+    final updatedHistory = Map<String, int>.from(state.sleepLogHistory)
+      ..[today] = minutes;
+    final updatedScores = Map<String, int>.from(state.sleepScoreHistory)
+      ..[today] = qualityScore;
+
     state = state.copyWith(
       sleepMinutes: minutes,
       sleepQualityScore: qualityScore.clamp(0, 100),
@@ -237,14 +246,14 @@ class WellnessNotifier extends StateNotifier<WellnessState> {
   }
 
   // ── Cycle Tracking actions ────────────────────────────────────────────────────
-  
+
   Future<void> logPeriodStart(String dateStr) async {
     _recordWellnessActivity();
     final dates = List<String>.from(state.periodStartDates);
     if (!dates.contains(dateStr)) {
       dates.add(dateStr);
     }
-    
+
     state = state.copyWith(periodStartDates: dates);
     updateRecovery();
   }
@@ -271,7 +280,7 @@ class WellnessNotifier extends StateNotifier<WellnessState> {
       daySymptoms.add(symptom);
     }
     symptoms[dateStr] = daySymptoms;
-    
+
     state = state.copyWith(loggedSymptoms: symptoms);
     await _persist();
   }
@@ -279,7 +288,8 @@ class WellnessNotifier extends StateNotifier<WellnessState> {
   Future<void> removeCycleSymptom(String dateStr, String symptom) async {
     final symptoms = Map<String, List<String>>.from(state.loggedSymptoms);
     if (symptoms.containsKey(dateStr)) {
-      final daySymptoms = List<String>.from(symptoms[dateStr] ?? [])..remove(symptom);
+      final daySymptoms = List<String>.from(symptoms[dateStr] ?? [])
+        ..remove(symptom);
       if (daySymptoms.isEmpty) {
         symptoms.remove(dateStr);
       } else {
@@ -291,12 +301,12 @@ class WellnessNotifier extends StateNotifier<WellnessState> {
   }
 
   // ── Mood & Energy actions ─────────────────────────────────────────────────────
-  
+
   Future<void> logMood(String mood) async {
     _recordWellnessActivity();
     final today = _todayStr();
     final moods = Map<String, String>.from(state.loggedMoods)..[today] = mood;
-    
+
     state = state.copyWith(loggedMoods: moods);
     updateRecovery();
   }
@@ -304,8 +314,9 @@ class WellnessNotifier extends StateNotifier<WellnessState> {
   Future<void> logEnergy(int level) async {
     _recordWellnessActivity();
     final today = _todayStr();
-    final energy = Map<String, int>.from(state.loggedEnergy)..[today] = level.clamp(1, 10);
-    
+    final energy = Map<String, int>.from(state.loggedEnergy)
+      ..[today] = level.clamp(1, 10);
+
     state = state.copyWith(loggedEnergy: energy);
     updateRecovery();
   }
@@ -316,10 +327,11 @@ class WellnessNotifier extends StateNotifier<WellnessState> {
   }
 
   // ── High fidelity predictions helper functions ───────────────────────────────
-  
+
   int get currentCycleDay {
-    if (state.periodStartDates.isEmpty) return 14; // default baseline middle day
-    
+    if (state.periodStartDates.isEmpty)
+      return 14; // default baseline middle day
+
     final sorted = List<String>.from(state.periodStartDates)
       ..sort((a, b) => b.compareTo(a));
     final latestDateStr = sorted.first;
@@ -327,7 +339,11 @@ class WellnessNotifier extends StateNotifier<WellnessState> {
       final latestDate = DateTime.parse(latestDateStr);
       final today = DateTime.now();
       // Reset times to compare only dates
-      final latestDateOnly = DateTime(latestDate.year, latestDate.month, latestDate.day);
+      final latestDateOnly = DateTime(
+        latestDate.year,
+        latestDate.month,
+        latestDate.day,
+      );
       final todayOnly = DateTime(today.year, today.month, today.day);
       final diff = todayOnly.difference(latestDateOnly).inDays;
       if (diff >= 0 && diff < state.cycleLengthDays) {

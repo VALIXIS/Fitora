@@ -144,7 +144,6 @@ class HealthMetricData {
   final double heartRate;
   final double activeCalories;
   final double sleepHours;
-  final List<HealthSyncWorkout> workouts;
   final DateTime timestamp;
 
   const HealthMetricData({
@@ -152,7 +151,6 @@ class HealthMetricData {
     required this.heartRate,
     required this.activeCalories,
     required this.sleepHours,
-    required this.workouts,
     required this.timestamp,
   });
 
@@ -162,7 +160,6 @@ class HealthMetricData {
       heartRate: 0.0,
       activeCalories: 0.0,
       sleepHours: 0.0,
-      workouts: const [],
       timestamp: DateTime.now(),
     );
   }
@@ -172,7 +169,6 @@ class HealthMetricData {
     double? heartRate,
     double? activeCalories,
     double? sleepHours,
-    List<HealthSyncWorkout>? workouts,
     DateTime? timestamp,
   }) {
     return HealthMetricData(
@@ -180,49 +176,7 @@ class HealthMetricData {
       heartRate: heartRate ?? this.heartRate,
       activeCalories: activeCalories ?? this.activeCalories,
       sleepHours: sleepHours ?? this.sleepHours,
-      workouts: workouts ?? this.workouts,
       timestamp: timestamp ?? this.timestamp,
-    );
-  }
-}
-
-@immutable
-class HealthSyncWorkout {
-  final String id;
-  final String title;
-  final String category; // wellness, gym, cardio, home, etc.
-  final int durationMinutes;
-  final int caloriesBurned;
-  final DateTime completedAt;
-
-  const HealthSyncWorkout({
-    required this.id,
-    required this.title,
-    required this.category,
-    required this.durationMinutes,
-    required this.caloriesBurned,
-    required this.completedAt,
-  });
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'title': title,
-      'category': category,
-      'durationMinutes': durationMinutes,
-      'caloriesBurned': caloriesBurned,
-      'completedAt': completedAt.toIso8601String(),
-    };
-  }
-
-  factory HealthSyncWorkout.fromJson(Map<String, dynamic> json) {
-    return HealthSyncWorkout(
-      id: json['id'] as String,
-      title: json['title'] as String,
-      category: json['category'] as String,
-      durationMinutes: json['durationMinutes'] as int,
-      caloriesBurned: json['caloriesBurned'] as int,
-      completedAt: DateTime.parse(json['completedAt'] as String),
     );
   }
 }

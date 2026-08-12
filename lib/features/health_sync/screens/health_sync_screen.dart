@@ -196,26 +196,7 @@ class _SyncStatusHub extends StatelessWidget {
               ),
             ],
           ),
-          if (cachedData.workouts.isNotEmpty) ...[
-            const SizedBox(height: FitoraSpacing.md),
-            const Divider(height: 1),
-            const SizedBox(height: FitoraSpacing.sm),
-            Row(
-              children: [
-                Icon(Icons.fitness_center_rounded, size: 16, color: cs.primary),
-                const SizedBox(width: 8),
-                Text(
-                  'Synced: ${cachedData.workouts.first.title}',
-                  style: tt.bodySmall?.copyWith(fontWeight: FontWeight.w600),
-                ),
-                const Spacer(),
-                Text(
-                  '${cachedData.workouts.first.durationMinutes}m | ${cachedData.workouts.first.caloriesBurned} kcal',
-                  style: tt.labelSmall?.copyWith(color: cs.onSurfaceVariant),
-                ),
-              ],
-            ),
-          ],
+
         ],
       ),
     );
@@ -514,8 +495,8 @@ class _LiveActivitySimulatorState extends State<_LiveActivitySimulator> {
           child: Row(
             children: [
               Container(
-                width: 44,
-                height: 44,
+                width: 40,
+                height: 40,
                 decoration: BoxDecoration(
                   color: (_isWalking ? FitoraColors.mintGreen : Colors.white).withValues(alpha: 0.1),
                   shape: BoxShape.circle,
@@ -524,18 +505,19 @@ class _LiveActivitySimulatorState extends State<_LiveActivitySimulator> {
                   child: Icon(
                     _isWalking ? Icons.directions_walk_rounded : Icons.boy_rounded,
                     color: _isWalking ? FitoraColors.mintGreen : Colors.white70,
-                    size: 24,
+                    size: 22,
                   ),
                 ),
               ),
-              const SizedBox(width: 14),
+              const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
                       _isWalking ? 'Active Walking Session' : 'Step Counter Standby',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                     ),
                     const SizedBox(height: 2),
                     Text(
@@ -545,21 +527,22 @@ class _LiveActivitySimulatorState extends State<_LiveActivitySimulator> {
                   ],
                 ),
               ),
+              const SizedBox(width: 8),
               ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: _isWalking ? FitoraColors.softPink.withValues(alpha: 0.15) : FitoraColors.mintGreen,
                   foregroundColor: _isWalking ? FitoraColors.softPink : Colors.black,
                   elevation: 0,
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
                 icon: Icon(
                   _isWalking ? Icons.pause_rounded : Icons.directions_run_rounded,
-                  size: 16,
+                  size: 14,
                 ),
                 label: Text(
                   _isWalking ? 'Stop' : 'Start',
-                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
                 ),
                 onPressed: () {
                   PedometerService().toggleWalkSimulation();

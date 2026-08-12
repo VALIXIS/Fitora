@@ -127,7 +127,6 @@ class WellnessEngineService {
           categoryLabel: 'Home',
           reason: 'A steady energy baseline supports an active muscular sculpting session.',
           actionLabel: 'Start Sunset Sculpt',
-          targetWorkoutId: 'beginner_home_reset',
         ));
         recommendations.add(const AdaptiveWorkoutRecommendation(
           title: 'Dumbbell Upper Body',

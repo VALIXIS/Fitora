@@ -467,8 +467,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     required IconData icon,
     required Color color,
     required TextTheme textTheme,
+    VoidCallback? onTap,
   }) {
-    return GlowContainer(
+    final card = GlowContainer(
       glowColor: color.withValues(alpha: 0.05),
       borderRadius: BorderRadius.circular(20),
       padding: EdgeInsets.zero,
@@ -526,6 +527,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
       ),
     );
+
+    return onTap != null ? GestureDetector(onTap: onTap, child: card) : card;
   }
 
   Widget _buildWeeklyActivity(
@@ -535,100 +538,105 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
     return GlowContainer(
-      glowColor: FitoraColors.calmCyan.withValues(alpha: 0.05),
-      borderRadius: BorderRadius.circular(24),
-      padding: EdgeInsets.zero,
-      child: Container(
-        padding: const EdgeInsets.all(FitoraSpacing.xl),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.02),
+          glowColor: FitoraColors.calmCyan.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          padding: EdgeInsets.zero,
+          child: Container(
+            padding: const EdgeInsets.all(FitoraSpacing.xl),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.02),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'WEEKLY ACTIVITY',
-                  style: textTheme.labelSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.5,
-                    color: Colors.white30,
-                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'WEEKLY ACTIVITY',
+                      style: textTheme.labelSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.5,
+                        color: Colors.white30,
+                      ),
+                    ),
+                    Text(
+                      '7 Day Trend',
+                      style: textTheme.bodySmall?.copyWith(
+                        color: Colors.white54,
+                      ),
+                    ),
+                  ],
                 ),
-                Text(
-                  '7 Day Trend',
-                  style: textTheme.bodySmall?.copyWith(color: Colors.white54),
+                const SizedBox(height: FitoraSpacing.lg),
+                SizedBox(
+                  height: 120,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: List.generate(7, (index) {
+                      final summary = index < summaries.length
+                          ? summaries[index]
+                          : null;
+                      final heightFactor = summary != null
+                          ? summary.stepsProgress.clamp(0.1, 1.0)
+                          : 0.1;
+                      final isToday = index == summaries.length - 1;
+
+                      return Column(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Expanded(
+                            child: Align(
+                              alignment: Alignment.bottomCenter,
+                              child: Container(
+                                width: 14,
+                                height: 80 * heightFactor,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(99),
+                                  gradient: isToday
+                                      ? const LinearGradient(
+                                          begin: Alignment.bottomCenter,
+                                          end: Alignment.topCenter,
+                                          colors: [
+                                            FitoraColors.mintGreen,
+                                            FitoraColors.softEmerald,
+                                          ],
+                                        )
+                                      : null,
+                                  color: isToday
+                                      ? null
+                                      : Colors.white.withValues(alpha: 0.1),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: FitoraSpacing.xs),
+                          Text(
+                            days[index],
+                            style: textTheme.labelSmall?.copyWith(
+                              color: isToday
+                                  ? FitoraColors.mintGreen
+                                  : Colors.white38,
+                              fontWeight: isToday
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                            ),
+                          ),
+                        ],
+                      );
+                    }),
+                  ),
                 ),
               ],
             ),
-            const SizedBox(height: FitoraSpacing.lg),
-            SizedBox(
-              height: 120,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: List.generate(7, (index) {
-                  final summary = index < summaries.length
-                      ? summaries[index]
-                      : null;
-                  final heightFactor = summary != null
-                      ? summary.stepsProgress.clamp(0.1, 1.0)
-                      : 0.1;
-                  final isToday = index == summaries.length - 1;
-
-                  return Column(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      Expanded(
-                        child: Align(
-                          alignment: Alignment.bottomCenter,
-                          child: Container(
-                            width: 14,
-                            height: 80 * heightFactor,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(99),
-                              gradient: isToday
-                                  ? const LinearGradient(
-                                      begin: Alignment.bottomCenter,
-                                      end: Alignment.topCenter,
-                                      colors: [
-                                        FitoraColors.mintGreen,
-                                        FitoraColors.calmCyan,
-                                      ],
-                                    )
-                                  : null,
-                              color: isToday
-                                  ? null
-                                  : Colors.white.withValues(alpha: 0.1),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: FitoraSpacing.xs),
-                      Text(
-                        days[index],
-                        style: textTheme.labelSmall?.copyWith(
-                          color: isToday
-                              ? FitoraColors.mintGreen
-                              : Colors.white38,
-                          fontWeight: isToday
-                              ? FontWeight.bold
-                              : FontWeight.normal,
-                        ),
-                      ),
-                    ],
-                  );
-                }),
-              ),
-            ),
-          ],
-        ),
-      ),
-    ).animate().fadeIn(delay: 200.ms, duration: 400.ms).slideY(begin: 0.05, end: 0);
+          ),
+        )
+        .animate()
+        .fadeIn(delay: 200.ms, duration: 400.ms)
+        .slideY(begin: 0.05, end: 0);
   }
 
   Widget _buildDailyGoals(

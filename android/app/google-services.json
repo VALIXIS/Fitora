@@ -7,50 +7,6 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:42856190078:android:945ea43bff22e8eebbc82f",
-        "android_client_info": {
-          "package_name": "com.example.fitora"
-        }
-      },
-      "oauth_client": [
-        {
-          "client_id": "42856190078-84qhb8frbf64rmkremsdqdvjtcluoqan.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.example.fitora",
-            "certificate_hash": "4821686564ccf3dd59c2470ff62e09284531531e"
-          }
-        },
-        {
-          "client_id": "42856190078-jrnu3av6iuodp4glo0aggvl1d81ichob.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
-      "api_key": [
-        {
-          "current_key": "AIzaSyCnhEWutAnjGr18cHHcpHHNo41DkYKa8CA"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "42856190078-jrnu3av6iuodp4glo0aggvl1d81ichob.apps.googleusercontent.com",
-              "client_type": 3
-            },
-            {
-              "client_id": "42856190078-bbd1j3hqgcr8jv8ge2ekagd4j84sosbj.apps.googleusercontent.com",
-              "client_type": 2,
-              "ios_info": {
-                "bundle_id": "com.example.fitora"
-              }
-            }
-          ]
-        }
-      }
-    },
-    {
-      "client_info": {
         "mobilesdk_app_id": "1:42856190078:android:5fe5617cec25cd4ebbc82f",
         "android_client_info": {
           "package_name": "com.subhash.fitora"
@@ -58,11 +14,27 @@
       },
       "oauth_client": [
         {
+          "client_id": "42856190078-49pv50nevno9uiqe89ltlmvrlc555gh2.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.subhash.fitora",
+            "certificate_hash": "f3ae1e7d352a6f5d0451dce7338ec35144c6e11d"
+          }
+        },
+        {
           "client_id": "42856190078-6u43e2qgg2ipn9cngr3a6lfo7dkv8sol.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.subhash.fitora",
             "certificate_hash": "4821686564ccf3dd59c2470ff62e09284531531e"
+          }
+        },
+        {
+          "client_id": "42856190078-vphr2fr0ardhuh3ac4qkip01bk4plhu9.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.subhash.fitora",
+            "certificate_hash": "46764240a9b255db644c2f105454e29010b14cdc"
           }
         },
         {

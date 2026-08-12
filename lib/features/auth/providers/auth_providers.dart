@@ -134,9 +134,16 @@ class AuthActionController extends StateNotifier<AuthActionState> {
       );
     } on PlatformException catch (error, stackTrace) {
       AppLogger.error(error, stackTrace);
+      final rawMsg = error.message ?? '';
+      String userMsg = 'Sign-in is unavailable right now.';
+      if (rawMsg.contains('10:') || error.code == 'sign_in_failed') {
+        userMsg = 'Google Auth requires enabling Google Provider in Firebase Console. Tap "Continue as Guest" to enter.';
+      } else if (rawMsg.isNotEmpty) {
+        userMsg = rawMsg;
+      }
       state = state.copyWith(
         isLoading: false,
-        error: error.message ?? 'Sign-in is unavailable right now.',
+        error: userMsg,
         action: null,
       );
     } catch (error, stackTrace) {

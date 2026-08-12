@@ -1,4 +1,3 @@
-
 class WellnessState {
   // Hydration
   final double hydrationLiters;
@@ -209,12 +208,15 @@ class WellnessState {
           const {},
       cycleLengthDays: (map['cycleLengthDays'] as num?)?.toInt() ?? 28,
       periodDurationDays: (map['periodDurationDays'] as num?)?.toInt() ?? 5,
-      periodStartDates: (map['periodStartDates'] as List<dynamic>?)?.cast<String>() ?? const [],
+      periodStartDates: (map['periodStartDates'] as List<dynamic>?)?.map((e) => e as String).toList() ?? const [],
       loggedSymptoms: (map['loggedSymptoms'] as Map<String, dynamic>?)?.map(
-            (k, v) => MapEntry(k, (v as List<dynamic>).cast<String>()),
+            (k, v) => MapEntry(k, (v as List<dynamic>).map((e) => e as String).toList()),
           ) ??
           const {},
-      loggedMoods: (map['loggedMoods'] as Map<String, dynamic>?)?.cast<String, String>() ?? const {},
+      loggedMoods: (map['loggedMoods'] as Map<String, dynamic>?)?.map(
+            (k, v) => MapEntry(k, v as String),
+          ) ??
+          const {},
       loggedEnergy: (map['loggedEnergy'] as Map<String, dynamic>?)?.map(
             (k, v) => MapEntry(k, (v as num).toInt()),
           ) ??

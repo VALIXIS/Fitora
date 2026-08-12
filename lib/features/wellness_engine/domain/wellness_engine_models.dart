@@ -59,7 +59,6 @@ class AdaptiveWorkoutRecommendation {
   final String reason;
   final String actionLabel;
   final String categoryLabel; // 'Home', 'Gym', 'Wellness'
-  final String? targetWorkoutId;
 
   const AdaptiveWorkoutRecommendation({
     required this.title,
@@ -67,7 +66,6 @@ class AdaptiveWorkoutRecommendation {
     required this.reason,
     required this.actionLabel,
     required this.categoryLabel,
-    this.targetWorkoutId,
   });
 }
 

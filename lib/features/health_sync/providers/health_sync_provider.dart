@@ -2,9 +2,14 @@ import 'dart:async';
 import 'dart:math';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:fitora/core/health/domain/health_models.dart' hide SyncStatus;
+import 'package:fitora/core/health/services/health_cache_service.dart';
+import 'package:fitora/core/health/services/health_connect_service.dart';
+import 'package:fitora/core/health/data/health_connect_repository.dart';
 import '../../../core/storage/app_preferences.dart';
 import '../domain/health_sync_models.dart';
 import '../services/health_sync_service.dart';
+import '../services/health_platform_connectors.dart';
 import '../services/pedometer_service.dart';
 
 final healthSyncProvider = StateNotifierProvider<HealthSyncController, HealthSyncState>((ref) {
@@ -40,15 +45,15 @@ class HealthSyncController extends StateNotifier<HealthSyncState> with WidgetsBi
   }
 
   @override
-  void didChangeAppLifecycleState(AppLifecycleState appState) {
-    if (appState == AppLifecycleState.paused || appState == AppLifecycleState.detached) {
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.detached) {
       if (_saveDebounceTimer?.isActive ?? false) {
         _saveDebounceTimer?.cancel();
         if (_initialized) {
-          _service.saveCachedData(state.cachedData);
+          _service.saveCachedData(this.state.cachedData);
         }
       }
-    } else if (appState == AppLifecycleState.resumed) {
+    } else if (state == AppLifecycleState.resumed) {
       if (_initialized) {
         syncAllActive();
       }
@@ -61,11 +66,28 @@ class HealthSyncController extends StateNotifier<HealthSyncState> with WidgetsBi
     final prefs = await AppPreferences.instance();
     _service = HealthSyncService(prefs);
 
-    final connections = _service.loadConnections();
+    final connections = Map<HealthSource, HealthSourceConnectionState>.from(_service.loadConnections());
     final priorities = _service.loadPriorities();
     final bgSyncEnabled = _service.loadBgSyncEnabled();
     final bgSyncInterval = _service.loadBgSyncInterval();
     final cachedData = _service.loadCachedData();
+
+    try {
+      final hcConnector = HealthConnectConnector();
+      final perm = await hcConnector.checkPermissionStatus();
+      if (perm == HealthPermissionStatus.authorized) {
+        final existing = connections[HealthSource.healthConnect] ?? HealthSourceConnectionState(source: HealthSource.healthConnect);
+        connections[HealthSource.healthConnect] = existing.copyWith(
+          isConnected: true,
+          permissionStatus: HealthPermissionStatus.authorized,
+        );
+        final existingGfit = connections[HealthSource.googleFit] ?? HealthSourceConnectionState(source: HealthSource.googleFit);
+        connections[HealthSource.googleFit] = existingGfit.copyWith(
+          isConnected: true,
+          permissionStatus: HealthPermissionStatus.authorized,
+        );
+      }
+    } catch (_) {}
 
     state = HealthSyncState(
       connections: connections,
@@ -105,8 +127,16 @@ class HealthSyncController extends StateNotifier<HealthSyncState> with WidgetsBi
 
         // Debounce local persistence to prevent race conditions during frequent updates
         _saveDebounceTimer?.cancel();
-        _saveDebounceTimer = Timer(const Duration(seconds: 1), () {
-          _service.saveCachedData(state.cachedData);
+        _saveDebounceTimer = Timer(const Duration(seconds: 1), () async {
+          await _service.saveCachedData(state.cachedData);
+          try {
+            final cacheService = HealthCacheService(AppPreferences.prefs);
+            final today = DateTime(now.year, now.month, now.day);
+            final existingDaily = cacheService.getDailyActivity(today) ?? DailyActivitySummary.empty(date: today);
+            if (updatedSteps > existingDaily.steps) {
+              await cacheService.saveDailyActivity(existingDaily.copyWith(steps: updatedSteps, lastSyncTime: now));
+            }
+          } catch (_) {}
         });
       }
     });
@@ -146,6 +176,17 @@ class HealthSyncController extends StateNotifier<HealthSyncState> with WidgetsBi
 
         final updatedConnections = Map<HealthSource, HealthSourceConnectionState>.from(state.connections);
         updatedConnections[source] = updatedConn;
+        if (source == HealthSource.healthConnect) {
+          updatedConnections[HealthSource.googleFit] = (updatedConnections[HealthSource.googleFit] ?? HealthSourceConnectionState(source: HealthSource.googleFit)).copyWith(
+            isConnected: true,
+            permissionStatus: HealthPermissionStatus.authorized,
+          );
+        } else if (source == HealthSource.googleFit) {
+          updatedConnections[HealthSource.healthConnect] = (updatedConnections[HealthSource.healthConnect] ?? HealthSourceConnectionState(source: HealthSource.healthConnect)).copyWith(
+            isConnected: true,
+            permissionStatus: HealthPermissionStatus.authorized,
+          );
+        }
 
         state = state.copyWith(connections: updatedConnections);
         await _service.saveConnections(updatedConnections);
@@ -233,6 +274,56 @@ class HealthSyncController extends StateNotifier<HealthSyncState> with WidgetsBi
 
     await _service.saveConnections(updatedConnections);
     await _service.saveCachedData(blended);
+
+    // ── Canonical Cache Bridge for Home & Progress Screens ───────────────────
+    try {
+      final cacheService = HealthCacheService(AppPreferences.prefs);
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      final existingDaily = cacheService.getDailyActivity(today) ?? DailyActivitySummary.empty(date: today);
+
+      final hcService = HealthConnectService();
+      final hcRepo = HealthConnectRepository(hcService);
+      final hcDaily = await hcRepo.getDailyActivity(today);
+
+      final updatedDaily = existingDaily.copyWith(
+        steps: blended.steps > 0 ? blended.steps : hcDaily.steps,
+        caloriesBurned: blended.activeCalories > 0 ? blended.activeCalories : hcDaily.caloriesBurned,
+        distanceKm: hcDaily.distanceKm,
+        activeMinutes: hcDaily.activeMinutes,
+        date: today,
+        healthConnectStatus: HealthConnectStatus.connected,
+        dataSource: DataSource.healthConnectOnly,
+        lastSyncTime: now,
+      );
+
+      await cacheService.saveDailyActivity(updatedDaily);
+
+      final weekly = cacheService.getWeeklyActivity() ??
+          List.generate(7, (i) => DailyActivitySummary.empty(date: today.subtract(Duration(days: 6 - i))));
+
+      final updatedWeekly = weekly.map((s) {
+        if (s.date.year == today.year && s.date.month == today.month && s.date.day == today.day) {
+          return updatedDaily;
+        }
+        return s;
+      }).toList();
+
+      await cacheService.saveWeeklyActivity(updatedWeekly);
+
+      if (blended.sleepHours > 0) {
+        final totalMins = (blended.sleepHours * 60).round();
+        final sleepSummary = SleepSummary(
+          totalSleep: Duration(minutes: totalMins),
+          remSleep: Duration.zero,
+          deepSleep: Duration.zero,
+          lightSleep: Duration(minutes: totalMins),
+          sleepScore: totalMins > 0 ? 80 : 0,
+          date: today,
+        );
+        await cacheService.saveSleepSummary(sleepSummary);
+      }
+    } catch (_) {}
   }
 
   Future<void> updatePriorities(List<HealthSource> newOrder) async {

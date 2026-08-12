@@ -72,8 +72,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                   // Activity Summary Metrics
                   _buildSectionHeader(textTheme, 'OVERVIEW'),
                   const SizedBox(height: FitoraSpacing.md),
-                  if (summaries.isEmpty ||
-                      summaries.last.lastSyncTime == null) ...[
+                  if (summaries.isEmpty) ...[
                     _buildEmptyActivityCard(context, textTheme),
                   ] else ...[
                     _buildActivitySection(textTheme, summaries),
@@ -103,6 +102,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                     const SizedBox(height: FitoraSpacing.lg),
                   ],
                   _buildStreakCard(textTheme),
+                  const SizedBox(height: 100), // Bottom scroll padding
                   const SizedBox(height: 100), // Bottom scroll padding
                 ]),
               ),
@@ -561,16 +561,29 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                             .resetHydration(),
                         tooltip: 'Reset intake',
                       ),
-                    IconButton(
-                      icon: const Icon(
-                        Icons.add_circle_rounded,
-                        color: Colors.blueAccent,
-                        size: 24,
-                      ),
+                    ElevatedButton.icon(
                       onPressed: () => ref
                           .read(wellnessProvider.notifier)
                           .addHydration(0.25),
-                      tooltip: 'Log 250ml',
+                      icon: const Icon(Icons.add_rounded, size: 18),
+                      label: const Text('+ 250ml'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blueAccent.withValues(
+                          alpha: 0.2,
+                        ),
+                        foregroundColor: Colors.blueAccent,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          side: BorderSide(
+                            color: Colors.blueAccent.withValues(alpha: 0.3),
+                          ),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                      ),
                     ),
                   ],
                 ),
