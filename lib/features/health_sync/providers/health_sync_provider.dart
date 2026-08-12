@@ -320,13 +320,13 @@ class HealthSyncController extends StateNotifier<HealthSyncState> with WidgetsBi
       }).toList();
       await cacheService.saveWeeklyActivity(updatedWeekly);
 
-      if (hcSleep.totalSleep.inMinutes > 0) {
-        final totalMins = hcSleep.totalSleep.inMinutes;
+      final sleepMins = hcSleep?.totalSleep.inMinutes ?? 0;
+      if (sleepMins > 0) {
         await cacheService.saveSleepSummary(SleepSummary(
-          totalSleep: Duration(minutes: totalMins),
+          totalSleep: Duration(minutes: sleepMins),
           remSleep: Duration.zero,
           deepSleep: Duration.zero,
-          lightSleep: Duration(minutes: totalMins),
+          lightSleep: Duration(minutes: sleepMins),
           sleepScore: 80,
           date: today,
         ));
