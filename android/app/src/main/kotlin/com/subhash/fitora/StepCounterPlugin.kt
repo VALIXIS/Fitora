@@ -41,6 +41,7 @@ class StepCounterPlugin : FlutterPlugin, EventChannel.StreamHandler, MethodChann
 
     override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         context = binding.applicationContext
+        sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as? SensorManager
 
         eventChannel = EventChannel(binding.binaryMessenger, STEP_CHANNEL)
         eventChannel.setStreamHandler(this)
@@ -62,12 +63,14 @@ class StepCounterPlugin : FlutterPlugin, EventChannel.StreamHandler, MethodChann
     override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
         when (call.method) {
             "getDebugSnapshot" -> {
+                val sm = sensorManager ?: (context.getSystemService(Context.SENSOR_SERVICE) as? SensorManager)
+                val isAvailable = sm?.getDefaultSensor(Sensor.TYPE_STEP_COUNTER) != null
                 result.success(mapOf(
                     "rawSteps"          to latestRaw,
                     "todaySteps"        to latestTodaySteps,
                     "baseline"          to bootBaseline,
                     "lastEventMs"       to lastEventTimestamp,
-                    "sensorAvailable"   to (sensorManager?.getDefaultSensor(Sensor.TYPE_STEP_COUNTER) != null)
+                    "sensorAvailable"   to isAvailable
                 ))
             }
             else -> result.notImplemented()
@@ -140,7 +143,6 @@ class StepCounterPlugin : FlutterPlugin, EventChannel.StreamHandler, MethodChann
     private fun stopListening() {
         sensorListener?.let { sensorManager?.unregisterListener(it) }
         sensorListener = null
-        sensorManager  = null
     }
 
     // -------------------------------------------------------------------------

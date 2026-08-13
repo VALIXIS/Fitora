@@ -87,10 +87,10 @@ class SensorStatusNotifier extends StateNotifier<SensorStatus> {
   final Ref _ref;
 
   SensorStatusNotifier(this._ref) : super(SensorStatus.unknown) {
-    _checkPermission();
+    checkPermission();
   }
 
-  Future<void> _checkPermission() async {
+  Future<void> checkPermission() async {
     final svc = _ref.read(healthPermissionsServiceProvider);
     final status = await svc.checkStatus();
     state = status;
@@ -222,29 +222,34 @@ final weeklyActivityProvider =
       ref.watch(healthSyncServiceProvider);
       final cache = ref.watch(healthCacheServiceProvider);
 
-      final profile = ref.watch(personalizationControllerProvider).profile;
-      final customStepGoal = ref.watch(customStepGoalProvider);
-      final computedGoals = HealthGoalCalculator.calculateGoals(
-        profile: profile,
-        customStepGoal: customStepGoal,
-      );
+      final cachedList = cache.getWeeklyActivity();
+      final Map<String, DailyActivitySummary> cachedMap = {};
+      if (cachedList != null) {
+        for (final item in cachedList) {
+          final key = "${item.date.year}-${item.date.month}-${item.date.day}";
+          cachedMap[key] = item;
+        }
+      }
 
-      final list =
-          cache.getWeeklyActivity() ??
-          List.generate(
-            7,
-            (i) => DailyActivitySummary.empty(
-              date: startDate.add(Duration(days: i)),
-            ),
-          );
-      return list
-          .map(
-            (s) => s.copyWith(
-              stepsGoal: computedGoals.stepsGoal,
-              caloriesGoal: computedGoals.caloriesGoal,
-            ),
-          )
-          .toList();
+      final List<DailyActivitySummary> list = [];
+      for (int i = 0; i < 7; i++) {
+        final dayDate = startDate.add(Duration(days: i));
+        final daily = ref.watch(dailyActivityProvider(dayDate));
+        final key = "${dayDate.year}-${dayDate.month}-${dayDate.day}";
+        final cached = cachedMap[key];
+
+        if (cached != null) {
+          list.add(daily.copyWith(
+            steps: max(daily.steps, cached.steps),
+            caloriesBurned: max(daily.caloriesBurned, cached.caloriesBurned),
+            distanceKm: max(daily.distanceKm, cached.distanceKm),
+            activeMinutes: max(daily.activeMinutes, cached.activeMinutes),
+          ));
+        } else {
+          list.add(daily);
+        }
+      }
+      return list;
     });
 
 final sleepSummaryProvider = Provider.family<SleepSummary, DateTime>((

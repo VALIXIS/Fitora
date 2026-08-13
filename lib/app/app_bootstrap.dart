@@ -37,8 +37,12 @@ class AppBootstrap {
           }
         };
 
-        await AppInitializer.initialize();
-        AppLogger.info('AppBootstrap: AppInitializer completed at ${stopwatch.elapsedMilliseconds}ms');
+        try {
+          await AppInitializer.initialize().timeout(const Duration(seconds: 4));
+          AppLogger.info('AppBootstrap: AppInitializer completed at ${stopwatch.elapsedMilliseconds}ms');
+        } catch (error, stackTrace) {
+          AppLogger.error('AppInitializer error or timeout: $error', stackTrace);
+        }
         
         runApp(
           ProviderScope(

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:fitora/app/navigation/app_shell.dart';
 import 'package:fitora/app/router/app_routes.dart';
 import 'package:fitora/app/router/startup_route_resolver.dart';
+import 'package:fitora/features/splash/screens/splash_screen.dart';
 import 'package:fitora/features/auth/models/auth_status.dart';
 import 'package:fitora/features/auth/presentation/auth_email_screen.dart';
 import 'package:fitora/features/auth/presentation/auth_screen.dart';
@@ -106,11 +107,14 @@ final appRouterProvider = Provider<GoRouter>(
 
     return GoRouter(
       navigatorKey: _rootNavigatorKey,
-      initialLocation: AppRoutes.home,
+      initialLocation: AppRoutes.splash,
       debugLogDiagnostics: kDebugMode,
       refreshListenable: routerRefreshNotifier,
       redirect: (context, state) {
         final location = state.matchedLocation;
+        if (location == AppRoutes.splash) {
+          return null;
+        }
         final isAuthFlow =
             location == AppRoutes.auth || location == AppRoutes.authEmail;
         final isProfileSetup = location == AppRoutes.profileSetup;
@@ -152,6 +156,11 @@ final appRouterProvider = Provider<GoRouter>(
         return null;
       },
       routes: [
+        GoRoute(
+          path: AppRoutes.splash,
+          name: AppRouteNames.splash,
+          builder: (context, state) => const SplashScreen(),
+        ),
         GoRoute(
           path: AppRoutes.onboarding,
           name: AppRouteNames.onboarding,

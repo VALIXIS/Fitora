@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -10,7 +9,6 @@ import 'package:fitora/core/health/providers/health_providers.dart';
 import 'package:fitora/features/personalization/providers/personalization_controller.dart';
 import 'package:fitora/features/personalization/domain/personalization_models.dart';
 import 'package:fitora/features/auth/providers/auth_providers.dart';
-import 'package:fitora/features/profile/widgets/sensor_debug_panel.dart';
 import 'package:fitora/features/settings/providers/settings_provider.dart';
 import 'package:fitora/shared/widgets/glow_container.dart';
 import 'package:fitora/features/wellness/providers/wellness_provider.dart';
@@ -90,11 +88,6 @@ class ProfileScreen extends ConsumerWidget {
                     _buildQuickActions(context, textTheme),
                     const SizedBox(height: FitoraSpacing.xl),
 
-                    if (kDebugMode) ...[
-                      _buildSectionTitle(textTheme, 'DEVELOPER DEBUG'),
-                      const SensorDebugPanel(),
-                      const SizedBox(height: FitoraSpacing.xl),
-                    ],
 
                     Consumer(
                       builder: (context, ref, _) {
@@ -369,110 +362,6 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildSensorStatusCard(
-    BuildContext context,
-    TextTheme tt,
-    WidgetRef ref,
-  ) {
-    final sensorStatus = ref.watch(sensorStatusProvider);
-
-    Color statusColor;
-    IconData statusIcon;
-    String title;
-    String subtitle;
-
-    switch (sensorStatus) {
-      case SensorStatus.active:
-        statusColor = FitoraColors.mintGreen;
-        statusIcon = Icons.sensors_rounded;
-        title = 'Sensor Tracking Active';
-        subtitle = 'Your steps and activity are being tracked in real-time.';
-        break;
-      case SensorStatus.permissionRequired:
-        statusColor = FitoraColors.warningOrange;
-        statusIcon = Icons.sensors_off_rounded;
-        title = 'Permission Required';
-        subtitle = 'Grant Activity Recognition access to enable live step tracking.';
-        break;
-      case SensorStatus.unavailable:
-        statusColor = Colors.white38;
-        statusIcon = Icons.do_not_disturb_rounded;
-        title = 'Sensor Unavailable';
-        subtitle = 'Your device does not have a supported step counter sensor.';
-        break;
-      case SensorStatus.unknown:
-        statusColor = Colors.white38;
-        statusIcon = Icons.sensors_rounded;
-        title = 'Checking Sensor...';
-        subtitle = 'Verifying sensor permission status.';
-        break;
-    }
-
-    return _buildCard(highlightColor: statusColor, [
-      Padding(
-        padding: const EdgeInsets.all(FitoraSpacing.md),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: statusColor.withValues(alpha: 0.15),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(statusIcon, color: statusColor, size: 24),
-            ),
-            const SizedBox(width: FitoraSpacing.md),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    title,
-                    style: tt.bodyMedium?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    style: tt.bodySmall?.copyWith(
-                      color: Colors.white60,
-                      height: 1.4,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (sensorStatus == SensorStatus.permissionRequired)
-              GestureDetector(
-                onTap: () =>
-                    ref.read(sensorStatusProvider.notifier).requestPermission(),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: FitoraColors.warningOrange.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Text(
-                    'Grant',
-                    style: tt.labelSmall?.copyWith(
-                      color: FitoraColors.warningOrange,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
-    ]);
-  }
-
   Widget _buildPersonalizationDetails(
     TextTheme tt,
     PersonalizationProfile profile,
@@ -526,180 +415,6 @@ class ProfileScreen extends ConsumerWidget {
         'Water Goal',
         waterGoalStr,
         iconColor: Colors.blueAccent,
-      ),
-    ]);
-  }
-
-  Widget _buildHealthSyncCard(
-    BuildContext context,
-    TextTheme tt,
-    WidgetRef ref,
-  ) {
-    final syncStatus = ref.watch(healthSyncServiceProvider);
-    final activity = ref.watch(dailyActivityProvider(DateTime.now()));
-
-    Color color;
-    IconData icon;
-    String title;
-    String subtitle;
-    String actionText;
-
-    switch (syncStatus) {
-      case SyncStatus.synced:
-        color = FitoraColors.mintGreen;
-        icon = Icons.health_and_safety_rounded;
-        title = 'Data Synced';
-        subtitle = 'All health metrics are up to date.';
-        actionText = 'Sync Now';
-        break;
-      case SyncStatus.syncing:
-        color = Colors.blueAccent;
-        icon = Icons.sync_rounded;
-        title = 'Syncing...';
-        subtitle = 'Fetching latest health data.';
-        actionText = '';
-        break;
-      case SyncStatus.offline:
-        color = Colors.white38;
-        icon = Icons.cloud_off_rounded;
-        title = 'Offline Mode';
-        subtitle = 'Using locally cached data.';
-        actionText = 'Retry';
-        break;
-      case SyncStatus.error:
-        color = Colors.redAccent;
-        icon = Icons.error_outline_rounded;
-        title = 'Sync Error';
-        subtitle = 'Failed to synchronize health records.';
-        actionText = 'Retry';
-        break;
-    }
-
-    String dataSourceStr;
-    switch (activity.dataSource) {
-      case DataSource.healthConnectAndSensor:
-        dataSourceStr = 'Health Connect + Sensor';
-        break;
-      case DataSource.sensorOnly:
-        dataSourceStr = 'Sensor Only';
-        break;
-      case DataSource.healthConnectOnly:
-        dataSourceStr = 'Health Connect Only';
-        break;
-      case DataSource.cache:
-        dataSourceStr = 'Offline Cache';
-        break;
-    }
-
-    return _buildCard(highlightColor: color, [
-      Padding(
-        padding: const EdgeInsets.all(FitoraSpacing.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.15),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(icon, color: color, size: 24),
-                ),
-                const SizedBox(width: FitoraSpacing.md),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: tt.bodyMedium?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        subtitle,
-                        style: tt.bodySmall?.copyWith(
-                          color: Colors.white60,
-                          height: 1.4,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: FitoraSpacing.md),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Source: $dataSourceStr',
-                      style: tt.labelSmall?.copyWith(color: Colors.white70),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      activity.lastSyncTime != null
-                          ? 'Last Sync: ${activity.lastSyncTime!.hour}:${activity.lastSyncTime!.minute.toString().padLeft(2, '0')}'
-                          : 'Last Sync: Never',
-                      style: tt.labelSmall?.copyWith(color: Colors.white54),
-                    ),
-                  ],
-                ),
-                if (actionText.isNotEmpty)
-                  GestureDetector(
-                    onTap: () {
-                      ref.read(healthSyncServiceProvider.notifier).syncNow();
-                      if (syncStatus != SyncStatus.syncing) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Starting health sync...'),
-                          ),
-                        );
-                      }
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: color.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Text(
-                        actionText,
-                        style: tt.labelSmall?.copyWith(
-                          color: color,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    ]);
-  }
-
-  Widget _buildOtherIntegrations(BuildContext context, TextTheme tt) {
-    return _buildCard([
-      _buildTile(
-        tt,
-        Icons.watch_rounded,
-        'Strava',
-        'Not Connected',
-        iconColor: Colors.orange,
-        valueColor: Colors.white54,
-        onTap: () => context.pushNamed(AppRouteNames.healthSync),
       ),
     ]);
   }

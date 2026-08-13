@@ -23,7 +23,6 @@ class HealthPermissionsService {
 
     final status = await Permission.activityRecognition.status;
     if (status.isGranted) return SensorStatus.active;
-    if (status.isPermanentlyDenied) return SensorStatus.unavailable;
     return SensorStatus.permissionRequired;
   }
 
@@ -40,7 +39,6 @@ class HealthPermissionsService {
 
     final result = await Permission.activityRecognition.request();
     if (result.isGranted) return SensorStatus.active;
-    if (result.isPermanentlyDenied) return SensorStatus.unavailable;
     return SensorStatus.permissionRequired;
   }
 

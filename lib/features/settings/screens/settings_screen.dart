@@ -122,6 +122,11 @@ class SettingsScreen extends ConsumerWidget {
                       ]),
                       const SizedBox(height: FitoraSpacing.xl),
 
+                      // ── STEP COUNTER & SENSORS ─────────────────────────────────
+                      _buildSectionTitle(textTheme, 'STEP COUNTER & SENSORS'),
+                      _buildSensorSettingsSection(context, textTheme, ref),
+                      const SizedBox(height: FitoraSpacing.xl),
+
                       // ── REMINDERS ─────────────────────────────────────────────
                       _buildSectionTitle(textTheme, 'REMINDERS'),
                       _buildSettingsCard([
@@ -250,6 +255,158 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   // ── Sync helpers ─────────────────────────────────────────────────────────
+
+  Widget _buildSensorSettingsSection(
+    BuildContext context,
+    TextTheme tt,
+    WidgetRef ref,
+  ) {
+    final sensorStatus = ref.watch(sensorStatusProvider);
+
+    String statusText;
+    Color statusColor;
+    IconData statusIcon;
+
+    switch (sensorStatus) {
+      case SensorStatus.active:
+        statusText = 'Active 🟢';
+        statusColor = FitoraColors.mintGreen;
+        statusIcon = Icons.sensors_rounded;
+        break;
+      case SensorStatus.permissionRequired:
+        statusText = 'Permission Disabled ⚠️';
+        statusColor = FitoraColors.warningOrange;
+        statusIcon = Icons.sensors_off_rounded;
+        break;
+      case SensorStatus.unavailable:
+        statusText = 'Sensor Unavailable';
+        statusColor = Colors.white38;
+        statusIcon = Icons.do_not_disturb_rounded;
+        break;
+      case SensorStatus.unknown:
+        statusText = 'Checking...';
+        statusColor = Colors.white54;
+        statusIcon = Icons.sensors_rounded;
+        break;
+    }
+
+    return _buildSettingsCard([
+      _buildTile(
+        tt,
+        statusIcon,
+        'Step Sensor Status',
+        statusText,
+        trailingIconColor: statusColor,
+      ),
+      _buildDivider(),
+      _buildTile(
+        tt,
+        Icons.fact_check_rounded,
+        'Verify Sensor Permission',
+        'Check Now',
+        onTap: () async {
+          final notifier = ref.read(sensorStatusProvider.notifier);
+          await notifier.checkPermission();
+          final updated = ref.read(sensorStatusProvider);
+          if (context.mounted) {
+            final isOK = updated == SensorStatus.active;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  isOK
+                      ? 'Step counter sensor is active and tracking your steps!'
+                      : 'Step tracking permission is disabled. Tap Open Settings to enable it.',
+                ),
+                backgroundColor: const Color(0xFF0D1117),
+                duration: const Duration(seconds: 4),
+                action: isOK
+                    ? null
+                    : SnackBarAction(
+                        label: 'Open Settings',
+                        textColor: FitoraColors.warningOrange,
+                        onPressed: () => ph.openAppSettings(),
+                      ),
+              ),
+            );
+          }
+        },
+        trailingIcon: Icons.refresh_rounded,
+      ),
+      if (sensorStatus == SensorStatus.permissionRequired) ...[
+        _buildDivider(),
+        Padding(
+          padding: const EdgeInsets.all(FitoraSpacing.md),
+          child: Container(
+            padding: const EdgeInsets.all(FitoraSpacing.md),
+            decoration: BoxDecoration(
+              color: FitoraColors.warningOrange.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: FitoraColors.warningOrange.withValues(alpha: 0.3),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.warning_amber_rounded,
+                      color: FitoraColors.warningOrange,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Step Tracking Disabled',
+                        style: tt.titleSmall?.copyWith(
+                          color: FitoraColors.warningOrange,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'If you accidentally tapped "Don\'t allow" for physical activity or motion permissions, tap below to grant permission or open system App Settings to re-enable step recording.',
+                  style: tt.bodySmall?.copyWith(
+                    color: Colors.white70,
+                    fontSize: 11,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: () async {
+                      final notifier = ref.read(sensorStatusProvider.notifier);
+                      await notifier.requestPermission();
+                      final currentStatus = ref.read(sensorStatusProvider);
+                      if (currentStatus == SensorStatus.permissionRequired) {
+                        await ph.openAppSettings();
+                      }
+                    },
+                    icon: const Icon(Icons.security_rounded, size: 16),
+                    label: const Text('Grant / Open System Settings'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: FitoraColors.warningOrange,
+                      foregroundColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    ]);
+  }
 
   String _syncStatusLabel(SyncStatus status) {
     switch (status) {
