@@ -227,6 +227,7 @@ class NotificationService {
             notificationDetails: platformDetails,
             androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
           );
+        }
       }
 
       // Sleep Reminder (10:00 PM / 22:00)
