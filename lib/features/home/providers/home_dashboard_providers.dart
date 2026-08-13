@@ -3,7 +3,9 @@ import 'package:fitora/features/home/data/mock_home_dashboard_repository.dart';
 import 'package:fitora/features/home/domain/home_dashboard_models.dart';
 import 'package:fitora/features/home/domain/home_dashboard_repository.dart';
 
-final homeDashboardRepositoryProvider = Provider<HomeDashboardRepository>((ref) {
+final homeDashboardRepositoryProvider = Provider<HomeDashboardRepository>((
+  ref,
+) {
   return MockHomeDashboardRepository();
 });
 

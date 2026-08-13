@@ -60,21 +60,12 @@ class HomeStepProgress {
   final int current;
   final int goal;
 
-  const HomeStepProgress({
-    required this.current,
-    required this.goal,
-  });
+  const HomeStepProgress({required this.current, required this.goal});
 
   double get progress => goal == 0 ? 0 : current / goal;
 }
 
-enum HomeMetricType {
-  calories,
-  activeMinutes,
-  water,
-  sleep,
-  streak,
-}
+enum HomeMetricType { calories, activeMinutes, water, sleep, streak }
 
 class HomeMetricTileData {
   final HomeMetricType type;

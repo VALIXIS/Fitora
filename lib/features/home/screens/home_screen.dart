@@ -14,6 +14,8 @@ import 'package:fitora/features/profile/screens/profile_screen.dart';
 import 'package:fitora/core/utils/greeting_utils.dart';
 import 'package:fitora/shared/widgets/fitora_background.dart';
 import 'package:fitora/core/services/permission_manager.dart';
+import 'package:fitora/features/home/providers/goals_streak_provider.dart';
+import 'package:fitora/features/home/domain/goals_streak_models.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -285,18 +287,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ),
                     const SizedBox(height: FitoraSpacing.md),
 
-                    // Daily Goals Cards (Steps, Hydration, Sleep)
-                    Consumer(
-                      builder: (context, ref, _) {
-                        final wellness = ref.watch(wellnessProvider);
-                        return _buildDailyGoals(
-                          textTheme,
-                          activity,
-                          wellness,
-                          today,
-                        );
-                      },
-                    ),
+                    // Daily Goals Cards (Steps, Hydration, Sleep, Calories)
+                    _buildDailyGoals(textTheme, today),
                     const SizedBox(height: FitoraSpacing.xl),
 
                     const SizedBox(height: 100), // Bottom scroll padding
@@ -307,6 +299,99 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  void _showStreakHistoryDialog(
+    BuildContext context,
+    GoalsStreakState streakState,
+  ) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        final textTheme = Theme.of(context).textTheme;
+        return AlertDialog(
+          backgroundColor: const Color(0xFF0D1117),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+          ),
+          title: Row(
+            children: [
+              const Icon(
+                Icons.local_fire_department_rounded,
+                color: FitoraColors.warningOrange,
+                size: 28,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Streak History',
+                style: textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Current Streak:',
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: Colors.white70,
+                    ),
+                  ),
+                  Text(
+                    '${streakState.currentStreak} ${streakState.currentStreak == 1 ? 'day' : 'days'}',
+                    style: textTheme.bodyLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: FitoraColors.warningOrange,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Longest Streak:',
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: Colors.white70,
+                    ),
+                  ),
+                  Text(
+                    '${streakState.longestStreak} ${streakState.longestStreak == 1 ? 'day' : 'days'}',
+                    style: textTheme.bodyLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: FitoraColors.mintGreen,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Keep up the great work! Smashed targets count towards your streak.',
+                style: textTheme.bodySmall?.copyWith(color: Colors.white38),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text(
+                'Close',
+                style: TextStyle(color: FitoraColors.mintGreen),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -361,14 +446,55 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ],
               ),
             ),
-            IconButton(
-              icon: Badge(
-                backgroundColor: FitoraColors.mintGreen,
-                smallSize: 8,
-                child: const Icon(
-                  Icons.notifications_outlined,
-                  color: Colors.white,
-                  size: 24,
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Consumer(
+                  builder: (context, ref, _) {
+                    final streakState = ref.watch(goalsStreakProvider);
+                    if (streakState.currentStreak == 0)
+                      return const SizedBox.shrink();
+                    return GestureDetector(
+                      onTap: () =>
+                          _showStreakHistoryDialog(context, streakState),
+                      child: Container(
+                        margin: const EdgeInsets.only(right: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: FitoraColors.warningOrange.withValues(
+                            alpha: 0.15,
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: FitoraColors.warningOrange.withValues(
+                              alpha: 0.3,
+                            ),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.local_fire_department_rounded,
+                              color: FitoraColors.warningOrange,
+                              size: 16,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              '${streakState.currentStreak}',
+                              style: textTheme.labelLarge?.copyWith(
+                                color: FitoraColors.warningOrange,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ),
               onPressed: () => _showNotificationsModal(context),
@@ -652,33 +778,97 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
     return GlowContainer(
-      glowColor: FitoraColors.calmCyan.withValues(alpha: 0.05),
-      borderRadius: BorderRadius.circular(24),
-      padding: EdgeInsets.zero,
-      child: Container(
-        padding: const EdgeInsets.all(FitoraSpacing.xl),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.02),
+          glowColor: FitoraColors.calmCyan.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          padding: EdgeInsets.zero,
+          child: Container(
+            padding: const EdgeInsets.all(FitoraSpacing.xl),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.02),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'WEEKLY ACTIVITY',
-                  style: textTheme.labelSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.5,
-                    color: Colors.white30,
-                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'WEEKLY ACTIVITY',
+                      style: textTheme.labelSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.5,
+                        color: Colors.white30,
+                      ),
+                    ),
+                    Text(
+                      '7 Day Trend',
+                      style: textTheme.bodySmall?.copyWith(
+                        color: Colors.white54,
+                      ),
+                    ),
+                  ],
                 ),
-                Text(
-                  '7 Day Trend',
-                  style: textTheme.bodySmall?.copyWith(color: Colors.white54),
+                const SizedBox(height: FitoraSpacing.lg),
+                SizedBox(
+                  height: 120,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: List.generate(7, (index) {
+                      final summary = index < summaries.length
+                          ? summaries[index]
+                          : null;
+                      final heightFactor = summary != null
+                          ? summary.stepsProgress.clamp(0.1, 1.0)
+                          : 0.1;
+                      final isToday = index == summaries.length - 1;
+
+                      return Column(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Expanded(
+                            child: Align(
+                              alignment: const Alignment(0, 1), // Align bar to bottom of container
+                              child: Container(
+                                width: 14,
+                                height: 80 * heightFactor,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(99),
+                                  gradient: isToday
+                                      ? const LinearGradient(
+                                          begin: Alignment.bottomCenter,
+                                          end: Alignment.topCenter,
+                                          colors: [
+                                            FitoraColors.mintGreen,
+                                            Color(0xFF22D3EE),
+                                          ],
+                                        )
+                                      : null,
+                                  color: isToday
+                                      ? null
+                                      : Colors.white.withValues(alpha: 0.1),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: FitoraSpacing.xs),
+                          Text(
+                            days[index],
+                            style: textTheme.labelSmall?.copyWith(
+                              color: isToday
+                                  ? FitoraColors.mintGreen
+                                  : Colors.white38,
+                              fontWeight: isToday
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                            ),
+                          ),
+                        ],
+                      );
+                    }),
+                  ),
                 ),
               ],
             ),
@@ -748,76 +938,122 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     ).animate().fadeIn(delay: 200.ms, duration: 400.ms).slideY(begin: 0.05, end: 0);
   }
 
-  Widget _buildDailyGoals(
-    TextTheme textTheme,
-    DailyActivitySummary activity,
-    wellness,
-    DateTime today,
-  ) {
-    final sleep = ref.watch(sleepSummaryProvider(today));
-    final hasSleep = sleep.totalSleep.inMinutes > 0;
+  Widget _buildDailyGoals(TextTheme textTheme, DateTime today) {
+    final status = ref.watch(dailyGoalStatusProvider(today));
+
+    int completedGoalsCount = status.metrics.where((m) => m.isCompleted).length;
+    int trackedGoalsCount = status.metrics
+        .where((m) => m.availability == MetricAvailability.available)
+        .length;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _buildGoalCard(
-          title: activity.sensorStatus == SensorStatus.active
-              ? 'Step Goal  🟢'
-              : 'Step Goal',
-          subtitle: activity.steps == 0
-              ? "Start walking to begin tracking today's progress."
-              : '${activity.steps.toString().replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (m) => "${m[1]},")} / ${activity.stepsGoal.toString().replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (m) => "${m[1]},")} steps',
-          progress: activity.stepsProgress,
-          icon: Icons.directions_walk_rounded,
-          color: FitoraColors.mintGreen,
-          textTheme: textTheme,
-          onTap: () => showStepGoalPicker(context, ref, activity.stepsGoal),
-        ),
-        const SizedBox(height: FitoraSpacing.sm),
-        _buildGoalCard(
-          title: 'Hydration Goal',
-          subtitle: wellness.hydrationGoalLiters == 0
-              ? 'Set Daily Water Goal'
-              : (wellness.hydrationLiters == 0
-                    ? 'Log your first glass of water today.'
-                    : '${wellness.hydrationLiters.toStringAsFixed(1)} / ${wellness.hydrationGoalLiters.toStringAsFixed(1)} L'),
-          progress: wellness.hydrationGoalLiters == 0
-              ? 0.0
-              : (wellness.hydrationLiters / wellness.hydrationGoalLiters).clamp(
-                  0.0,
-                  1.0,
+        GlowContainer(
+          glowColor: FitoraColors.mintGreen.withValues(alpha: 0.03),
+          borderRadius: BorderRadius.circular(20),
+          padding: EdgeInsets.zero,
+          child: Container(
+            padding: const EdgeInsets.all(FitoraSpacing.md),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.02),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+            ),
+            child: Row(
+              children: [
+                Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    SizedBox(
+                      width: 48,
+                      height: 48,
+                      child: CircularProgressIndicator(
+                        value: status.completionPercentage / 100,
+                        strokeWidth: 4,
+                        backgroundColor: Colors.white.withValues(alpha: 0.05),
+                        valueColor: AlwaysStoppedAnimation(
+                          completedGoalsCount == trackedGoalsCount &&
+                                  trackedGoalsCount > 0
+                              ? FitoraColors.successGreen
+                              : FitoraColors.mintGreen,
+                        ),
+                        strokeCap: StrokeCap.round,
+                      ),
+                    ),
+                    Icon(
+                      completedGoalsCount == trackedGoalsCount &&
+                              trackedGoalsCount > 0
+                          ? Icons.emoji_events_rounded
+                          : Icons.insights_rounded,
+                      color:
+                          completedGoalsCount == trackedGoalsCount &&
+                              trackedGoalsCount > 0
+                          ? FitoraColors.mintGreen
+                          : Colors.white70,
+                      size: 20,
+                    ),
+                  ],
                 ),
-          icon: Icons.water_drop_rounded,
-          color: Colors.blueAccent,
-          textTheme: textTheme,
-        ),
-        if (hasSleep) ...[
-          const SizedBox(height: FitoraSpacing.sm),
-          _buildGoalCard(
-            title: 'Sleep',
-            subtitle:
-                '${sleep.totalSleep.inHours}h ${sleep.totalSleep.inMinutes.remainder(60)}m logged',
-            progress: (sleep.totalSleep.inMinutes / 480.0).clamp(0.0, 1.0),
-            icon: Icons.bedtime_rounded,
-            color: FitoraColors.calmCyan,
-            textTheme: textTheme,
+                const SizedBox(width: FitoraSpacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        completedGoalsCount == trackedGoalsCount &&
+                                trackedGoalsCount > 0
+                            ? 'All Daily Goals Smashed! 🎉'
+                            : 'Daily Progress',
+                        style: textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        trackedGoalsCount > 0
+                            ? '$completedGoalsCount of $trackedGoalsCount targets completed today'
+                            : 'No active goals tracked today',
+                        style: textTheme.bodySmall?.copyWith(
+                          color: Colors.white54,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Text(
+                  '${status.completionPercentage.toInt()}%',
+                  style: textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w900,
+                    color: FitoraColors.mintGreen,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ],
+        ),
+        const SizedBox(height: FitoraSpacing.md),
+        ...status.metrics.map((metric) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: FitoraSpacing.sm),
+            child: _buildMetricGoalCard(textTheme, metric),
+          );
+        }),
       ],
     ).animate().fadeIn(delay: 250.ms, duration: 400.ms).slideY(begin: 0.05, end: 0);
   }
 
-  Widget _buildGoalCard({
-    required String title,
-    required String subtitle,
-    required double progress,
-    required IconData icon,
-    required Color color,
-    required TextTheme textTheme,
-    VoidCallback? onTap,
-  }) {
+  Widget _buildMetricGoalCard(TextTheme textTheme, GoalMetric metric) {
+    final color = _getMetricColor(metric.key);
+    final icon = _getMetricIcon(metric.key);
+
     final card = GlowContainer(
-      glowColor: color.withValues(alpha: 0.05),
+      glowColor: metric.isCompleted
+          ? color.withValues(alpha: 0.08)
+          : color.withValues(alpha: 0.02),
       borderRadius: BorderRadius.circular(20),
       padding: EdgeInsets.zero,
       child: Container(
@@ -825,7 +1061,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         decoration: BoxDecoration(
           color: Colors.white.withValues(alpha: 0.02),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+          border: Border.all(
+            color: metric.isCompleted
+                ? color.withValues(alpha: 0.25)
+                : Colors.white.withValues(alpha: 0.08),
+          ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -845,8 +1085,305 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      Row(
+                        children: [
+                          Text(
+                            metric.name,
+                            style: textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                          if (metric.isCompleted) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: color.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                  color: color.withValues(alpha: 0.3),
+                                ),
+                              ),
+                              child: Text(
+                                'MET',
+                                style: textTheme.labelSmall?.copyWith(
+                                  color: color,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 8,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      _buildMetricSubtitle(textTheme, metric),
+                    ],
+                  ),
+                ),
+                _buildMetricTrailing(textTheme, metric, color),
+              ],
+            ),
+            if (metric.availability == MetricAvailability.available) ...[
+              const SizedBox(height: FitoraSpacing.md),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(99),
+                child: LinearProgressIndicator(
+                  value: metric.progressFraction,
+                  minHeight: 6,
+                  backgroundColor: Colors.white.withValues(alpha: 0.05),
+                  valueColor: AlwaysStoppedAnimation(color),
+                ),
+              ),
+            ] else if (metric.availability ==
+                MetricAvailability.permissionRequired) ...[
+              const SizedBox(height: FitoraSpacing.sm),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton.icon(
+                    onPressed: () => _handleRequestPermission(metric.key),
+                    icon: Icon(Icons.lock_open_rounded, size: 14, color: color),
+                    label: Text(
+                      'Enable Access',
+                      style: TextStyle(
+                        color: color,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 11,
+                      ),
+                    ),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 4,
+                      ),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                  ),
+                ],
+              ),
+            ] else ...[
+              const SizedBox(height: FitoraSpacing.xs),
+            ],
+          ],
+        ),
+      ),
+    );
+
+    if (metric.key == 'steps' &&
+        metric.availability == MetricAvailability.available) {
+      return GestureDetector(
+        onTap: () => showStepGoalPicker(context, ref, metric.goal.toInt()),
+        child: card,
+      );
+    }
+    return card;
+  }
+<<<<<<< HEAD
+=======
+
+  Color _getMetricColor(String key) {
+    switch (key) {
+      case 'steps':
+        return FitoraColors.mintGreen;
+      case 'water':
+        return Colors.blueAccent;
+      case 'sleep':
+        return FitoraColors.calmCyan;
+      case 'calories':
+        return FitoraColors.softEmerald;
+      default:
+        return Colors.white;
+    }
+  }
+
+  IconData _getMetricIcon(String key) {
+    switch (key) {
+      case 'steps':
+        return Icons.directions_walk_rounded;
+      case 'water':
+        return Icons.water_drop_rounded;
+      case 'sleep':
+        return Icons.bedtime_rounded;
+      case 'calories':
+        return Icons.local_fire_department_rounded;
+      default:
+        return Icons.help_outline_rounded;
+    }
+  }
+
+  Widget _buildMetricSubtitle(TextTheme textTheme, GoalMetric metric) {
+    if (metric.availability == MetricAvailability.permissionRequired) {
+      return Text(
+        'Permission Required to track ${metric.name.toLowerCase()}',
+        style: textTheme.bodySmall?.copyWith(
+          color: Colors.orangeAccent.withValues(alpha: 0.8),
+          fontSize: 11,
+          fontWeight: FontWeight.w500,
+        ),
+      );
+    }
+    if (metric.availability == MetricAvailability.unavailable) {
+      return Text(
+        'Data Unavailable (Sensor / Integration missing)',
+        style: textTheme.bodySmall?.copyWith(
+          color: Colors.white30,
+          fontSize: 11,
+        ),
+      );
+    }
+
+    if (metric.key == 'steps') {
+      final formattedCurrent = metric.current
+          .toInt()
+          .toString()
+          .replaceAllMapped(
+            RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+            (m) => '${m[1]},',
+          );
+      final formattedGoal = metric.goal.toInt().toString().replaceAllMapped(
+        RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+        (m) => '${m[1]},',
+      );
+      return Text(
+        metric.current == 0
+            ? "Start walking to begin tracking today's progress."
+            : '$formattedCurrent / $formattedGoal steps',
+        style: textTheme.bodySmall?.copyWith(
+          color: Colors.white54,
+          fontSize: 11,
+        ),
+      );
+    }
+
+    if (metric.key == 'water') {
+      return Text(
+        metric.current == 0
+            ? 'Log your first glass of water today.'
+            : '${metric.current.toStringAsFixed(1)} / ${metric.goal.toStringAsFixed(1)} L',
+        style: textTheme.bodySmall?.copyWith(
+          color: Colors.white54,
+          fontSize: 11,
+        ),
+      );
+    }
+
+    if (metric.key == 'sleep') {
+      final hours = (metric.current / 60).floor();
+      final mins = (metric.current % 60).toInt();
+      return Text(
+        metric.current == 0
+            ? 'Log your sleep or sync via Health Connect.'
+            : '${hours}h ${mins}m logged of 8h goal',
+        style: textTheme.bodySmall?.copyWith(
+          color: Colors.white54,
+          fontSize: 11,
+        ),
+      );
+    }
+
+    if (metric.key == 'calories') {
+      return Text(
+        metric.current == 0
+            ? 'Active calories burned during workouts.'
+            : '${metric.current.toInt()} / ${metric.goal.toInt()} kcal active burned',
+        style: textTheme.bodySmall?.copyWith(
+          color: Colors.white54,
+          fontSize: 11,
+        ),
+      );
+    }
+
+    return const SizedBox.shrink();
+  }
+
+  Widget _buildMetricTrailing(
+    TextTheme textTheme,
+    GoalMetric metric,
+    Color color,
+  ) {
+    if (metric.availability == MetricAvailability.permissionRequired) {
+      return const Icon(
+        Icons.lock_rounded,
+        color: Colors.orangeAccent,
+        size: 18,
+      );
+    }
+    if (metric.availability == MetricAvailability.unavailable) {
+      return const Icon(
+        Icons.info_outline_rounded,
+        color: Colors.white30,
+        size: 18,
+      );
+    }
+    return Text(
+      '${metric.percentage.toInt()}%',
+      style: textTheme.labelLarge?.copyWith(
+        color: color,
+        fontWeight: FontWeight.w900,
+      ),
+    );
+  }
+
+  Future<void> _handleRequestPermission(String key) async {
+    if (key == 'steps') {
+      await ref.read(sensorStatusProvider.notifier).requestPermission();
+    } else {
+      context.pushNamed(AppRouteNames.healthSync);
+    }
+  }
+
+  Widget _buildSyncPrompt(
+    BuildContext context,
+    TextTheme textTheme,
+    DailyActivitySummary activity,
+  ) {
+    if (activity.lastSyncTime != null) return const SizedBox.shrink();
+
+    final hasSensorIssue =
+        activity.sensorStatus == SensorStatus.unknown ||
+        activity.sensorStatus == SensorStatus.permissionRequired;
+
+    return GlowContainer(
+      glowColor: FitoraColors.mintGreen.withValues(alpha: 0.08),
+      borderRadius: BorderRadius.circular(20),
+      padding: EdgeInsets.zero,
+      child: Container(
+        padding: const EdgeInsets.all(FitoraSpacing.lg),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.02),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: FitoraColors.mintGreen.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.link_rounded,
+                    color: FitoraColors.mintGreen,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: FitoraSpacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                       Text(
-                        title,
+                        'Connect Health Data',
                         style: textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
@@ -854,7 +1391,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        subtitle,
+                        hasSensorIssue
+                            ? 'Enable sensors or connect health integration to sync your activity.'
+                            : 'Sync steps and metrics automatically with your health source.',
                         style: textTheme.bodySmall?.copyWith(
                           color: Colors.white54,
                           fontSize: 11,
@@ -863,33 +1402,62 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ],
                   ),
                 ),
-                Text(
-                  '${(progress * 100).toInt()}%',
-                  style: textTheme.labelLarge?.copyWith(
-                    color: color,
-                    fontWeight: FontWeight.w900,
+              ],
+            ),
+            const SizedBox(height: FitoraSpacing.md),
+            Row(
+              children: [
+                if (hasSensorIssue) ...[
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () async {
+                        await ref
+                            .read(healthSyncServiceProvider.notifier)
+                            .syncNow();
+                      },
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: Colors.white10),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                      ),
+                      child: Text(
+                        'Permissions',
+                        style: textTheme.labelLarge?.copyWith(
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: FitoraSpacing.sm),
+                ],
+                Expanded(
+                  child: FilledButton(
+                    onPressed: () =>
+                        context.pushNamed(AppRouteNames.healthSync),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: FitoraColors.mintGreen,
+                      foregroundColor: Colors.black,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                    ),
+                    child: Text(
+                      'Connect Now',
+                      style: textTheme.labelLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: FitoraSpacing.md),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(99),
-              child: LinearProgressIndicator(
-                value: progress,
-                minHeight: 6,
-                backgroundColor: Colors.white.withValues(alpha: 0.05),
-                valueColor: AlwaysStoppedAnimation(color),
-              ),
-            ),
           ],
         ),
       ),
-    );
-
-    if (onTap != null) {
-      return GestureDetector(onTap: onTap, child: card);
-    }
-    return card;
+    ).animate().fadeIn(delay: 300.ms, duration: 400.ms).slideY(begin: 0.05, end: 0);
   }
+>>>>>>> origin/feature/vaseem/fitora-v1.1-goals
 }
