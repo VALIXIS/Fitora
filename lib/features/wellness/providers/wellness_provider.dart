@@ -3,9 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fitora/core/storage/app_preferences.dart';
 import 'package:fitora/features/wellness/domain/wellness_models.dart';
 
-final wellnessProvider = StateNotifierProvider<WellnessNotifier, WellnessState>((ref) {
-  return WellnessNotifier()..load();
-});
+final wellnessProvider = StateNotifierProvider<WellnessNotifier, WellnessState>(
+  (ref) {
+    return WellnessNotifier()..load();
+  },
+);
 
 class WellnessNotifier extends StateNotifier<WellnessState> {
   WellnessNotifier() : super(WellnessState.initial());
@@ -42,11 +44,12 @@ class WellnessNotifier extends StateNotifier<WellnessState> {
       // Check if they met hydration goal yesterday to maintain hydration streak
       double previousHydration = state.hydrationLiters;
       double previousGoal = state.hydrationGoalLiters;
-      
+
       int newHydrationStreak = state.hydrationStreak;
       final yesterday = DateTime.now().subtract(const Duration(days: 1));
-      final yesterdayStr = "${yesterday.year}-${yesterday.month.toString().padLeft(2, '0')}-${yesterday.day.toString().padLeft(2, '0')}";
-      
+      final yesterdayStr =
+          "${yesterday.year}-${yesterday.month.toString().padLeft(2, '0')}-${yesterday.day.toString().padLeft(2, '0')}";
+
       if (state.lastHydrationDate == yesterdayStr) {
         if (previousHydration < previousGoal) {
           newHydrationStreak = 0; // Broke streak
@@ -57,7 +60,8 @@ class WellnessNotifier extends StateNotifier<WellnessState> {
 
       // Wellness streak: check if active yesterday
       int newWellnessStreak = state.wellnessStreak;
-      if (state.lastActiveDate != yesterdayStr && state.lastActiveDate != today) {
+      if (state.lastActiveDate != yesterdayStr &&
+          state.lastActiveDate != today) {
         newWellnessStreak = 0; // Broke streak
       }
 
@@ -79,19 +83,17 @@ class WellnessNotifier extends StateNotifier<WellnessState> {
     final today = _todayStr();
     if (state.lastActiveDate != today) {
       final yesterday = DateTime.now().subtract(const Duration(days: 1));
-      final yesterdayStr = "${yesterday.year}-${yesterday.month.toString().padLeft(2, '0')}-${yesterday.day.toString().padLeft(2, '0')}";
-      
+      final yesterdayStr =
+          "${yesterday.year}-${yesterday.month.toString().padLeft(2, '0')}-${yesterday.day.toString().padLeft(2, '0')}";
+
       int newStreak = state.wellnessStreak;
       if (state.lastActiveDate == yesterdayStr) {
         newStreak += 1;
       } else {
         newStreak = 1; // start new
       }
-      
-      state = state.copyWith(
-        wellnessStreak: newStreak,
-        lastActiveDate: today,
-      );
+
+      state = state.copyWith(wellnessStreak: newStreak, lastActiveDate: today);
     }
   }
 
@@ -106,17 +108,17 @@ class WellnessNotifier extends StateNotifier<WellnessState> {
     final goal = hydrationGoalLiters ?? state.hydrationGoalLiters;
     final sq = sleepQualityScore ?? state.sleepQualityScore;
     final fatigue = muscleFatigue ?? state.muscleFatigue;
-    
+
     double hydrationPct = goal > 0 ? (hyd / goal).clamp(0.0, 1.0) : 0.0;
-    
+
     int score = 0;
-    
+
     // Sleep contribution: up to 40% (using quality score)
     score += (sq * 0.4).round();
-    
+
     // Hydration contribution: up to 25%
     score += (hydrationPct * 25).round();
-    
+
     // Fatigue contribution: up to 25%
     if (fatigue == 'Low') {
       score += 25;
@@ -125,28 +127,47 @@ class WellnessNotifier extends StateNotifier<WellnessState> {
     } else {
       score += 3;
     }
-    
+
     // Energy/Mood contribution: up to 10%
     final today = _todayStr();
     final energy = energyLevel ?? state.loggedEnergy[today] ?? 5;
     score += (energy * 1.0).round();
-    
+
     return score.clamp(10, 100);
   }
 
   void updateRecovery() {
-    state = state.copyWith(
-      recoveryScore: _calculateRecoveryScore(),
-    );
+    state = state.copyWith(recoveryScore: _calculateRecoveryScore());
     _persist();
   }
 
   // ── Hydration actions ────────────────────────────────────────────────────────
 
-  Future<void> addHydration(double amount) async {
+  Future<void> addWaterLogEntry(int amountMl) async {
+    if (amountMl <= 0) return;
     _recordWellnessActivity();
+    final now = DateTime.now();
     final today = _todayStr();
-    final newHydration = (state.hydrationLiters + amount).clamp(0.0, 10.0);
+
+    final entry = WaterLogEntry(
+      id: '${now.millisecondsSinceEpoch}_${now.microsecond}',
+      amountMl: amountMl,
+      timestamp: now,
+    );
+
+    final updatedLogs = List<WaterLogEntry>.from(state.waterLogs)..add(entry);
+
+    // Calculate today's total from logs
+    final todayTotalMl = updatedLogs
+        .where(
+          (e) =>
+              e.timestamp.year == now.year &&
+              e.timestamp.month == now.month &&
+              e.timestamp.day == now.day,
+        )
+        .fold<int>(0, (sum, e) => sum + e.amountMl);
+
+    double newHydration = (todayTotalMl / 1000.0).clamp(0.0, 99.9);
     int newHydrationStreak = state.hydrationStreak;
 
     if (newHydration >= state.hydrationGoalLiters &&
@@ -163,6 +184,7 @@ class WellnessNotifier extends StateNotifier<WellnessState> {
     }
 
     state = state.copyWith(
+      waterLogs: updatedLogs,
       hydrationLiters: newHydration,
       hydrationStreak: newHydrationStreak,
       lastHydrationDate: today,
@@ -171,10 +193,46 @@ class WellnessNotifier extends StateNotifier<WellnessState> {
     await _persist();
   }
 
-  Future<void> resetHydration() async {
+  Future<void> deleteWaterLogEntry(String id) async {
+    final now = DateTime.now();
+    final updatedLogs = List<WaterLogEntry>.from(state.waterLogs)
+      ..removeWhere((e) => e.id == id);
+
+    final todayTotalMl = updatedLogs
+        .where(
+          (e) =>
+              e.timestamp.year == now.year &&
+              e.timestamp.month == now.month &&
+              e.timestamp.day == now.day,
+        )
+        .fold<int>(0, (sum, e) => sum + e.amountMl);
+
+    double newHydration = (todayTotalMl / 1000.0).clamp(0.0, 99.9);
+
     state = state.copyWith(
-      hydrationLiters: 0.0,
+      waterLogs: updatedLogs,
+      hydrationLiters: newHydration,
     );
+    updateRecovery();
+    await _persist();
+  }
+
+  Future<void> addHydration(double amount) async {
+    final amountMl = (amount * 1000).round();
+    await addWaterLogEntry(amountMl);
+  }
+
+  Future<void> resetHydration() async {
+    final now = DateTime.now();
+    final updatedLogs = List<WaterLogEntry>.from(state.waterLogs)
+      ..removeWhere(
+        (e) =>
+            e.timestamp.year == now.year &&
+            e.timestamp.month == now.month &&
+            e.timestamp.day == now.day,
+      );
+
+    state = state.copyWith(waterLogs: updatedLogs, hydrationLiters: 0.0);
     updateRecovery();
     await _persist();
   }
@@ -182,6 +240,7 @@ class WellnessNotifier extends StateNotifier<WellnessState> {
   Future<void> setHydrationGoal(double goal) async {
     state = state.copyWith(hydrationGoalLiters: goal.clamp(1.0, 10.0));
     updateRecovery();
+    await _persist();
   }
 
   Future<void> toggleHydrationReminders(bool enabled) async {
@@ -190,17 +249,93 @@ class WellnessNotifier extends StateNotifier<WellnessState> {
   }
 
   Future<void> setHydrationReminderFrequency(int minutes) async {
-    state = state.copyWith(hydrationReminderFrequencyMinutes: minutes.clamp(15, 480));
+    state = state.copyWith(
+      hydrationReminderFrequencyMinutes: minutes.clamp(15, 480),
+    );
     await _persist();
   }
 
+  // ── 7-Day Hydration Statistics & Analytics ──────────────────────────────────
+
+  List<WaterLogEntry> get todayWaterLogs {
+    final now = DateTime.now();
+    return getLogsForDate(now);
+  }
+
+  List<WaterLogEntry> getLogsForDate(DateTime date) {
+    return state.waterLogs
+        .where(
+          (e) =>
+              e.timestamp.year == date.year &&
+              e.timestamp.month == date.month &&
+              e.timestamp.day == date.day,
+        )
+        .toList()
+      ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+  }
+
+  double getDailyTotalLiters(DateTime date) {
+    final totalMl = getLogsForDate(
+      date,
+    ).fold<int>(0, (sum, e) => sum + e.amountMl);
+    return totalMl / 1000.0;
+  }
+
+  double get7DayTotalLiters([DateTime? endDate]) {
+    final end = endDate ?? DateTime.now();
+    double total = 0.0;
+    for (int i = 0; i < 7; i++) {
+      final date = end.subtract(Duration(days: i));
+      total += getDailyTotalLiters(date);
+    }
+    return total;
+  }
+
+  double get7DayAverageLiters([DateTime? endDate]) {
+    return get7DayTotalLiters(endDate) / 7.0;
+  }
+
+  MapEntry<DateTime, double> get7DayBestDay([DateTime? endDate]) {
+    final end = endDate ?? DateTime.now();
+    DateTime bestDate = end;
+    double maxLiters = 0.0;
+    for (int i = 0; i < 7; i++) {
+      final date = end.subtract(Duration(days: i));
+      final liters = getDailyTotalLiters(date);
+      if (liters >= maxLiters) {
+        maxLiters = liters;
+        bestDate = date;
+      }
+    }
+    return MapEntry(bestDate, maxLiters);
+  }
+
+  int get7DayGoalMetCount([DateTime? endDate]) {
+    final end = endDate ?? DateTime.now();
+    int count = 0;
+    for (int i = 0; i < 7; i++) {
+      final date = end.subtract(Duration(days: i));
+      final liters = getDailyTotalLiters(date);
+      if (liters >= state.hydrationGoalLiters &&
+          state.hydrationGoalLiters > 0) {
+        count++;
+      }
+    }
+    return count;
+  }
+
+  double get7DayWeeklyCompletionPercentage([DateTime? endDate]) {
+    final weeklyTarget = state.hydrationGoalLiters * 7;
+    if (weeklyTarget <= 0) return 0.0;
+    final totalLogged = get7DayTotalLiters(endDate);
+    return (totalLogged / weeklyTarget) * 100.0;
+  }
+
   // ── Guided Breathing actions ──────────────────────────────────────────────────
-  
+
   Future<void> addBreathingMinutes(int amount) async {
     _recordWellnessActivity();
-    state = state.copyWith(
-      breathingMinutes: state.breathingMinutes + amount,
-    );
+    state = state.copyWith(breathingMinutes: state.breathingMinutes + amount);
     await _persist();
   }
 
@@ -218,14 +353,19 @@ class WellnessNotifier extends StateNotifier<WellnessState> {
   }
 
   // ── Sleep logging actions ─────────────────────────────────────────────────────
-  
-  Future<void> logSleep({required int minutes, required int qualityScore}) async {
+
+  Future<void> logSleep({
+    required int minutes,
+    required int qualityScore,
+  }) async {
     _recordWellnessActivity();
     final today = _todayStr();
-    
-    final updatedHistory = Map<String, int>.from(state.sleepLogHistory)..[today] = minutes;
-    final updatedScores = Map<String, int>.from(state.sleepScoreHistory)..[today] = qualityScore;
-    
+
+    final updatedHistory = Map<String, int>.from(state.sleepLogHistory)
+      ..[today] = minutes;
+    final updatedScores = Map<String, int>.from(state.sleepScoreHistory)
+      ..[today] = qualityScore;
+
     state = state.copyWith(
       sleepMinutes: minutes,
       sleepQualityScore: qualityScore.clamp(0, 100),
@@ -236,14 +376,14 @@ class WellnessNotifier extends StateNotifier<WellnessState> {
   }
 
   // ── Cycle Tracking actions ────────────────────────────────────────────────────
-  
+
   Future<void> logPeriodStart(String dateStr) async {
     _recordWellnessActivity();
     final dates = List<String>.from(state.periodStartDates);
     if (!dates.contains(dateStr)) {
       dates.add(dateStr);
     }
-    
+
     state = state.copyWith(periodStartDates: dates);
     updateRecovery();
   }
@@ -270,7 +410,7 @@ class WellnessNotifier extends StateNotifier<WellnessState> {
       daySymptoms.add(symptom);
     }
     symptoms[dateStr] = daySymptoms;
-    
+
     state = state.copyWith(loggedSymptoms: symptoms);
     await _persist();
   }
@@ -278,7 +418,8 @@ class WellnessNotifier extends StateNotifier<WellnessState> {
   Future<void> removeCycleSymptom(String dateStr, String symptom) async {
     final symptoms = Map<String, List<String>>.from(state.loggedSymptoms);
     if (symptoms.containsKey(dateStr)) {
-      final daySymptoms = List<String>.from(symptoms[dateStr] ?? [])..remove(symptom);
+      final daySymptoms = List<String>.from(symptoms[dateStr] ?? [])
+        ..remove(symptom);
       if (daySymptoms.isEmpty) {
         symptoms.remove(dateStr);
       } else {
@@ -290,12 +431,12 @@ class WellnessNotifier extends StateNotifier<WellnessState> {
   }
 
   // ── Mood & Energy actions ─────────────────────────────────────────────────────
-  
+
   Future<void> logMood(String mood) async {
     _recordWellnessActivity();
     final today = _todayStr();
     final moods = Map<String, String>.from(state.loggedMoods)..[today] = mood;
-    
+
     state = state.copyWith(loggedMoods: moods);
     updateRecovery();
   }
@@ -303,8 +444,9 @@ class WellnessNotifier extends StateNotifier<WellnessState> {
   Future<void> logEnergy(int level) async {
     _recordWellnessActivity();
     final today = _todayStr();
-    final energy = Map<String, int>.from(state.loggedEnergy)..[today] = level.clamp(1, 10);
-    
+    final energy = Map<String, int>.from(state.loggedEnergy)
+      ..[today] = level.clamp(1, 10);
+
     state = state.copyWith(loggedEnergy: energy);
     updateRecovery();
   }
@@ -315,10 +457,12 @@ class WellnessNotifier extends StateNotifier<WellnessState> {
   }
 
   // ── High fidelity predictions helper functions ───────────────────────────────
-  
+
   int get currentCycleDay {
-    if (state.periodStartDates.isEmpty) return 14; // default baseline middle day
-    
+    if (state.periodStartDates.isEmpty) {
+      return 14; // default baseline middle day
+    }
+
     final sorted = List<String>.from(state.periodStartDates)
       ..sort((a, b) => b.compareTo(a));
     final latestDateStr = sorted.first;
@@ -326,7 +470,11 @@ class WellnessNotifier extends StateNotifier<WellnessState> {
       final latestDate = DateTime.parse(latestDateStr);
       final today = DateTime.now();
       // Reset times to compare only dates
-      final latestDateOnly = DateTime(latestDate.year, latestDate.month, latestDate.day);
+      final latestDateOnly = DateTime(
+        latestDate.year,
+        latestDate.month,
+        latestDate.day,
+      );
       final todayOnly = DateTime(today.year, today.month, today.day);
       final diff = todayOnly.difference(latestDateOnly).inDays;
       if (diff >= 0 && diff < state.cycleLengthDays) {
