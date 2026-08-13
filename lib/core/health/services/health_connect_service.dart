@@ -1,222 +1,167 @@
-import 'package:flutter/foundation.dart';
 import 'package:health/health.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:fitora/core/health/domain/health_models.dart';
 import 'package:fitora/core/utils/app_logger.dart';
 
 class HealthConnectService {
-  // Singleton — configure() is expensive and must only run once
-  static final HealthConnectService _instance = HealthConnectService._internal();
-  factory HealthConnectService() => _instance;
-
   final Health _health = Health();
+  final SharedPreferences _prefs;
 
-  static const _stepsTypes = [HealthDataType.STEPS];
-  static const _stepsPerms = [HealthDataAccess.READ];
+  static const _kHealthPermissionsGrantedBeforeKey =
+      'health_permissions_granted_before';
 
-  // Activity types — steps, calories, distance (most devices grant these together)
-  static const _activityTypes = [
+  /// Data types used for STEP + ACTIVITY metrics.
+  final _activityTypes = [
     HealthDataType.STEPS,
     HealthDataType.ACTIVE_ENERGY_BURNED,
-    HealthDataType.TOTAL_CALORIES_BURNED,
     HealthDataType.DISTANCE_DELTA,
   ];
 
-  // Sleep types — separate permission bucket, may not be granted
-  static const _sleepTypes = [
-    HealthDataType.SLEEP_SESSION,
-  ];
+  /// Data types used for SLEEP.
+  final _sleepTypes = [HealthDataType.SLEEP_SESSION];
 
-  // All types used during permission request
-  List<HealthDataType> get _dataTypes => [..._activityTypes, ..._sleepTypes];
-
-  HealthConnectService._internal() {
+  HealthConnectService(this._prefs) {
     _health.configure();
   }
 
-  List<HealthDataAccess> get _permissions =>
-      _dataTypes.map((_) => HealthDataAccess.READ).toList();
+  // ---------------------------------------------------------------------------
+  // Health Connect Availability & Permission Status
+  // ---------------------------------------------------------------------------
 
-  Future<Map<String, dynamic>> runDirectDiagnostic() async {
-    final Map<String, dynamic> diag = {};
-    final now = DateTime.now();
-    final start = DateTime(now.year, now.month, now.day);
-    final end = now;
-
-    print('[HC_DIRECT] now = $now');
-    print('[HC_DIRECT] start = $start');
-    print('[HC_DIRECT] end = $end');
-    diag['now'] = now.toIso8601String();
-    diag['start'] = start.toIso8601String();
-    diag['end'] = end.toIso8601String();
-
-    try {
-      final sdkStatus = await _health.getHealthConnectSdkStatus();
-      print('[HC_DIRECT] SDK status = $sdkStatus');
-      diag['sdkStatus'] = sdkStatus?.name;
-
-      final hasPerm = await _health.hasPermissions(
-        _stepsTypes,
-        permissions: _stepsPerms,
-      );
-      print('[HC_DIRECT] hasPermissions (STEPS READ) = $hasPerm');
-      diag['hasPermissionsSteps'] = hasPerm;
-
-      print('[HC_DIRECT] requesting STEPS authorization...');
-      bool authResult = false;
-      try {
-        authResult = await _health.requestAuthorization(
-          _stepsTypes,
-          permissions: _stepsPerms,
-        );
-      } catch (e) {
-        print('[HC_DIRECT] requestAuthorization threw: $e');
-        diag['requestAuthError'] = e.toString();
-      }
-      print('[HC_DIRECT] authorization result = $authResult');
-      diag['authorizationResult'] = authResult;
-
-      // Try reading regardless of auth result — Android may have permissions even if hasPermissions returns null
-      int? totalSteps;
-      try {
-        totalSteps = await _health.getTotalStepsInInterval(start, end);
-      } catch (e) {
-        print('[HC_DIRECT] getTotalStepsInInterval THREW: $e');
-        diag['stepsException'] = e.toString();
-      }
-      print('[HC_DIRECT] total steps result = $totalSteps');
-      diag['totalSteps'] = totalSteps;
-
-      List<HealthDataPoint> rawRecords = [];
-      try {
-        rawRecords = await _health.getHealthDataFromTypes(
-          startTime: start,
-          endTime: end,
-          types: _stepsTypes,
-        );
-      } catch (e) {
-        print('[HC_DIRECT] getHealthDataFromTypes THREW: $e');
-        diag['recordsException'] = e.toString();
-      }
-      print('[HC_DIRECT] raw step record count = ${rawRecords.length}');
-      diag['rawRecordCount'] = rawRecords.length;
-
-      final List<Map<String, dynamic>> recList = [];
-      for (int i = 0; i < rawRecords.length; i++) {
-        final r = rawRecords[i];
-        final val = (r.value as NumericHealthValue).numericValue;
-        print('[HC_DIRECT] record ${i + 1}: val=$val source=${r.sourceName} app=${r.sourceId} from=${r.dateFrom} to=${r.dateTo}');
-        recList.add({
-          'val': val,
-          'sourceName': r.sourceName,
-          'sourceId': r.sourceId,
-          'dateFrom': r.dateFrom.toIso8601String(),
-          'dateTo': r.dateTo.toIso8601String(),
-        });
-      }
-      diag['records'] = recList;
-    } catch (e, st) {
-      print('[HC_DIRECT] OUTER EXCEPTION: $e');
-      print('[HC_DIRECT] STACKTRACE: $st');
-      diag['exception'] = e.toString();
-    }
-
-    return diag;
-  }
-
+  /// Checks whether Health Connect is installed and whether permissions have
+  /// been granted. Returns a granular [HealthConnectStatus].
   Future<HealthConnectStatus> getStatus() async {
     try {
+      // Check SDK availability first (Health Connect must be installed)
       final sdkStatus = await _health.getHealthConnectSdkStatus();
-      if (kDebugMode) print('[HC_DEBUG] SDK status: $sdkStatus');
-      if (sdkStatus == HealthConnectSdkStatus.sdkUnavailable) {
-        return HealthConnectStatus.notInstalled;
+      if (sdkStatus != HealthConnectSdkStatus.sdkAvailable) {
+        return HealthConnectStatus.unavailable;
       }
 
-      final hasPerm = await _health.hasPermissions(
-        _stepsTypes,
-        permissions: _stepsPerms,
-      );
-      if (kDebugMode) print('[HC_DEBUG] hasPermissions(STEPS): $hasPerm');
+      final allTypes = [..._activityTypes, ..._sleepTypes];
+      final grantedTypes = <HealthDataType>[];
+      for (final type in allTypes) {
+        final granted = await _health.hasPermissions([type]);
+        if (granted == true) {
+          grantedTypes.add(type);
+        }
+      }
 
-      // null means indeterminate — treat as permissionRequired so UI shows Connect button
-      if (hasPerm == true) return HealthConnectStatus.connected;
+      final previouslyGranted =
+          _prefs.getBool(_kHealthPermissionsGrantedBeforeKey) ?? false;
+
+      if (grantedTypes.length == allTypes.length) {
+        if (!previouslyGranted) {
+          await _prefs.setBool(_kHealthPermissionsGrantedBeforeKey, true);
+        }
+        return HealthConnectStatus.connected;
+      }
+
+      if (grantedTypes.isNotEmpty) {
+        if (!previouslyGranted) {
+          await _prefs.setBool(_kHealthPermissionsGrantedBeforeKey, true);
+        }
+        return HealthConnectStatus.partiallyGranted;
+      }
+
+      // No permissions are granted.
+      if (previouslyGranted) {
+        return HealthConnectStatus.revoked;
+      }
+
       return HealthConnectStatus.permissionRequired;
     } catch (e, st) {
       AppLogger.error('Health Connect status error: $e', st);
-      return HealthConnectStatus.permissionRequired;
+      return HealthConnectStatus.error;
     }
   }
 
+  /// Requests permissions for activity and sleep independently.
+  /// Returns true if at least activity permissions are granted.
   Future<bool> requestPermissions() async {
     try {
-      // Request all types so we don't get partial permission issues
-      bool granted = false;
-      try {
-        granted = await _health.requestAuthorization(
-          _dataTypes,
-          permissions: _permissions,
-        );
-        if (kDebugMode) print('[HC_DEBUG] requestAuthorization full result: $granted');
-      } catch (e) {
-        AppLogger.error('Full permission request failed: $e');
-        // Fallback: request only steps
-        try {
-          granted = await _health.requestAuthorization(
-            _stepsTypes,
-            permissions: _stepsPerms,
-          );
-          if (kDebugMode) print('[HC_DEBUG] requestAuthorization steps-only result: $granted');
-        } catch (e2) {
-          AppLogger.error('Steps-only permission request also failed: $e2');
+      // Request all types together; partial grants are handled at read time
+      final allTypes = [..._activityTypes, ..._sleepTypes];
+      final success = await _health.requestAuthorization(allTypes);
+      if (success) {
+        final allTypes = [..._activityTypes, ..._sleepTypes];
+        final grantedTypes = <HealthDataType>[];
+        for (final type in allTypes) {
+          final granted = await _health.hasPermissions([type]);
+          if (granted == true) {
+            grantedTypes.add(type);
+          }
+        }
+        if (grantedTypes.isNotEmpty) {
+          await _prefs.setBool(_kHealthPermissionsGrantedBeforeKey, true);
         }
       }
-      return granted;
+      return success;
     } catch (e, st) {
-      AppLogger.error('Health Connect requestPermissions error: $e', st);
+      AppLogger.error('Health Connect permission request error: $e', st);
       return false;
     }
   }
 
-  /// Reads activity data only (steps, calories, distance) — not sleep.
-  Future<List<HealthDataPoint>> getActivityData(DateTime start, DateTime end) async {
+  // ---------------------------------------------------------------------------
+  // Data Fetching (real Health Connect reads, no mock fallbacks)
+  // ---------------------------------------------------------------------------
+
+  /// Fetches steps for the given [start]–[end] window.
+  /// Returns null if the permission is unavailable or the SDK is not installed.
+  Future<int?> getSteps(DateTime start, DateTime end) async {
     try {
-      final points = await _health.getHealthDataFromTypes(
+      final sdkStatus = await _health.getHealthConnectSdkStatus();
+      if (sdkStatus != HealthConnectSdkStatus.sdkAvailable) return null;
+
+      final hasPermission = await _health.hasPermissions([
+        HealthDataType.STEPS,
+      ]);
+      if (hasPermission != true) return null;
+
+      return await _health.getTotalStepsInInterval(start, end);
+    } catch (e, st) {
+      AppLogger.error('Health Connect getSteps error: $e', st);
+      return null;
+    }
+  }
+
+  /// Fetches health data points for [types] in [start]–[end].
+  /// Returns an empty list on any error or unavailability — never throws.
+  Future<List<HealthDataPoint>> getHealthData(
+    DateTime start,
+    DateTime end, {
+    List<HealthDataType>? types,
+  }) async {
+    try {
+      final sdkStatus = await _health.getHealthConnectSdkStatus();
+      if (sdkStatus != HealthConnectSdkStatus.sdkAvailable) return [];
+
+      final queryTypes = types ?? _activityTypes;
+      // Only query types where permission was actually granted to avoid crashing
+      final grantedTypes = <HealthDataType>[];
+      for (final t in queryTypes) {
+        final ok = await _health.hasPermissions([t]);
+        if (ok == true) grantedTypes.add(t);
+      }
+      if (grantedTypes.isEmpty) return [];
+
+      return await _health.getHealthDataFromTypes(
         startTime: start,
         endTime: end,
-        types: _activityTypes,
+        types: grantedTypes,
       );
-      if (kDebugMode) print('[HC_DEBUG] getActivityData returned ${points.length} points');
-      return points;
     } catch (e, st) {
-      AppLogger.error('Health Connect getActivityData error: $e', st);
-      if (kDebugMode) print('[HC_DEBUG] getActivityData THREW: $e');
+      AppLogger.error('Health Connect getHealthData error: $e', st);
       return [];
     }
   }
 
-  /// Reads sleep data only — throws if sleep permission not granted.
-  Future<List<HealthDataPoint>> getSleepData(DateTime start, DateTime end) async {
-    final points = await _health.getHealthDataFromTypes(
-      startTime: start,
-      endTime: end,
-      types: _sleepTypes,
-    );
-    if (kDebugMode) print('[HC_DEBUG] getSleepData returned ${points.length} points');
-    return points;
-  }
-
-  /// Legacy alias — reads only activity data (no sleep) to avoid permission issues.
-  Future<List<HealthDataPoint>> getHealthData(DateTime start, DateTime end) =>
-      getActivityData(start, end);
-
-  Future<int?> getSteps(DateTime start, DateTime end) async {
-    try {
-      final steps = await _health.getTotalStepsInInterval(start, end);
-      if (kDebugMode) print('[HC_DEBUG] getSteps returned: $steps');
-      return steps;
-    } catch (e, st) {
-      AppLogger.error('Health Connect getSteps error: $e', st);
-      if (kDebugMode) print('[HC_DEBUG] getSteps THREW: $e');
-      return null;
-    }
+  /// Fetches sleep data points for the given [start]–[end] window.
+  Future<List<HealthDataPoint>> getSleepData(
+    DateTime start,
+    DateTime end,
+  ) async {
+    return getHealthData(start, end, types: _sleepTypes);
   }
 }

@@ -24,7 +24,9 @@ class MockHealthRepository implements HealthRepository {
   }
 
   @override
-  Future<List<DailyActivitySummary>> getWeeklyActivity(DateTime startDate) async {
+  Future<List<DailyActivitySummary>> getWeeklyActivity(
+    DateTime startDate,
+  ) async {
     return List.generate(7, (index) {
       final date = startDate.add(Duration(days: index));
       return DailyActivitySummary(
@@ -42,12 +44,13 @@ class MockHealthRepository implements HealthRepository {
 
   @override
   Future<SleepSummary> getSleepSummary(DateTime date) async {
+    // No real sleep data available without Health Connect
     return SleepSummary(
-      totalSleep: const Duration(hours: 7, minutes: 15),
-      remSleep: const Duration(hours: 1, minutes: 45),
-      deepSleep: const Duration(hours: 1, minutes: 30),
-      lightSleep: const Duration(hours: 4, minutes: 0),
-      sleepScore: 82,
+      totalSleep: Duration.zero,
+      remSleep: Duration.zero,
+      deepSleep: Duration.zero,
+      lightSleep: Duration.zero,
+      sleepScore: 0,
       date: date,
     );
   }
@@ -55,9 +58,9 @@ class MockHealthRepository implements HealthRepository {
   @override
   Future<RecoverySummary> getRecoverySummary(DateTime date) async {
     return RecoverySummary(
-      recoveryScore: 87,
-      hrv: 65,
-      restingHeartRate: 52,
+      recoveryScore: 0,
+      hrv: 0,
+      restingHeartRate: 0,
       date: date,
     );
   }
@@ -65,7 +68,7 @@ class MockHealthRepository implements HealthRepository {
   @override
   Future<HydrationSummary> getHydrationSummary(DateTime date) async {
     return HydrationSummary(
-      waterConsumedLiters: 2.1,
+      waterConsumedLiters: 0.0,
       waterGoalLiters: 2.5,
       date: date,
     );

@@ -24,7 +24,7 @@ final healthCacheServiceProvider = Provider<HealthCacheService>((ref) {
 });
 
 final healthConnectServiceProvider = Provider<HealthConnectService>((ref) {
-  return HealthConnectService();
+  return HealthConnectService(AppPreferences.prefs);
 });
 
 final healthConnectRepositoryProvider = Provider<HealthConnectRepository>((
@@ -41,7 +41,6 @@ final healthSyncServiceProvider =
         ref.watch(healthCacheServiceProvider),
       );
     });
-
 // ---------------------------------------------------------------------------
 // Custom Step Goal Provider
 // ---------------------------------------------------------------------------

@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:fitora/core/health/data/health_repository.dart';
 import 'package:fitora/core/health/domain/health_models.dart';
 import 'package:fitora/core/health/services/health_connect_service.dart';
@@ -9,135 +8,215 @@ class HealthConnectRepository implements HealthRepository {
 
   HealthConnectRepository(this._service);
 
+  // ---------------------------------------------------------------------------
+  // Daily Activity
+  // ---------------------------------------------------------------------------
+
   @override
   Future<DailyActivitySummary> getDailyActivity(DateTime date) async {
-    final now = DateTime.now();
+    // Use local midnight-to-midnight window for accurate timezone handling
     final start = DateTime(date.year, date.month, date.day);
-    DateTime end = start.add(const Duration(days: 1)).subtract(const Duration(milliseconds: 1));
-    if (end.isAfter(now)) {
-      end = now;
+    final end = DateTime(date.year, date.month, date.day, 23, 59, 59, 999);
+    final now = DateTime.now();
+
+    final status = await _service.getStatus();
+
+    if (status != HealthConnectStatus.connected &&
+        status != HealthConnectStatus.partiallyGranted) {
+      return DailyActivitySummary(
+        steps: 0,
+        stepsGoal: 10000,
+        caloriesBurned: 0.0,
+        caloriesGoal: 500,
+        activeMinutes: 0,
+        activeMinutesGoal: 30,
+        distanceKm: 0.0,
+        date: start,
+        healthConnectStatus: status,
+        dataSource: DataSource.cache,
+        lastSyncTime: now,
+      );
     }
 
-    if (kDebugMode) {
-      print('[HC_DEBUG] Calling Health Connect read... start: $start, end: $end');
-    }
+    // Fetch steps independently — null means permission denied or HC unavailable
+    final steps = (await _service.getSteps(start, end)) ?? 0;
 
-    final points = await _service.getHealthData(start, end);
-    int steps = (await _service.getSteps(start, end)) ?? 0;
+    // Fetch activity points (calories, distance) — empty if permission denied
+    final activityPoints = await _service.getHealthData(start, end);
 
-    double activeCal = 0;
-    double totalCal = 0;
-    double distance = 0;
+    // Deduplicate activity points by UUID
+    final uniquePoints = activityPoints
+        .fold<Map<String, HealthDataPoint>>({}, (map, p) {
+          map[p.uuid] = p;
+          return map;
+        })
+        .values
+        .toList();
+
+    double calories = 0;
+    double distanceKm = 0;
     int activeMinutes = 0;
 
-    if (kDebugMode) {
-      print('[HC_DEBUG] Health Connect raw steps: $steps');
-      print('[HC_DEBUG] Health Connect raw points count: ${points.length}');
-    }
-
-    for (final p in points) {
-      if (p.type == HealthDataType.STEPS) {
-        if (steps == 0) {
-          steps += (p.value as NumericHealthValue).numericValue.toInt();
-        }
-      } else if (p.type == HealthDataType.ACTIVE_ENERGY_BURNED) {
-        activeCal += (p.value as NumericHealthValue).numericValue.toDouble();
-      } else if (p.type == HealthDataType.TOTAL_CALORIES_BURNED) {
-        totalCal += (p.value as NumericHealthValue).numericValue.toDouble();
+    for (final p in uniquePoints) {
+      if (p.type == HealthDataType.ACTIVE_ENERGY_BURNED) {
+        calories += (p.value as NumericHealthValue).numericValue.toDouble();
       } else if (p.type == HealthDataType.DISTANCE_DELTA) {
-        distance += (p.value as NumericHealthValue).numericValue.toDouble() / 1000.0;
+        // Health Connect returns distance in metres
+        distanceKm +=
+            (p.value as NumericHealthValue).numericValue.toDouble() / 1000.0;
       }
     }
 
-    double calories = activeCal > 0 ? activeCal : totalCal;
+    // Active minutes: heuristic — 1 active minute per 100 steps (conservative)
+    activeMinutes = (steps / 100).floor();
 
-    if (kDebugMode) {
-      print('[HC_DEBUG] Health Connect raw calories: $calories (active: $activeCal, total: $totalCal)');
-      print('[HC_DEBUG] Health Connect raw distance: $distance km');
-    }
-
-    final daily = DailyActivitySummary(
+    return DailyActivitySummary(
       steps: steps,
       stepsGoal: 10000,
       caloriesBurned: calories,
       caloriesGoal: 500,
       activeMinutes: activeMinutes,
       activeMinutesGoal: 30,
-      distanceKm: distance,
+      distanceKm: distanceKm,
       date: start,
-      healthConnectStatus: HealthConnectStatus.connected,
+      healthConnectStatus: status,
       dataSource: DataSource.healthConnectOnly,
       lastSyncTime: now,
     );
-
-    if (kDebugMode) {
-      print('[HC_DEBUG] Repository DailyActivity: steps=${daily.steps}, cal=${daily.caloriesBurned}, dist=${daily.distanceKm}');
-    }
-
-    return daily;
   }
+
+  // ---------------------------------------------------------------------------
+  // Weekly Activity
+  // ---------------------------------------------------------------------------
+
+  @override
+  Future<List<DailyActivitySummary>> getWeeklyActivity(
+    DateTime startDate,
+  ) async {
+    final List<DailyActivitySummary> week = [];
+    for (int i = 0; i < 7; i++) {
+      final day = DateTime(startDate.year, startDate.month, startDate.day + i);
+      week.add(await getDailyActivity(day));
+    }
+    return week;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Sleep
+  // ---------------------------------------------------------------------------
 
   @override
   Future<SleepSummary> getSleepSummary(DateTime date) async {
-    final now = DateTime.now();
-    final start = DateTime(date.year, date.month, date.day);
-    DateTime end = start.add(const Duration(days: 1)).subtract(const Duration(milliseconds: 1));
-    if (end.isAfter(now)) {
-      end = now;
+    final status = await _service.getStatus();
+    if (status != HealthConnectStatus.connected &&
+        status != HealthConnectStatus.partiallyGranted) {
+      return SleepSummary(
+        totalSleep: Duration.zero,
+        remSleep: Duration.zero,
+        deepSleep: Duration.zero,
+        lightSleep: Duration.zero,
+        sleepScore: 0,
+        date: date,
+      );
     }
 
-    final points = await _service.getSleepData(start, end);
-    int sleepMinutes = 0;
+    // Query noon-yesterday → noon-today to capture full nightly sleep window
+    final start = DateTime(
+      date.year,
+      date.month,
+      date.day,
+      12,
+      0,
+    ).subtract(const Duration(days: 1));
+    final end = DateTime(date.year, date.month, date.day, 12, 0);
 
-    for (final p in points) {
+    final sleepPoints = await _service.getSleepData(start, end);
+
+    final intervals = <_TimeInterval>[];
+    for (final p in sleepPoints) {
       if (p.type == HealthDataType.SLEEP_SESSION) {
-        final duration = p.dateTo.difference(p.dateFrom);
-        sleepMinutes += duration.inMinutes;
+        if (p.dateTo.isAfter(p.dateFrom)) {
+          intervals.add(_TimeInterval(p.dateFrom, p.dateTo));
+        }
       }
     }
 
-    if (kDebugMode) {
-      print('[HC_DEBUG] Health Connect raw sleep: ${sleepMinutes / 60.0} hours');
+    final merged = _mergeIntervals(intervals);
+    int totalMinutes = 0;
+    for (final interval in merged) {
+      totalMinutes += interval.end.difference(interval.start).inMinutes;
     }
 
+    final sleepScore = totalMinutes > 0
+        ? ((totalMinutes / 480.0) * 100).round().clamp(0, 100)
+        : 0;
+
     return SleepSummary(
-      totalSleep: Duration(minutes: sleepMinutes),
+      totalSleep: Duration(minutes: totalMinutes),
       remSleep: Duration.zero,
       deepSleep: Duration.zero,
-      lightSleep: Duration(minutes: sleepMinutes),
-      sleepScore: sleepMinutes > 0 ? 80 : 0,
-      date: start,
+      lightSleep: Duration(minutes: totalMinutes),
+      sleepScore: sleepScore,
+      date: date,
     );
   }
 
+  // ---------------------------------------------------------------------------
+  // Recovery & Hydration — not available via Health Connect; return empty
+  // ---------------------------------------------------------------------------
+
   @override
   Future<RecoverySummary> getRecoverySummary(DateTime date) async {
-    final start = DateTime(date.year, date.month, date.day);
     return RecoverySummary(
       recoveryScore: 0,
       hrv: 0,
       restingHeartRate: 0,
-      date: start,
+      date: date,
     );
   }
 
   @override
   Future<HydrationSummary> getHydrationSummary(DateTime date) async {
-    final start = DateTime(date.year, date.month, date.day);
     return HydrationSummary(
-      waterConsumedLiters: 0.0,
+      waterConsumedLiters: 0,
       waterGoalLiters: 2.5,
-      date: start,
+      date: date,
     );
   }
+}
 
-  @override
-  Future<List<DailyActivitySummary>> getWeeklyActivity(DateTime endOfWeek) async {
-    final list = <DailyActivitySummary>[];
-    for (int i = 6; i >= 0; i--) {
-      final day = endOfWeek.subtract(Duration(days: i));
-      list.add(await getDailyActivity(day));
+class _TimeInterval {
+  final DateTime start;
+  final DateTime end;
+  _TimeInterval(this.start, this.end);
+}
+
+List<_TimeInterval> _mergeIntervals(List<_TimeInterval> intervals) {
+  if (intervals.isEmpty) return [];
+
+  // Sort intervals by start time
+  intervals.sort((a, b) => a.start.compareTo(b.start));
+
+  final merged = <_TimeInterval>[intervals.first];
+
+  for (int i = 1; i < intervals.length; i++) {
+    final current = intervals[i];
+    final lastMerged = merged.last;
+
+    if (current.start.isBefore(lastMerged.end) ||
+        current.start.isAtSameMomentAs(lastMerged.end)) {
+      // Overlap: merge by updating the end time if the current end is later
+      if (current.end.isAfter(lastMerged.end)) {
+        merged[merged.length - 1] = _TimeInterval(
+          lastMerged.start,
+          current.end,
+        );
+      }
+    } else {
+      // No overlap: add to merged list
+      merged.add(current);
     }
-    return list;
   }
+
+  return merged;
 }
