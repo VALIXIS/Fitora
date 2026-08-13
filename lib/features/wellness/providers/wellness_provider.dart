@@ -178,16 +178,17 @@ class WellnessNotifier extends StateNotifier<WellnessState> {
 
       if (state.lastHydrationDate == yesterdayStr) {
         newHydrationStreak += 1;
-      } else if (state.lastHydrationDate != today) {
-        newHydrationStreak = 1;
       }
     }
+    final updatedHistory = Map<String, double>.from(state.waterLogHistory)
+      ..[today] = newHydration;
 
     state = state.copyWith(
       waterLogs: updatedLogs,
       hydrationLiters: newHydration,
       hydrationStreak: newHydrationStreak,
       lastHydrationDate: today,
+      waterLogHistory: updatedHistory,
     );
     updateRecovery();
     await _persist();
@@ -212,6 +213,19 @@ class WellnessNotifier extends StateNotifier<WellnessState> {
     state = state.copyWith(
       waterLogs: updatedLogs,
       hydrationLiters: newHydration,
+    );
+    updateRecovery();
+    await _persist();
+  }
+
+  Future<void> resetHydration() async {
+    final today = _todayStr();
+    final updatedHistory = Map<String, double>.from(state.waterLogHistory)
+      ..[today] = 0.0;
+    state = state.copyWith(
+      hydrationLiters: 0.0,
+      waterLogs: const [],
+      waterLogHistory: updatedHistory,
     );
     updateRecovery();
     await _persist();

@@ -830,7 +830,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         children: [
                           Expanded(
                             child: Align(
-                              alignment: const Alignment(0, 1), // Align bar to bottom of container
+                              alignment: Alignment.bottomCenter,
                               child: Container(
                                 width: 14,
                                 height: 80 * heightFactor,
@@ -842,7 +842,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                           end: Alignment.topCenter,
                                           colors: [
                                             FitoraColors.mintGreen,
-                                            Color(0xFF22D3EE),
+                                            FitoraColors.softEmerald,
                                           ],
                                         )
                                       : null,
@@ -872,70 +872,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: FitoraSpacing.lg),
-            SizedBox(
-              height: 120,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: List.generate(7, (index) {
-                  final summary = index < summaries.length
-                      ? summaries[index]
-                      : null;
-                  final heightFactor = summary != null
-                      ? summary.stepsProgress.clamp(0.1, 1.0)
-                      : 0.1;
-                  final isToday = index == summaries.length - 1;
-
-                  return Column(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      Expanded(
-                        child: Align(
-                          alignment: Alignment.bottomCenter,
-                          child: Container(
-                            width: 14,
-                            height: 80 * heightFactor,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(99),
-                              gradient: isToday
-                                  ? const LinearGradient(
-                                      begin: Alignment.bottomCenter,
-                                      end: Alignment.topCenter,
-                                      colors: [
-                                        FitoraColors.mintGreen,
-                                        FitoraColors.softEmerald,
-                                      ],
-                                    )
-                                  : null,
-                              color: isToday
-                                  ? null
-                                  : Colors.white.withValues(alpha: 0.1),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: FitoraSpacing.xs),
-                      Text(
-                        days[index],
-                        style: textTheme.labelSmall?.copyWith(
-                          color: isToday
-                              ? FitoraColors.mintGreen
-                              : Colors.white38,
-                          fontWeight: isToday
-                              ? FontWeight.bold
-                              : FontWeight.normal,
-                        ),
-                      ),
-                    ],
-                  );
-                }),
-              ),
-            ),
-          ],
-        ),
-      ),
-    ).animate().fadeIn(delay: 200.ms, duration: 400.ms).slideY(begin: 0.05, end: 0);
+          ),
+        )
+        .animate()
+        .fadeIn(delay: 200.ms, duration: 400.ms)
+        .slideY(begin: 0.05, end: 0);
   }
 
   Widget _buildDailyGoals(TextTheme textTheme, DateTime today) {
@@ -1184,8 +1125,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
     return card;
   }
-<<<<<<< HEAD
-=======
 
   Color _getMetricColor(String key) {
     switch (key) {

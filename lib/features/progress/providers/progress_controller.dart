@@ -61,7 +61,6 @@ class ProgressController extends StateNotifier<ProgressState> {
 
   Future<void> ensureLoaded() => _loadFuture;
 
-
   Future<void> recordWorkout({
     required Workout workout,
     required WorkoutSessionState session,
@@ -87,7 +86,6 @@ class ProgressController extends StateNotifier<ProgressState> {
     state = _buildState(updated, isLoading: false);
     unawaited(_repository.saveHistory(updated));
   }
-
   ProgressState _buildState(
     List<WorkoutHistoryEntry> history, {
     required bool isLoading,

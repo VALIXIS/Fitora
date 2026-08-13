@@ -251,6 +251,19 @@ final weeklyActivityProvider =
       return list;
     });
 
+final healthActivityRangeProvider =
+    Provider.family<List<DailyActivitySummary>, int>((ref, daysCount) {
+  ref.watch(healthSyncServiceProvider);
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+  final startDate = today.subtract(Duration(days: daysCount - 1));
+
+  return List.generate(daysCount, (i) {
+    final date = startDate.add(Duration(days: i));
+    return ref.watch(dailyActivityProvider(date));
+  });
+});
+
 final sleepSummaryProvider = Provider.family<SleepSummary, DateTime>((
   ref,
   date,

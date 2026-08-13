@@ -35,6 +35,7 @@ class WellnessState {
   final bool hydrationRemindersEnabled;
   final int hydrationReminderFrequencyMinutes; // e.g. 60, 90, 120
   final List<WaterLogEntry> waterLogs;
+  final Map<String, double> waterLogHistory; // date string -> waterLiters
 
   // Guided Breathing
   final int breathingMinutes;
@@ -76,6 +77,7 @@ class WellnessState {
     required this.hydrationRemindersEnabled,
     required this.hydrationReminderFrequencyMinutes,
     this.waterLogs = const [],
+    this.waterLogHistory = const {},
     required this.breathingMinutes,
     required this.inhaleSeconds,
     required this.exhaleSeconds,
@@ -97,32 +99,33 @@ class WellnessState {
   });
 
   factory WellnessState.initial() => WellnessState(
-    hydrationLiters: 0.0,
-    hydrationGoalLiters: 2.5,
-    hydrationStreak: 0,
-    lastHydrationDate: null,
-    hydrationRemindersEnabled: false,
-    hydrationReminderFrequencyMinutes: 60,
-    waterLogs: const [],
-    breathingMinutes: 0,
-    inhaleSeconds: 4,
-    exhaleSeconds: 4,
-    breathingHapticsEnabled: true,
-    sleepMinutes: 0,
-    sleepQualityScore: 0,
-    sleepLogHistory: const {},
-    sleepScoreHistory: const {},
-    cycleLengthDays: 28,
-    periodDurationDays: 5,
-    periodStartDates: const [],
-    loggedSymptoms: const {},
-    loggedMoods: const {},
-    loggedEnergy: const {},
-    recoveryScore: 82,
-    muscleFatigue: 'Low',
-    wellnessStreak: 0,
-    lastActiveDate: null,
-  );
+        hydrationLiters: 0.0,
+        hydrationGoalLiters: 2.5,
+        hydrationStreak: 0,
+        lastHydrationDate: null,
+        hydrationRemindersEnabled: false,
+        hydrationReminderFrequencyMinutes: 60,
+        waterLogs: const [],
+        waterLogHistory: const {},
+        breathingMinutes: 0,
+        inhaleSeconds: 4,
+        exhaleSeconds: 4,
+        breathingHapticsEnabled: true,
+        sleepMinutes: 0,
+        sleepQualityScore: 0,
+        sleepLogHistory: const {},
+        sleepScoreHistory: const {},
+        cycleLengthDays: 28,
+        periodDurationDays: 5,
+        periodStartDates: const [],
+        loggedSymptoms: const {},
+        loggedMoods: const {},
+        loggedEnergy: const {},
+        recoveryScore: 82,
+        muscleFatigue: 'Low',
+        wellnessStreak: 0,
+        lastActiveDate: null,
+      );
 
   WellnessState copyWith({
     double? hydrationLiters,
@@ -132,6 +135,7 @@ class WellnessState {
     bool? hydrationRemindersEnabled,
     int? hydrationReminderFrequencyMinutes,
     List<WaterLogEntry>? waterLogs,
+    Map<String, double>? waterLogHistory,
     int? breathingMinutes,
     int? inhaleSeconds,
     int? exhaleSeconds,
@@ -156,12 +160,10 @@ class WellnessState {
       hydrationGoalLiters: hydrationGoalLiters ?? this.hydrationGoalLiters,
       hydrationStreak: hydrationStreak ?? this.hydrationStreak,
       lastHydrationDate: lastHydrationDate ?? this.lastHydrationDate,
-      hydrationRemindersEnabled:
-          hydrationRemindersEnabled ?? this.hydrationRemindersEnabled,
-      hydrationReminderFrequencyMinutes:
-          hydrationReminderFrequencyMinutes ??
-          this.hydrationReminderFrequencyMinutes,
+      hydrationRemindersEnabled: hydrationRemindersEnabled ?? this.hydrationRemindersEnabled,
+      hydrationReminderFrequencyMinutes: hydrationReminderFrequencyMinutes ?? this.hydrationReminderFrequencyMinutes,
       waterLogs: waterLogs ?? this.waterLogs,
+      waterLogHistory: waterLogHistory ?? this.waterLogHistory,
       breathingMinutes: breathingMinutes ?? this.breathingMinutes,
       inhaleSeconds: inhaleSeconds ?? this.inhaleSeconds,
       exhaleSeconds: exhaleSeconds ?? this.exhaleSeconds,
@@ -193,6 +195,7 @@ class WellnessState {
       'hydrationRemindersEnabled': hydrationRemindersEnabled,
       'hydrationReminderFrequencyMinutes': hydrationReminderFrequencyMinutes,
       'waterLogs': waterLogs.map((e) => e.toJson()).toList(),
+      'waterLogHistory': waterLogHistory,
       'breathingMinutes': breathingMinutes,
       'inhaleSeconds': inhaleSeconds,
       'exhaleSeconds': exhaleSeconds,
@@ -221,15 +224,17 @@ class WellnessState {
           (map['hydrationGoalLiters'] as num?)?.toDouble() ?? 2.5,
       hydrationStreak: (map['hydrationStreak'] as num?)?.toInt() ?? 0,
       lastHydrationDate: map['lastHydrationDate'] as String?,
-      hydrationRemindersEnabled:
-          map['hydrationRemindersEnabled'] as bool? ?? false,
-      hydrationReminderFrequencyMinutes:
-          (map['hydrationReminderFrequencyMinutes'] as num?)?.toInt() ?? 60,
+      hydrationRemindersEnabled: map['hydrationRemindersEnabled'] as bool? ?? false,
+      hydrationReminderFrequencyMinutes: (map['hydrationReminderFrequencyMinutes'] as num?)?.toInt() ?? 60,
       waterLogs:
           (map['waterLogs'] as List<dynamic>?)
               ?.map((e) => WaterLogEntry.fromJson(e as Map<String, dynamic>))
               .toList() ??
           const [],
+      waterLogHistory: (map['waterLogHistory'] as Map<String, dynamic>?)?.map(
+            (k, v) => MapEntry(k, (v as num).toDouble()),
+          ) ??
+          const {},
       breathingMinutes: (map['breathingMinutes'] as num?)?.toInt() ?? 0,
       inhaleSeconds: (map['inhaleSeconds'] as num?)?.toInt() ?? 4,
       exhaleSeconds: (map['exhaleSeconds'] as num?)?.toInt() ?? 4,

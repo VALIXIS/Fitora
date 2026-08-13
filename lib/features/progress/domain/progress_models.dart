@@ -131,3 +131,98 @@ class WeeklyTrend {
     required this.calories,
   });
 }
+
+enum HealthTimeframe {
+  sevenDays,
+  thirtyDays;
+
+  int get days => this == HealthTimeframe.sevenDays ? 7 : 30;
+  String get label => this == HealthTimeframe.sevenDays ? '7 Days' : '30 Days';
+}
+
+enum HealthMetricType {
+  steps,
+  distance,
+  calories,
+  sleep,
+  water;
+
+  String get displayName {
+    switch (this) {
+      case HealthMetricType.steps:
+        return 'Steps';
+      case HealthMetricType.distance:
+        return 'Distance';
+      case HealthMetricType.calories:
+        return 'Calories';
+      case HealthMetricType.sleep:
+        return 'Sleep';
+      case HealthMetricType.water:
+        return 'Water';
+    }
+  }
+
+  String get unit {
+    switch (this) {
+      case HealthMetricType.steps:
+        return 'steps';
+      case HealthMetricType.distance:
+        return 'km';
+      case HealthMetricType.calories:
+        return 'kcal';
+      case HealthMetricType.sleep:
+        return 'hrs';
+      case HealthMetricType.water:
+        return 'L';
+    }
+  }
+}
+
+class WeeklyHealthSummaryData {
+  final int totalSteps;
+  final double totalWaterLiters;
+  final double avgSleepMinutes;
+  final double totalActiveCalories;
+
+  // Week-over-Week Comparison Deltas (Current 7d vs Prior 7d)
+  final double stepsDeltaPct;
+  final double waterDeltaLiters;
+  final double sleepDeltaHours;
+  final double caloriesDeltaPct;
+
+  // Best Day Highlights
+  final String bestStepDay;
+  final int bestStepValue;
+  final String bestHydrationDay;
+  final double bestHydrationValue;
+
+  const WeeklyHealthSummaryData({
+    required this.totalSteps,
+    required this.totalWaterLiters,
+    required this.avgSleepMinutes,
+    required this.totalActiveCalories,
+    required this.stepsDeltaPct,
+    required this.waterDeltaLiters,
+    required this.sleepDeltaHours,
+    required this.caloriesDeltaPct,
+    required this.bestStepDay,
+    required this.bestStepValue,
+    required this.bestHydrationDay,
+    required this.bestHydrationValue,
+  });
+
+  factory WeeklyHealthSummaryData.empty() => const WeeklyHealthSummaryData(
+    totalSteps: 0,
+    totalWaterLiters: 0.0,
+    avgSleepMinutes: 0.0,
+    totalActiveCalories: 0.0,
+    stepsDeltaPct: 0.0,
+    waterDeltaLiters: 0.0,
+    sleepDeltaHours: 0.0,
+    caloriesDeltaPct: 0.0,
+    bestStepDay: 'N/A',
+    bestStepValue: 0,
+    bestHydrationDay: 'N/A',
+    bestHydrationValue: 0.0,
+  );
+}

@@ -11,8 +11,9 @@ import 'package:fitora/core/health/domain/health_models.dart';
 import 'package:fitora/features/wellness/providers/wellness_provider.dart';
 import 'package:fitora/features/wellness/domain/wellness_models.dart';
 import 'package:fitora/features/personalization/providers/personalization_controller.dart';
+import 'package:fitora/features/progress/widgets/weekly_summary_card.dart';
+import 'package:fitora/features/progress/widgets/health_trend_chart.dart';
 import 'package:fitora/shared/widgets/fitora_background.dart';
-import 'package:fitora/features/home/providers/goals_streak_provider.dart';
 
 class ProgressScreen extends ConsumerStatefulWidget {
   const ProgressScreen({super.key});
@@ -48,15 +49,6 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     final profile = ref.watch(personalizationControllerProvider).profile;
     final hasWeight = profile.weightKg != null && profile.weightKg! > 0;
 
-    final sleepValues = summaries.map((s) {
-      return ref
-          .watch(sleepSummaryProvider(s.date))
-          .totalSleep
-          .inMinutes
-          .toDouble();
-    }).toList();
-    final hasSleepHistory = sleepValues.any((v) => v > 0);
-
     return FitoraBackground(
       child: Scaffold(
         backgroundColor: Colors.transparent,
@@ -87,27 +79,30 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                   ],
                   const SizedBox(height: FitoraSpacing.xl),
 
+                  // Task 8: Weekly Health Summary & WoW Comparisons
+                  _buildSectionHeader(textTheme, 'WEEKLY PERFORMANCE'),
+                  const SizedBox(height: FitoraSpacing.md),
+                  const WeeklySummaryCard(),
+                  const SizedBox(height: FitoraSpacing.xl),
+
+                  // Task 7: 7-Day / 30-Day Health Trend Charts
+                  _buildSectionHeader(textTheme, 'HEALTH TRENDS & ANALYTICS'),
+                  const SizedBox(height: FitoraSpacing.md),
+                  const HealthTrendChart(),
+                  const SizedBox(height: FitoraSpacing.xl),
+
                   // Recovery Stats Section
                   _buildSectionHeader(textTheme, 'RECOVERY'),
                   const SizedBox(height: FitoraSpacing.md),
                   _buildRecoverySection(context, textTheme),
                   const SizedBox(height: FitoraSpacing.xl),
 
-                  // Trends & Analytics Charts Section
-                  _buildSectionHeader(textTheme, 'TRENDS & ANALYTICS'),
-                  const SizedBox(height: FitoraSpacing.md),
-                  if (summaries.isEmpty) ...[
-                    _buildEmptyTrendsCard(context, textTheme),
-                  ] else ...[
-                    _buildTrendsSection(
-                      textTheme,
-                      summaries,
-                      hasSleepHistory,
-                      sleepValues,
-                      hasWeight,
-                      profile.weightKg,
-                    ),
+                  if (hasWeight && profile.weightKg != null) ...[
+                    _buildWeightTrend(textTheme, profile.weightKg!),
+                    const SizedBox(height: FitoraSpacing.lg),
                   ],
+                  _buildStreakCard(textTheme),
+                  const SizedBox(height: 100), // Bottom scroll padding
                   const SizedBox(height: 100), // Bottom scroll padding
                 ]),
               ),
@@ -567,18 +562,27 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                         tooltip: 'Reset intake',
                       ),
                     ElevatedButton.icon(
-                      onPressed: () => ref.read(wellnessProvider.notifier).addHydration(0.25),
+                      onPressed: () => ref
+                          .read(wellnessProvider.notifier)
+                          .addHydration(0.25),
                       icon: const Icon(Icons.add_rounded, size: 18),
                       label: const Text('+ 250ml'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blueAccent.withValues(alpha: 0.2),
+                        backgroundColor: Colors.blueAccent.withValues(
+                          alpha: 0.2,
+                        ),
                         foregroundColor: Colors.blueAccent,
                         elevation: 0,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
-                          side: BorderSide(color: Colors.blueAccent.withValues(alpha: 0.3)),
+                          side: BorderSide(
+                            color: Colors.blueAccent.withValues(alpha: 0.3),
+                          ),
                         ),
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
                       ),
                     ),
                   ],
@@ -936,273 +940,6 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     );
   }
 
-  Widget _buildTrendsSection(
-    TextTheme tt,
-    List<DailyActivitySummary> summaries,
-    bool hasSleepHistory,
-    List<double> sleepValues,
-    bool hasWeight,
-    double? weight,
-  ) {
-    return Column(
-          children: [
-            // Modern Weekly Steps Gradient Bar Chart
-            _buildStepsGraph(tt, summaries),
-            const SizedBox(height: FitoraSpacing.lg),
-
-            Row(
-              children: [
-                Expanded(
-                  child: _buildTrendCard(
-                    tt,
-                    'Calories',
-                    Icons.local_fire_department_rounded,
-                    FitoraColors.softEmerald,
-                    summaries.map((s) => s.caloriesBurned).toList(),
-                  ),
-                ),
-                const SizedBox(width: FitoraSpacing.md),
-                Expanded(
-                  child: _buildTrendCard(
-                    tt,
-                    'Active',
-                    Icons.timer_rounded,
-                    FitoraColors.calmCyan,
-                    summaries.map((s) => s.activeMinutes.toDouble()).toList(),
-                  ),
-                ),
-              ],
-            ),
-            if (hasSleepHistory) ...[
-              const SizedBox(height: FitoraSpacing.lg),
-              _buildTrendCard(
-                tt,
-                'Sleep History',
-                Icons.bedtime_rounded,
-                FitoraColors.mintGreen,
-                sleepValues,
-              ),
-            ],
-            if (hasWeight && weight != null) ...[
-              const SizedBox(height: FitoraSpacing.lg),
-              _buildWeightTrend(tt, weight),
-            ],
-            const SizedBox(height: FitoraSpacing.lg),
-            _buildStreakCard(tt),
-          ],
-        )
-        .animate()
-        .fadeIn(delay: 200.ms, duration: 400.ms)
-        .slideY(begin: 0.05, end: 0);
-  }
-
-  Widget _buildStepsGraph(TextTheme tt, List<DailyActivitySummary> summaries) {
-    final stepValues = summaries.map((s) => s.steps.toDouble()).toList();
-    final maxSteps = stepValues.isEmpty
-        ? 1.0
-        : stepValues.reduce((curr, next) => curr > next ? curr : next);
-    final maxStepsChecked = maxSteps == 0 ? 1.0 : maxSteps;
-
-    final trendPct = _calculateTrendPercentage(stepValues);
-    final isPositive = trendPct >= 0;
-    final trendText = '${isPositive ? "+" : ""}${trendPct.toStringAsFixed(0)}%';
-
-    final now = DateTime.now();
-
-    return GlowContainer(
-      glowColor: FitoraColors.mintGreen.withValues(alpha: 0.05),
-      borderRadius: BorderRadius.circular(24),
-      padding: EdgeInsets.zero,
-      child: Container(
-        padding: const EdgeInsets.all(FitoraSpacing.xl),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.02),
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'WEEKLY STEPS',
-                      style: tt.labelSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.0,
-                        color: Colors.white54,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Row(
-                      children: [
-                        Icon(
-                          isPositive
-                              ? Icons.trending_up_rounded
-                              : Icons.trending_down_rounded,
-                          color: isPositive
-                              ? FitoraColors.mintGreen
-                              : FitoraColors.errorRed,
-                          size: 14,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '$trendText vs last period',
-                          style: TextStyle(
-                            color: isPositive
-                                ? FitoraColors.mintGreen
-                                : FitoraColors.errorRed,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 11,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: FitoraColors.mintGreen.withValues(alpha: 0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.directions_walk_rounded,
-                    color: FitoraColors.mintGreen,
-                    size: 20,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: FitoraSpacing.xl),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: summaries.map((s) {
-                final isToday = s.date.day == now.day && s.date.month == now.month && s.date.year == now.year;
-                return Expanded(
-                  child: _buildBar(_getDayName(s.date), s.steps / maxStepsChecked, isToday, FitoraColors.mintGreen),
-                );
-              }).toList(),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTrendCard(
-    TextTheme tt,
-    String title,
-    IconData icon,
-    Color color,
-    List<double> values,
-  ) {
-    final maxVal = values.isEmpty
-        ? 1.0
-        : values.reduce((curr, next) => curr > next ? curr : next);
-    final maxValChecked = maxVal == 0 ? 1.0 : maxVal;
-
-    final trendPct = _calculateTrendPercentage(values);
-    final isPositive = trendPct >= 0;
-    final trendText = '${isPositive ? "+" : ""}${trendPct.toStringAsFixed(0)}%';
-
-    return GlowContainer(
-      glowColor: color.withValues(alpha: 0.05),
-      borderRadius: BorderRadius.circular(20),
-      padding: EdgeInsets.zero,
-      child: Container(
-        padding: const EdgeInsets.all(FitoraSpacing.md),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.02),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: color.withValues(alpha: 0.1),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(icon, color: color, size: 16),
-                    ),
-                    const SizedBox(width: FitoraSpacing.sm),
-                    Text(
-                      title.toUpperCase(),
-                      style: tt.labelSmall?.copyWith(
-                        color: Colors.white70,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ],
-                ),
-                Text(
-                  trendText,
-                  style: TextStyle(
-                    color: isPositive
-                        ? FitoraColors.mintGreen
-                        : FitoraColors.errorRed,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 10,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: FitoraSpacing.xl),
-            SizedBox(
-              height: 70,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: values.map((val) {
-                  final heightRatio = (val / maxValChecked).clamp(0.05, 1.0);
-                  return Expanded(
-                    child: Align(
-                      alignment: Alignment.bottomCenter,
-                      child: Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 3),
-                        height: 70 * heightRatio,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [color, color.withValues(alpha: 0.3)],
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                          ),
-                          borderRadius: BorderRadius.circular(99),
-                        ),
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-            ),
-            const SizedBox(height: FitoraSpacing.sm),
-            Text(
-              'Compared to last period',
-              style: tt.labelSmall?.copyWith(
-                color: Colors.white30,
-                fontSize: 9,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildWeightTrend(TextTheme tt, double currentWeight) {
     return GlowContainer(
       glowColor: FitoraColors.lavender.withValues(alpha: 0.05),
@@ -1262,64 +999,9 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     );
   }
 
-  Widget _buildBar(String day, double heightRatio, bool isToday, Color color) {
-    final double clampedRatio = heightRatio.clamp(0.04, 1.0);
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      mainAxisAlignment: MainAxisAlignment.end,
-      children: [
-        Container(
-          width: 12,
-          height: 120 * clampedRatio,
-          decoration: BoxDecoration(
-            gradient: isToday
-                ? LinearGradient(
-                    colors: [FitoraColors.mintGreen, FitoraColors.softEmerald],
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                  )
-                : LinearGradient(
-                    colors: [
-                      FitoraColors.calmCyan.withValues(alpha: 0.4),
-                      FitoraColors.calmCyan.withValues(alpha: 0.1),
-                    ],
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                  ),
-            borderRadius: BorderRadius.circular(99),
-            border: Border.all(
-              color: isToday
-                  ? FitoraColors.mintGreen.withValues(alpha: 0.8)
-                  : Colors.transparent,
-              width: 1.5,
-            ),
-            boxShadow: isToday
-                ? [
-                    BoxShadow(
-                      color: FitoraColors.mintGreen.withValues(alpha: 0.3),
-                      blurRadius: 8,
-                      spreadRadius: 1,
-                    ),
-                  ]
-                : null,
-          ),
-        ),
-        const SizedBox(height: 10),
-        Text(
-          day,
-          style: TextStyle(
-            color: isToday ? Colors.white : Colors.white30,
-            fontSize: 11,
-            fontWeight: isToday ? FontWeight.w900 : FontWeight.normal,
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _buildStreakCard(TextTheme tt) {
-    final streakState = ref.watch(goalsStreakProvider);
-    if (streakState.currentStreak == 0) return const SizedBox.shrink();
+    final wellness = ref.watch(wellnessProvider);
+    if (wellness.wellnessStreak == 0) return const SizedBox.shrink();
 
     return GlowContainer(
       glowColor: FitoraColors.warningOrange.withValues(alpha: 0.08),
@@ -1352,7 +1034,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '${streakState.currentStreak} DAY STREAK',
+                    '${wellness.wellnessStreak} DAY STREAK',
                     style: tt.labelSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                       letterSpacing: 1.0,
@@ -1367,9 +1049,8 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                       color: Colors.white,
                     ),
                   ),
-                  const SizedBox(height: 2),
                   Text(
-                    'Longest streak: ${streakState.longestStreak} days',
+                    'Keep the momentum going.',
                     style: tt.bodySmall?.copyWith(color: Colors.white70),
                   ),
                 ],
@@ -1379,11 +1060,6 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
         ),
       ),
     );
-  }
-
-  String _getDayName(DateTime date) {
-    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    return days[date.weekday - 1];
   }
 
   Widget _buildEmptyActivityCard(BuildContext context, TextTheme tt) {
@@ -1426,58 +1102,6 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
               label: const Text('Connect Health Source'),
               style: FilledButton.styleFrom(
                 backgroundColor: FitoraColors.mintGreen,
-                foregroundColor: Colors.black,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildEmptyTrendsCard(BuildContext context, TextTheme tt) {
-    return GlowContainer(
-      glowColor: FitoraColors.lavender.withValues(alpha: 0.05),
-      borderRadius: BorderRadius.circular(20),
-      padding: EdgeInsets.zero,
-      child: Container(
-        padding: const EdgeInsets.all(FitoraSpacing.xl),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.02),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-        ),
-        child: Column(
-          children: [
-            const Icon(
-              Icons.bar_chart_rounded,
-              color: FitoraColors.lavender,
-              size: 40,
-            ),
-            const SizedBox(height: FitoraSpacing.md),
-            Text(
-              'No Trend Data Yet',
-              style: tt.titleSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(height: FitoraSpacing.xs),
-            Text(
-              'Weekly steps, calorie trends, and sleep logs will appear here once connected.',
-              style: tt.bodySmall?.copyWith(color: Colors.white70),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: FitoraSpacing.lg),
-            FilledButton.icon(
-              onPressed: () => context.pushNamed(AppRouteNames.healthSync),
-              icon: const Icon(Icons.link_rounded),
-              label: const Text('Connect Health Source'),
-              style: FilledButton.styleFrom(
-                backgroundColor: FitoraColors.lavender,
                 foregroundColor: Colors.black,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
