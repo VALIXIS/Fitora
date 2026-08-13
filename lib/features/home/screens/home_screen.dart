@@ -496,8 +496,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     );
                   },
                 ),
-              ),
-              onPressed: () => _showNotificationsModal(context),
+                IconButton(
+                  icon: const Icon(
+                    Icons.notifications_outlined,
+                    color: FitoraColors.darkTextPrimary,
+                  ),
+                  onPressed: () => _showNotificationsModal(context),
+                ),
+              ],
             ),
           ],
         ),

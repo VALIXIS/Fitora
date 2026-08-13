@@ -8,6 +8,7 @@ import 'package:fitora/shared/widgets/app_scaffold.dart';
 import 'package:fitora/shared/widgets/fitora_card.dart';
 import 'package:fitora/shared/widgets/glow_container.dart';
 import 'package:fitora/core/health/services/health_connect_service.dart';
+import 'package:fitora/core/storage/app_preferences.dart';
 import '../domain/health_sync_models.dart';
 import '../providers/health_sync_provider.dart';
 import '../services/pedometer_service.dart';
