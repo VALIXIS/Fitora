@@ -1,9 +1,14 @@
 import 'package:health/health.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:fitora/core/health/domain/health_models.dart';
 import 'package:fitora/core/utils/app_logger.dart';
 
 class HealthConnectService {
   final Health _health = Health();
+  final SharedPreferences _prefs;
+
+  static const _kHealthPermissionsGrantedBeforeKey =
+      'health_permissions_granted_before';
 
   /// Data types used for STEP + ACTIVITY metrics.
   final _activityTypes = [
@@ -13,11 +18,9 @@ class HealthConnectService {
   ];
 
   /// Data types used for SLEEP.
-  final _sleepTypes = [
-    HealthDataType.SLEEP_SESSION,
-  ];
+  final _sleepTypes = [HealthDataType.SLEEP_SESSION];
 
-  HealthConnectService() {
+  HealthConnectService(this._prefs) {
     _health.configure();
   }
 
@@ -32,20 +35,40 @@ class HealthConnectService {
       // Check SDK availability first (Health Connect must be installed)
       final sdkStatus = await _health.getHealthConnectSdkStatus();
       if (sdkStatus != HealthConnectSdkStatus.sdkAvailable) {
-        return HealthConnectStatus.notInstalled;
+        return HealthConnectStatus.unavailable;
       }
 
-      // Check if all activity permissions are granted
-      final activityGranted = await _health.hasPermissions(_activityTypes);
-      final sleepGranted = await _health.hasPermissions(_sleepTypes);
+      final allTypes = [..._activityTypes, ..._sleepTypes];
+      final grantedTypes = <HealthDataType>[];
+      for (final type in allTypes) {
+        final granted = await _health.hasPermissions([type]);
+        if (granted == true) {
+          grantedTypes.add(type);
+        }
+      }
 
-      if (activityGranted == true && sleepGranted == true) {
+      final previouslyGranted =
+          _prefs.getBool(_kHealthPermissionsGrantedBeforeKey) ?? false;
+
+      if (grantedTypes.length == allTypes.length) {
+        if (!previouslyGranted) {
+          await _prefs.setBool(_kHealthPermissionsGrantedBeforeKey, true);
+        }
         return HealthConnectStatus.connected;
       }
-      if (activityGranted == true || sleepGranted == true) {
-        // At least one category is granted
-        return HealthConnectStatus.connected;
+
+      if (grantedTypes.isNotEmpty) {
+        if (!previouslyGranted) {
+          await _prefs.setBool(_kHealthPermissionsGrantedBeforeKey, true);
+        }
+        return HealthConnectStatus.partiallyGranted;
       }
+
+      // No permissions are granted.
+      if (previouslyGranted) {
+        return HealthConnectStatus.revoked;
+      }
+
       return HealthConnectStatus.permissionRequired;
     } catch (e, st) {
       AppLogger.error('Health Connect status error: $e', st);
@@ -59,7 +82,21 @@ class HealthConnectService {
     try {
       // Request all types together; partial grants are handled at read time
       final allTypes = [..._activityTypes, ..._sleepTypes];
-      return await _health.requestAuthorization(allTypes);
+      final success = await _health.requestAuthorization(allTypes);
+      if (success) {
+        final allTypes = [..._activityTypes, ..._sleepTypes];
+        final grantedTypes = <HealthDataType>[];
+        for (final type in allTypes) {
+          final granted = await _health.hasPermissions([type]);
+          if (granted == true) {
+            grantedTypes.add(type);
+          }
+        }
+        if (grantedTypes.isNotEmpty) {
+          await _prefs.setBool(_kHealthPermissionsGrantedBeforeKey, true);
+        }
+      }
+      return success;
     } catch (e, st) {
       AppLogger.error('Health Connect permission request error: $e', st);
       return false;
@@ -77,7 +114,9 @@ class HealthConnectService {
       final sdkStatus = await _health.getHealthConnectSdkStatus();
       if (sdkStatus != HealthConnectSdkStatus.sdkAvailable) return null;
 
-      final hasPermission = await _health.hasPermissions([HealthDataType.STEPS]);
+      final hasPermission = await _health.hasPermissions([
+        HealthDataType.STEPS,
+      ]);
       if (hasPermission != true) return null;
 
       return await _health.getTotalStepsInInterval(start, end);
@@ -119,7 +158,10 @@ class HealthConnectService {
   }
 
   /// Fetches sleep data points for the given [start]–[end] window.
-  Future<List<HealthDataPoint>> getSleepData(DateTime start, DateTime end) async {
+  Future<List<HealthDataPoint>> getSleepData(
+    DateTime start,
+    DateTime end,
+  ) async {
     return getHealthData(start, end, types: _sleepTypes);
   }
 }

@@ -42,7 +42,9 @@ class HealthCacheService {
     if (jsonStr != null) {
       try {
         final List<dynamic> decoded = jsonDecode(jsonStr);
-        return decoded.map((json) => DailyActivitySummary.fromJson(json)).toList();
+        return decoded
+            .map((json) => DailyActivitySummary.fromJson(json))
+            .toList();
       } catch (e) {
         // Corrupted cache
         _prefs.remove(_weeklyActivityKey);
@@ -67,5 +69,13 @@ class HealthCacheService {
       }
     }
     return null;
+  }
+
+  bool getBgSyncEnabled() {
+    return _prefs.getBool('fitora_health_bg_sync') ?? true;
+  }
+
+  int getBgSyncInterval() {
+    return _prefs.getInt('fitora_health_bg_sync_interval') ?? 60;
   }
 }

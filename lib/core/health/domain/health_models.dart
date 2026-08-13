@@ -15,26 +15,18 @@ enum SensorStatus {
 
 enum HealthConnectStatus {
   connected,
-  notInstalled,
   permissionRequired,
+  partiallyGranted,
+  revoked,
+  unavailable,
   syncing,
   error,
   unknown,
 }
 
-enum SyncStatus {
-  synced,
-  syncing,
-  offline,
-  error,
-}
+enum SyncStatus { synced, syncing, offline, error }
 
-enum DataSource {
-  healthConnectAndSensor,
-  sensorOnly,
-  healthConnectOnly,
-  cache,
-}
+enum DataSource { healthConnectAndSensor, sensorOnly, healthConnectOnly, cache }
 
 class DailyActivitySummary {
   final int steps;
@@ -70,20 +62,19 @@ class DailyActivitySummary {
     SensorStatus sensorStatus = SensorStatus.unknown,
     HealthConnectStatus healthConnectStatus = HealthConnectStatus.error,
     DataSource dataSource = DataSource.cache,
-  }) =>
-      DailyActivitySummary(
-        steps: 0,
-        stepsGoal: 10000,
-        caloriesBurned: 0,
-        caloriesGoal: 500,
-        activeMinutes: 0,
-        activeMinutesGoal: 30,
-        distanceKm: 0,
-        date: date ?? DateTime.now(),
-        sensorStatus: sensorStatus,
-        healthConnectStatus: healthConnectStatus,
-        dataSource: dataSource,
-      );
+  }) => DailyActivitySummary(
+    steps: 0,
+    stepsGoal: 10000,
+    caloriesBurned: 0,
+    caloriesGoal: 500,
+    activeMinutes: 0,
+    activeMinutesGoal: 30,
+    distanceKm: 0,
+    date: date ?? DateTime.now(),
+    sensorStatus: sensorStatus,
+    healthConnectStatus: healthConnectStatus,
+    dataSource: dataSource,
+  );
 
   DailyActivitySummary copyWith({
     int? steps,
@@ -139,14 +130,18 @@ class DailyActivitySummary {
       activeMinutesGoal: json['activeMinutesGoal'] ?? 30,
       distanceKm: (json['distanceKm'] ?? 0.0).toDouble(),
       date: DateTime.parse(json['date']),
-      lastSyncTime: json['lastSyncTime'] != null ? DateTime.parse(json['lastSyncTime']) : null,
+      lastSyncTime: json['lastSyncTime'] != null
+          ? DateTime.parse(json['lastSyncTime'])
+          : null,
       dataSource: DataSource.cache,
     );
   }
 
   double get stepsProgress => (steps / stepsGoal).clamp(0.0, 1.0);
-  double get caloriesProgress => (caloriesBurned / caloriesGoal).clamp(0.0, 1.0);
-  double get activeMinutesProgress => (activeMinutes / activeMinutesGoal).clamp(0.0, 1.0);
+  double get caloriesProgress =>
+      (caloriesBurned / caloriesGoal).clamp(0.0, 1.0);
+  double get activeMinutesProgress =>
+      (activeMinutes / activeMinutesGoal).clamp(0.0, 1.0);
 }
 
 class SleepSummary {
@@ -214,5 +209,6 @@ class HydrationSummary {
     required this.date,
   });
 
-  double get progress => (waterConsumedLiters / waterGoalLiters).clamp(0.0, 1.0);
+  double get progress =>
+      (waterConsumedLiters / waterGoalLiters).clamp(0.0, 1.0);
 }

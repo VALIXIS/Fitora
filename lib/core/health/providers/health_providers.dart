@@ -19,28 +19,32 @@ final healthCacheServiceProvider = Provider<HealthCacheService>((ref) {
 });
 
 final healthConnectServiceProvider = Provider<HealthConnectService>((ref) {
-  return HealthConnectService();
+  return HealthConnectService(AppPreferences.prefs);
 });
 
-final healthConnectRepositoryProvider = Provider<HealthConnectRepository>((ref) {
+final healthConnectRepositoryProvider = Provider<HealthConnectRepository>((
+  ref,
+) {
   return HealthConnectRepository(ref.watch(healthConnectServiceProvider));
 });
 
-final healthSyncServiceProvider = StateNotifierProvider<HealthSyncService, SyncStatus>((ref) {
-  return HealthSyncService(
-    ref.watch(healthConnectRepositoryProvider),
-    ref.watch(sensorHealthRepositoryProvider),
-    ref.watch(healthCacheServiceProvider),
-  );
-});
+final healthSyncServiceProvider =
+    StateNotifierProvider<HealthSyncService, SyncStatus>((ref) {
+      return HealthSyncService(
+        ref.watch(healthConnectRepositoryProvider),
+        ref.watch(sensorHealthRepositoryProvider),
+        ref.watch(healthCacheServiceProvider),
+      );
+    });
 
 // ---------------------------------------------------------------------------
 // Sensor permission status — drives gating of live data
 // ---------------------------------------------------------------------------
 
-final sensorStatusProvider = StateNotifierProvider<SensorStatusNotifier, SensorStatus>(
-  (ref) => SensorStatusNotifier(ref),
-);
+final sensorStatusProvider =
+    StateNotifierProvider<SensorStatusNotifier, SensorStatus>(
+      (ref) => SensorStatusNotifier(ref),
+    );
 
 class SensorStatusNotifier extends StateNotifier<SensorStatus> {
   final Ref _ref;
@@ -66,25 +70,33 @@ class SensorStatusNotifier extends StateNotifier<SensorStatus> {
 // Health Connect Status
 // ---------------------------------------------------------------------------
 
-final healthConnectStatusProvider = StateNotifierProvider<HealthConnectStatusNotifier, HealthConnectStatus>((ref) {
-  return HealthConnectStatusNotifier(ref.read(healthConnectServiceProvider));
-});
+final healthConnectStatusProvider =
+    StateNotifierProvider<HealthConnectStatusNotifier, HealthConnectStatus>((
+      ref,
+    ) {
+      return HealthConnectStatusNotifier(
+        ref.read(healthConnectServiceProvider),
+      );
+    });
 
 class HealthConnectStatusNotifier extends StateNotifier<HealthConnectStatus> {
   final HealthConnectService _service;
-  
-  HealthConnectStatusNotifier(this._service) : super(HealthConnectStatus.unknown) {
+
+  HealthConnectStatusNotifier(this._service)
+    : super(HealthConnectStatus.unknown) {
     checkStatus();
   }
-  
+
   Future<void> checkStatus() async {
     state = await _service.getStatus();
   }
-  
+
   Future<void> requestPermissions() async {
     state = HealthConnectStatus.syncing;
     final granted = await _service.requestPermissions();
-    state = granted ? HealthConnectStatus.connected : HealthConnectStatus.permissionRequired;
+    state = granted
+        ? HealthConnectStatus.connected
+        : HealthConnectStatus.permissionRequired;
   }
 }
 
@@ -98,13 +110,13 @@ final liveStepsProvider = StreamProvider<int>((ref) async* {
     yield 0;
     return;
   }
-  
+
   final repo = ref.read(sensorRepositoryProvider);
   final initial = await repo.getCurrentSteps();
   if (initial != null) {
     yield initial;
   }
-  
+
   yield* repo.stepStream;
 });
 
@@ -112,10 +124,13 @@ final liveStepsProvider = StreamProvider<int>((ref) async* {
 // Activity Providers (Driven by Cache & Merged with Live Steps)
 // ---------------------------------------------------------------------------
 
-final dailyActivityProvider = Provider.family<DailyActivitySummary, DateTime>((ref, date) {
+final dailyActivityProvider = Provider.family<DailyActivitySummary, DateTime>((
+  ref,
+  date,
+) {
   // Rebuild UI when background sync completes
   ref.watch(healthSyncServiceProvider);
-  
+
   final cache = ref.watch(healthCacheServiceProvider);
   final cached = cache.getDailyActivity(date) ?? DailyActivitySummary.empty();
 
@@ -124,38 +139,67 @@ final dailyActivityProvider = Provider.family<DailyActivitySummary, DateTime>((r
     final liveSteps = ref.watch(liveStepsProvider);
     return liveSteps.when(
       data: (sensorSteps) {
-        return cached.copyWith(
-          steps: max(cached.steps, sensorSteps),
-        );
+        return cached.copyWith(steps: max(cached.steps, sensorSteps));
       },
       loading: () => cached,
       error: (_, _) => cached,
     );
   }
-  
+
   return cached;
 });
 
-final weeklyActivityProvider = Provider.family<List<DailyActivitySummary>, DateTime>((ref, startDate) {
+final weeklyActivityProvider =
+    Provider.family<List<DailyActivitySummary>, DateTime>((ref, startDate) {
+      ref.watch(healthSyncServiceProvider);
+      final cache = ref.watch(healthCacheServiceProvider);
+      return cache.getWeeklyActivity() ??
+          List.generate(
+            7,
+            (i) => DailyActivitySummary.empty(
+              date: startDate.add(Duration(days: i)),
+            ),
+          );
+    });
+
+final sleepSummaryProvider = Provider.family<SleepSummary, DateTime>((
+  ref,
+  date,
+) {
   ref.watch(healthSyncServiceProvider);
   final cache = ref.watch(healthCacheServiceProvider);
-  return cache.getWeeklyActivity() ?? List.generate(7, (i) => DailyActivitySummary.empty(date: startDate.add(Duration(days: i))));
+  return cache.getSleepSummary(date) ??
+      SleepSummary(
+        totalSleep: Duration.zero,
+        remSleep: Duration.zero,
+        deepSleep: Duration.zero,
+        lightSleep: Duration.zero,
+        sleepScore: 0,
+        date: date,
+      );
 });
 
-final sleepSummaryProvider = Provider.family<SleepSummary, DateTime>((ref, date) {
-  ref.watch(healthSyncServiceProvider);
-  final cache = ref.watch(healthCacheServiceProvider);
-  return cache.getSleepSummary(date) ?? SleepSummary(
-    totalSleep: Duration.zero, remSleep: Duration.zero, deepSleep: Duration.zero, lightSleep: Duration.zero, sleepScore: 0, date: date,
+final recoverySummaryProvider = Provider.family<RecoverySummary, DateTime>((
+  ref,
+  date,
+) {
+  return RecoverySummary(
+    recoveryScore: 0,
+    hrv: 0,
+    restingHeartRate: 0,
+    date: date,
   );
 });
 
-final recoverySummaryProvider = Provider.family<RecoverySummary, DateTime>((ref, date) {
-  return RecoverySummary(recoveryScore: 0, hrv: 0, restingHeartRate: 0, date: date);
-});
-
-final hydrationSummaryProvider = Provider.family<HydrationSummary, DateTime>((ref, date) {
-  return HydrationSummary(waterConsumedLiters: 0.0, waterGoalLiters: 2.5, date: date);
+final hydrationSummaryProvider = Provider.family<HydrationSummary, DateTime>((
+  ref,
+  date,
+) {
+  return HydrationSummary(
+    waterConsumedLiters: 0.0,
+    waterGoalLiters: 2.5,
+    date: date,
+  );
 });
 
 // ---------------------------------------------------------------------------

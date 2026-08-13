@@ -29,9 +29,12 @@ class GoogleFitConnector implements HealthPlatformConnector {
   /// Google Fit data API is deprecated — returns empty metrics.
   @override
   Future<HealthMetricData> fetchMetrics(
-      DateTime startTime, DateTime endTime) async {
+    DateTime startTime,
+    DateTime endTime,
+  ) async {
     throw UnsupportedError(
-        'Google Fit data API is deprecated. Use Health Connect instead.');
+      'Google Fit data API is deprecated. Use Health Connect instead.',
+    );
   }
 }
 
@@ -65,7 +68,9 @@ class HealthConnectConnector implements HealthPlatformConnector {
   /// current in-memory cached state to avoid double-fetching.
   @override
   Future<HealthMetricData> fetchMetrics(
-      DateTime startTime, DateTime endTime) async {
+    DateTime startTime,
+    DateTime endTime,
+  ) async {
     if (_status != HealthPermissionStatus.authorized) {
       throw Exception('Health Connect permission not granted');
     }
@@ -100,7 +105,9 @@ class SamsungHealthConnector implements HealthPlatformConnector {
   /// Samsung Health data is not available via a public Flutter SDK.
   @override
   Future<HealthMetricData> fetchMetrics(
-      DateTime startTime, DateTime endTime) async {
+    DateTime startTime,
+    DateTime endTime,
+  ) async {
     if (_status != HealthPermissionStatus.authorized) {
       throw Exception('Samsung Health permission not granted');
     }
@@ -131,7 +138,9 @@ class AppleHealthConnector implements HealthPlatformConnector {
   /// Apple HealthKit is iOS-only. Returns empty metrics on Android.
   @override
   Future<HealthMetricData> fetchMetrics(
-      DateTime startTime, DateTime endTime) async {
+    DateTime startTime,
+    DateTime endTime,
+  ) async {
     if (_status != HealthPermissionStatus.authorized) {
       throw Exception('Apple Health permission not granted');
     }

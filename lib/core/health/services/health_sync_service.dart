@@ -26,7 +26,7 @@ class HealthSyncService extends StateNotifier<SyncStatus>
   Timer? _retryTimer;
 
   HealthSyncService(this._hcRepo, this._sensorRepo, this._cache)
-      : super(SyncStatus.offline) {
+    : super(SyncStatus.offline) {
     WidgetsBinding.instance.addObserver(this);
     _startPolling();
   }
@@ -52,8 +52,14 @@ class HealthSyncService extends StateNotifier<SyncStatus>
       syncNow();
       _startPolling();
     } else if (appState == AppLifecycleState.paused) {
-      // Cancel polling to avoid unnecessary wakeups while app is in background
-      _pollingTimer?.cancel();
+      final bgEnabled = _cache.getBgSyncEnabled();
+      if (!bgEnabled) {
+        // Cancel polling to avoid unnecessary wakeups while app is in background and background sync is disabled
+        _pollingTimer?.cancel();
+      } else {
+        // Trigger a sync immediately when app moves to background
+        _backgroundSyncNow();
+      }
     }
   }
 
@@ -63,8 +69,11 @@ class HealthSyncService extends StateNotifier<SyncStatus>
 
   void _startPolling() {
     _pollingTimer?.cancel();
-    _pollingTimer =
-        Timer.periodic(_kMinPollInterval, (_) => _backgroundSyncNow());
+    final intervalMinutes = max(15, _cache.getBgSyncInterval());
+    _pollingTimer = Timer.periodic(
+      Duration(minutes: intervalMinutes),
+      (_) => _backgroundSyncNow(),
+    );
   }
 
   /// Background sync — protects against zero-data overwrites.
@@ -116,41 +125,52 @@ class HealthSyncService extends StateNotifier<SyncStatus>
       // 4. Merge: always pick the MAX of cached vs new to prevent zero overwrites
       DailyActivitySummary mergedSummary;
 
-      if (hcSummary != null && sensorSummary != null) {
-        mergedSummary = hcSummary.copyWith(
-          steps: max(existingSteps,
-              max(hcSummary.steps, sensorSummary.steps)),
+      final hcActive =
+          hcSummary != null &&
+          (hcSummary.healthConnectStatus == HealthConnectStatus.connected ||
+              hcSummary.healthConnectStatus ==
+                  HealthConnectStatus.partiallyGranted);
+
+      if (hcActive && sensorSummary != null) {
+        mergedSummary = hcSummary!.copyWith(
+          steps: max(existingSteps, max(hcSummary.steps, sensorSummary.steps)),
           caloriesBurned: max(existingCalories, hcSummary.caloriesBurned),
           distanceKm: max(existingDistance, hcSummary.distanceKm),
-          activeMinutes:
-              max(existingActiveMinutes, hcSummary.activeMinutes),
+          activeMinutes: max(existingActiveMinutes, hcSummary.activeMinutes),
           dataSource: DataSource.healthConnectAndSensor,
           lastSyncTime: now,
         );
-      } else if (hcSummary != null) {
-        mergedSummary = hcSummary.copyWith(
+      } else if (hcActive) {
+        mergedSummary = hcSummary!.copyWith(
           steps: max(existingSteps, hcSummary.steps),
           caloriesBurned: max(existingCalories, hcSummary.caloriesBurned),
           distanceKm: max(existingDistance, hcSummary.distanceKm),
-          activeMinutes:
-              max(existingActiveMinutes, hcSummary.activeMinutes),
+          activeMinutes: max(existingActiveMinutes, hcSummary.activeMinutes),
           dataSource: DataSource.healthConnectOnly,
           lastSyncTime: now,
         );
       } else if (sensorSummary != null) {
+        // If Health Connect is inactive, use sensor data but preserve granular HC status in the returned summary
+        final hcStatus =
+            hcSummary?.healthConnectStatus ?? HealthConnectStatus.unknown;
         mergedSummary = sensorSummary.copyWith(
           steps: max(existingSteps, sensorSummary.steps),
-          caloriesBurned:
-              max(existingCalories, sensorSummary.caloriesBurned),
+          caloriesBurned: max(existingCalories, sensorSummary.caloriesBurned),
           distanceKm: max(existingDistance, sensorSummary.distanceKm),
-          activeMinutes:
-              max(existingActiveMinutes, sensorSummary.activeMinutes),
+          activeMinutes: max(
+            existingActiveMinutes,
+            sensorSummary.activeMinutes,
+          ),
+          healthConnectStatus: hcStatus,
           dataSource: DataSource.sensorOnly,
           lastSyncTime: now,
         );
       } else {
-        // Both failed — keep existing cache; do NOT overwrite with zeroes
-        mergedSummary = cachedSummary ?? DailyActivitySummary.empty();
+        // Both failed or unavailable — keep existing cache; do NOT overwrite with zeroes
+        final hcStatus =
+            hcSummary?.healthConnectStatus ?? HealthConnectStatus.unknown;
+        mergedSummary = (cachedSummary ?? DailyActivitySummary.empty())
+            .copyWith(healthConnectStatus: hcStatus, lastSyncTime: now);
         state = SyncStatus.error;
         _scheduleRetry();
         return;
@@ -160,7 +180,7 @@ class HealthSyncService extends StateNotifier<SyncStatus>
       await _cache.saveDailyActivity(mergedSummary);
 
       // 6. Weekly update — only if HC data is available
-      if (hcSummary != null) {
+      if (hcActive) {
         try {
           final lastWeek = today.subtract(const Duration(days: 6));
           final weekly = await _hcRepo.getWeeklyActivity(lastWeek);
@@ -182,7 +202,7 @@ class HealthSyncService extends StateNotifier<SyncStatus>
       }
 
       // 7. Sleep — only if HC data is available; never overwrite valid sleep cache
-      if (hcSummary != null) {
+      if (hcActive) {
         try {
           final sleep = await _hcRepo.getSleepSummary(today);
           // Only overwrite if new sleep score is non-zero or cache has no sleep
@@ -214,14 +234,15 @@ class HealthSyncService extends StateNotifier<SyncStatus>
   void _scheduleRetry() {
     if (_retryCount >= _kMaxRetries) {
       AppLogger.error(
-          'Health sync: max retries reached ($_kMaxRetries). Giving up.');
+        'Health sync: max retries reached ($_kMaxRetries). Giving up.',
+      );
       return;
     }
     _retryTimer?.cancel();
-    final delaySeconds = (pow(2, _retryCount) * 30).round(); // 30s, 60s, 120s, 240s
+    final delaySeconds = (pow(2, _retryCount) * 30)
+        .round(); // 30s, 60s, 120s, 240s
     _retryCount++;
-    AppLogger.error(
-        'Health sync: retry $_retryCount in ${delaySeconds}s');
+    AppLogger.error('Health sync: retry $_retryCount in ${delaySeconds}s');
     _retryTimer = Timer(Duration(seconds: delaySeconds), () {
       if (state != SyncStatus.syncing) {
         syncNow();
