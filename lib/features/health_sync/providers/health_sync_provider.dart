@@ -5,6 +5,8 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fitora/core/health/domain/health_models.dart' hide SyncStatus;
 import 'package:fitora/core/health/services/health_cache_service.dart';
+import 'package:fitora/core/health/data/health_connect_repository.dart';
+import 'package:fitora/core/health/services/health_connect_service.dart';
 
 import '../../../core/storage/app_preferences.dart';
 import '../domain/health_sync_models.dart';
@@ -242,8 +244,10 @@ class HealthSyncController extends StateNotifier<HealthSyncState> with WidgetsBi
 
       if (kDebugMode) print('[HC_DEBUG] Reading from HealthConnectRepository...');
 
+      final repo = HealthConnectRepository(HealthConnectService(AppPreferences.prefs));
+
       // Step read — MUST succeed for any useful data
-      final hcDaily = await sharedHcRepo.getDailyActivity(now);
+      final hcDaily = await repo.getDailyActivity(now);
 
       if (kDebugMode) {
         print('[HC_DEBUG] HC steps read: steps=${hcDaily.steps}, cal=${hcDaily.caloriesBurned}, dist=${hcDaily.distanceKm}');
@@ -252,8 +256,8 @@ class HealthSyncController extends StateNotifier<HealthSyncState> with WidgetsBi
       // Sleep read — optional, don't let failure kill the sync
       SleepSummary? hcSleep;
       try {
-        hcSleep = await sharedHcRepo.getSleepSummary(now);
-        if (kDebugMode) print('[HC_DEBUG] HC sleep: ${hcSleep.totalSleep.inMinutes} min');
+        hcSleep = await repo.getSleepSummary(now);
+        if (kDebugMode && hcSleep != null) print('[HC_DEBUG] HC sleep: ${hcSleep.totalSleep.inMinutes} min');
       } catch (e) {
         if (kDebugMode) print('[HC_DEBUG] Sleep read failed (non-fatal): $e');
       }

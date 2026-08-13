@@ -593,7 +593,7 @@ class _DirectHealthConnectDiagnosticState extends State<_DirectHealthConnectDiag
       _diagnosticResult = null;
     });
 
-    final res = await HealthConnectService().runDirectDiagnostic();
+    final res = await HealthConnectService(AppPreferences.prefs).runDirectDiagnostic();
 
     setState(() {
       _isRunning = false;

@@ -1398,5 +1398,4 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ),
     ).animate().fadeIn(delay: 300.ms, duration: 400.ms).slideY(begin: 0.05, end: 0);
   }
->>>>>>> origin/feature/vaseem/fitora-v1.1-goals
 }

@@ -62,24 +62,22 @@ class ProgressController extends StateNotifier<ProgressState> {
   Future<void> ensureLoaded() => _loadFuture;
 
   Future<void> recordWorkout({
-    required Workout workout,
-    required WorkoutSessionState session,
+    required String workoutId,
+    required String title,
+    required int durationSeconds,
+    required int calories,
+    required int exercisesCompleted,
   }) async {
     await ensureLoaded();
 
-    final completed = session.completedExercises;
-    final total = session.totalExercises;
-    final completionRatio = total == 0 ? 0.0 : completed / total;
-    final calories = (workout.calories * completionRatio).round();
-
     final entry = WorkoutHistoryEntry(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
-      workoutId: workout.id,
-      title: workout.title,
+      workoutId: workoutId,
+      title: title,
       completedAt: DateTime.now(),
-      durationSeconds: session.totalElapsedSeconds,
+      durationSeconds: durationSeconds,
       calories: calories < 0 ? 0 : calories,
-      exercisesCompleted: completed,
+      exercisesCompleted: exercisesCompleted,
     );
 
     final updated = [...state.history, entry];

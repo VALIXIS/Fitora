@@ -220,11 +220,19 @@ class WellnessNotifier extends StateNotifier<WellnessState> {
 
   Future<void> resetHydration() async {
     final today = _todayStr();
+    final now = DateTime.now();
     final updatedHistory = Map<String, double>.from(state.waterLogHistory)
       ..[today] = 0.0;
+    final updatedLogs = List<WaterLogEntry>.from(state.waterLogs)
+      ..removeWhere(
+        (e) =>
+            e.timestamp.year == now.year &&
+            e.timestamp.month == now.month &&
+            e.timestamp.day == now.day,
+      );
     state = state.copyWith(
       hydrationLiters: 0.0,
-      waterLogs: const [],
+      waterLogs: updatedLogs,
       waterLogHistory: updatedHistory,
     );
     updateRecovery();
@@ -234,21 +242,6 @@ class WellnessNotifier extends StateNotifier<WellnessState> {
   Future<void> addHydration(double amount) async {
     final amountMl = (amount * 1000).round();
     await addWaterLogEntry(amountMl);
-  }
-
-  Future<void> resetHydration() async {
-    final now = DateTime.now();
-    final updatedLogs = List<WaterLogEntry>.from(state.waterLogs)
-      ..removeWhere(
-        (e) =>
-            e.timestamp.year == now.year &&
-            e.timestamp.month == now.month &&
-            e.timestamp.day == now.day,
-      );
-
-    state = state.copyWith(waterLogs: updatedLogs, hydrationLiters: 0.0);
-    updateRecovery();
-    await _persist();
   }
 
   Future<void> setHydrationGoal(double goal) async {
