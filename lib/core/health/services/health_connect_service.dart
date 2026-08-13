@@ -164,4 +164,46 @@ class HealthConnectService {
   ) async {
     return getHealthData(start, end, types: _sleepTypes);
   }
+
+  /// Runs a direct diagnostic against Health Connect, returning a map
+  /// of raw SDK status, permissions, and step record details.
+  Future<Map<String, dynamic>> runDirectDiagnostic() async {
+    final Map<String, dynamic> diag = {};
+    final now = DateTime.now();
+    final start = DateTime(now.year, now.month, now.day);
+    diag['now'] = now.toIso8601String();
+    diag['start'] = start.toIso8601String();
+    try {
+      final sdkStatus = await _health.getHealthConnectSdkStatus();
+      diag['sdkStatus'] = sdkStatus?.name;
+      final hasPerm = await _health.hasPermissions(
+        [HealthDataType.STEPS],
+        permissions: [HealthDataAccess.READ],
+      );
+      diag['hasPermissionsSteps'] = hasPerm;
+      final totalSteps = await _health.getTotalStepsInInterval(start, now);
+      diag['totalSteps'] = totalSteps;
+      final rawRecords = await _health.getHealthDataFromTypes(
+        startTime: start,
+        endTime: now,
+        types: [HealthDataType.STEPS],
+      );
+      diag['rawRecordCount'] = rawRecords.length;
+      final recList = <Map<String, dynamic>>[];
+      for (final r in rawRecords) {
+        final val = (r.value as NumericHealthValue).numericValue;
+        recList.add({
+          'val': val,
+          'sourceName': r.sourceName,
+          'dateFrom': r.dateFrom.toIso8601String(),
+          'dateTo': r.dateTo.toIso8601String(),
+        });
+      }
+      diag['records'] = recList;
+    } catch (e, st) {
+      AppLogger.error('runDirectDiagnostic error: $e', st);
+      diag['exception'] = e.toString();
+    }
+    return diag;
+  }
 }

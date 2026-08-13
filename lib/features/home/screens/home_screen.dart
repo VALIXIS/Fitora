@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:fitora/app/router/app_routes.dart';
 import 'package:fitora/core/constants/spacing.dart';
 import 'package:fitora/core/theme/fitora_colors.dart';
 import 'package:fitora/shared/widgets/glow_container.dart';

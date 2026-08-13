@@ -194,15 +194,13 @@ class SettingsScreen extends ConsumerWidget {
                                   _showNotificationDeniedSnackbar(context);
                                   return;
                                 }
-                                return;
->>>>>>> origin/feature/adithya/fitora-v1.1-notifications
                               }
                             }
-                          }
-                          await settingsNotifier.updateSetting(
-                            'hydrationReminderEnabled',
-                            v,
-                          );
+                          
+                            await settingsNotifier.updateSetting(
+                              'hydrationReminderEnabled',
+                              v,
+                            );
                         },
                         iconColor: Colors.blueAccent,
                       ),
