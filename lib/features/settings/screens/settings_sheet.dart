@@ -21,7 +21,10 @@ class SettingsSheet extends ConsumerWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('Settings', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+                const Text(
+                  'Settings',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                ),
                 IconButton(
                   icon: const Icon(Icons.close),
                   onPressed: () => Navigator.of(context).pop(),
@@ -32,37 +35,55 @@ class SettingsSheet extends ConsumerWidget {
             SwitchListTile(
               title: const Text('Enable notifications'),
               value: settings.notificationsEnabled,
-              onChanged: (v) => ref.read(settingsProvider.notifier).updateSetting('notificationsEnabled', v),
+              onChanged: (v) => ref
+                  .read(settingsProvider.notifier)
+                  .updateSetting('notificationsEnabled', v),
             ),
             SwitchListTile(
               title: const Text('Hydration reminders'),
-              value: settings.waterReminder,
-              onChanged: (v) => ref.read(settingsProvider.notifier).updateSetting('waterReminder', v),
+              value: settings.hydrationReminderEnabled,
+              onChanged: (v) => ref
+                  .read(settingsProvider.notifier)
+                  .updateSetting('hydrationReminderEnabled', v),
             ),
             SwitchListTile(
               title: const Text('Sound & haptics'),
               value: settings.soundEffectsEnabled,
-              onChanged: (v) => ref.read(settingsProvider.notifier).updateSetting('soundEffectsEnabled', v),
+              onChanged: (v) => ref
+                  .read(settingsProvider.notifier)
+                  .updateSetting('soundEffectsEnabled', v),
             ),
             SwitchListTile(
               title: const Text('Autoplay rest timers'),
               value: settings.autoplayRest,
-              onChanged: (v) => ref.read(settingsProvider.notifier).updateSetting('autoplayRest', v),
+              onChanged: (v) => ref
+                  .read(settingsProvider.notifier)
+                  .updateSetting('autoplayRest', v),
             ),
             ListTile(
               title: const Text('Units'),
-              subtitle: Text(settings.isMetric ? 'Metric (kg, cm)' : 'Imperial (lbs, in)'),
+              subtitle: Text(
+                settings.isMetric ? 'Metric (kg, cm)' : 'Imperial (lbs, in)',
+              ),
               trailing: PopupMenuButton<String>(
-                onSelected: (v) => ref.read(settingsProvider.notifier).updateSetting('isMetric', v == 'metric'),
+                onSelected: (v) => ref
+                    .read(settingsProvider.notifier)
+                    .updateSetting('isMetric', v == 'metric'),
                 itemBuilder: (context) => [
                   const PopupMenuItem(value: 'metric', child: Text('Metric')),
-                  const PopupMenuItem(value: 'imperial', child: Text('Imperial')),
+                  const PopupMenuItem(
+                    value: 'imperial',
+                    child: Text('Imperial'),
+                  ),
                 ],
               ),
             ),
             const Divider(),
             ListTile(
-              leading: const Icon(Icons.sync_rounded, color: FitoraColors.mintGreen),
+              leading: const Icon(
+                Icons.sync_rounded,
+                color: FitoraColors.mintGreen,
+              ),
               title: const Text('Health Integration'),
               subtitle: const Text('Google Fit, Health Connect, Apple Health…'),
               trailing: const Icon(Icons.chevron_right_rounded),
@@ -76,11 +97,21 @@ class SettingsSheet extends ConsumerWidget {
               title: const Text('Appearance'),
               subtitle: const Text('Select app theme'),
               trailing: PopupMenuButton<ThemeMode>(
-                onSelected: (mode) => ref.read(themeModeProvider.notifier).setThemeMode(mode),
+                onSelected: (mode) =>
+                    ref.read(themeModeProvider.notifier).setThemeMode(mode),
                 itemBuilder: (context) => [
-                  const PopupMenuItem(value: ThemeMode.light, child: Text('Light')),
-                  const PopupMenuItem(value: ThemeMode.dark, child: Text('Dark')),
-                  const PopupMenuItem(value: ThemeMode.system, child: Text('System')),
+                  const PopupMenuItem(
+                    value: ThemeMode.light,
+                    child: Text('Light'),
+                  ),
+                  const PopupMenuItem(
+                    value: ThemeMode.dark,
+                    child: Text('Dark'),
+                  ),
+                  const PopupMenuItem(
+                    value: ThemeMode.system,
+                    child: Text('System'),
+                  ),
                 ],
               ),
             ),
