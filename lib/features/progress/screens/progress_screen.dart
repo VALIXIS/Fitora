@@ -455,28 +455,34 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                 Row(
                   children: [
                     Expanded(
-                      child: _buildOverviewCard(
-                        label: 'Mood',
-                        value: mood,
-                        unit: '',
-                        trend: 'Daily',
-                        isPositiveTrend: true,
-                        icon: Icons.sentiment_satisfied_rounded,
-                        color: Colors.amber,
-                        textTheme: tt,
+                      child: GestureDetector(
+                        onTap: () => _showMoodDialog(context, ref, mood),
+                        child: _buildOverviewCard(
+                          label: 'Mood',
+                          value: mood,
+                          unit: '',
+                          trend: 'Daily',
+                          isPositiveTrend: true,
+                          icon: Icons.sentiment_satisfied_rounded,
+                          color: Colors.amber,
+                          textTheme: tt,
+                        ),
                       ),
                     ),
                     const SizedBox(width: FitoraSpacing.sm),
                     Expanded(
-                      child: _buildOverviewCard(
-                        label: 'Breathing',
-                        value: '${wellness.breathingMinutes} min',
-                        unit: '',
-                        trend: '+${wellness.breathingMinutes}m',
-                        isPositiveTrend: true,
-                        icon: Icons.air_rounded,
-                        color: FitoraColors.softEmerald,
-                        textTheme: tt,
+                      child: GestureDetector(
+                        onTap: () => _showBreathingDialog(context, ref),
+                        child: _buildOverviewCard(
+                          label: 'Breathing',
+                          value: '${wellness.breathingMinutes} min',
+                          unit: '',
+                          trend: '+${wellness.breathingMinutes}m',
+                          isPositiveTrend: true,
+                          icon: Icons.air_rounded,
+                          color: FitoraColors.softEmerald,
+                          textTheme: tt,
+                        ),
                       ),
                     ),
                   ],
@@ -1111,6 +1117,90 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  void _showMoodDialog(BuildContext context, WidgetRef ref, String currentMood) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        final tt = Theme.of(context).textTheme;
+        return AlertDialog(
+          backgroundColor: const Color(0xFF0D1117),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+          ),
+          title: Text(
+            'How are you feeling?',
+            style: tt.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              'Great',
+              'Good',
+              'Okay',
+              'Poor',
+              'Terrible'
+            ].map((mood) {
+              final isSelected = mood == currentMood;
+              return ListTile(
+                title: Text(mood, style: tt.bodyLarge?.copyWith(color: isSelected ? Colors.amber : Colors.white70)),
+                trailing: isSelected ? const Icon(Icons.check, color: Colors.amber) : null,
+                onTap: () {
+                  ref.read(wellnessProvider.notifier).logMood(mood);
+                  Navigator.pop(context);
+                },
+              );
+            }).toList(),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showBreathingDialog(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        final tt = Theme.of(context).textTheme;
+        return AlertDialog(
+          backgroundColor: const Color(0xFF0D1117),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+          ),
+          title: Text(
+            'Log Breathing',
+            style: tt.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Log 5 minutes of mindful breathing?', style: tt.bodyMedium?.copyWith(color: Colors.white70)),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () {
+                  ref.read(wellnessProvider.notifier).addBreathingMinutes(5);
+                  Navigator.pop(context);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: FitoraColors.softEmerald.withValues(alpha: 0.2),
+                  foregroundColor: FitoraColors.softEmerald,
+                ),
+                child: const Text('Log 5 mins'),
+              )
+            ],
+          ),
+        );
+      },
     );
   }
 }

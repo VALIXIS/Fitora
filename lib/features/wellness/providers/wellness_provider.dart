@@ -65,6 +65,16 @@ class WellnessNotifier extends StateNotifier<WellnessState> {
         newWellnessStreak = 0; // Broke streak
       }
 
+      final updatedHistory = Map<String, double>.from(state.waterLogHistory);
+      // Ensure yesterday's hydration is archived before zeroing
+      if (state.lastHydrationDate != today && state.hydrationLiters > 0) {
+        if (state.lastHydrationDate.isNotEmpty) {
+           updatedHistory[state.lastHydrationDate] = state.hydrationLiters;
+        } else {
+           updatedHistory[yesterdayStr] = state.hydrationLiters;
+        }
+      }
+
       state = state.copyWith(
         hydrationLiters: 0.0,
         breathingMinutes: 0,
@@ -72,6 +82,7 @@ class WellnessNotifier extends StateNotifier<WellnessState> {
         sleepQualityScore: 0,
         hydrationStreak: newHydrationStreak,
         wellnessStreak: newWellnessStreak,
+        waterLogHistory: updatedHistory,
         // Preserve other historical values
       );
       _persist();
@@ -380,6 +391,7 @@ class WellnessNotifier extends StateNotifier<WellnessState> {
       sleepScoreHistory: updatedScores,
     );
     updateRecovery();
+    await _persist();
   }
 
   // ── Cycle Tracking actions ────────────────────────────────────────────────────
@@ -446,6 +458,7 @@ class WellnessNotifier extends StateNotifier<WellnessState> {
 
     state = state.copyWith(loggedMoods: moods);
     updateRecovery();
+    await _persist();
   }
 
   Future<void> logEnergy(int level) async {
@@ -456,6 +469,7 @@ class WellnessNotifier extends StateNotifier<WellnessState> {
 
     state = state.copyWith(loggedEnergy: energy);
     updateRecovery();
+    await _persist();
   }
 
   Future<void> setMuscleFatigue(String level) async {
