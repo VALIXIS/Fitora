@@ -21,7 +21,7 @@ class OnboardingScreen extends HookConsumerWidget {
     useEffect(() {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (context.mounted) {
-          PermissionManager.requestFirstLaunchPermissions(context);
+          PermissionManager.requestFirstLaunchPermissions(context, ref);
         }
       });
       return null;
@@ -59,7 +59,7 @@ class OnboardingScreen extends HookConsumerWidget {
         return;
       }
       // Request Activity Recognition and Notifications sequentially on first launch
-      await PermissionManager.requestFirstLaunchPermissions(context);
+      await PermissionManager.requestFirstLaunchPermissions(context, ref);
       if (!context.mounted) {
         return;
       }

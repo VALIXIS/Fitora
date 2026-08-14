@@ -9,6 +9,10 @@ final notificationServiceProvider = Provider<NotificationService>(
 );
 
 class NotificationService {
+  static final NotificationService _instance = NotificationService._internal();
+  factory NotificationService() => _instance;
+  NotificationService._internal();
+
   final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
   bool _isInitialized = false;
@@ -320,6 +324,26 @@ class NotificationService {
       title: 'Fitora Notifications ✅',
       body:
           'Notifications are working! You\'ll receive reminders as scheduled.',
+      notificationDetails: const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'health_reminders',
+          'Health Reminders',
+          channelDescription: 'Notifications for health and wellness tracking',
+          importance: Importance.high,
+          priority: Priority.high,
+          icon: '@drawable/ic_notification',
+        ),
+        iOS: DarwinNotificationDetails(),
+      ),
+    );
+  }
+
+  Future<void> showWelcomeNotification() async {
+    await initialize();
+    await _plugin.show(
+      id: 8888,
+      title: 'Welcome to Fitora! 🌟',
+      body: 'Your health and wellness reminders are now set up. Let\'s crush those goals!',
       notificationDetails: const NotificationDetails(
         android: AndroidNotificationDetails(
           'health_reminders',

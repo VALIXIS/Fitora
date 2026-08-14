@@ -1,7 +1,9 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart' as ph;
 import 'package:fitora/app/providers/theme_mode_provider.dart';
+import 'package:fitora/core/constants/storage_keys.dart';
 import 'package:fitora/core/services/notification_service.dart';
 import 'package:fitora/core/storage/app_preferences.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -89,6 +91,14 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
   SettingsNotifier(this.ref) : super(const SettingsState()) {
     _loadSettings();
 
+    // Reactive synchronization for theme mode
+    ref.listen<ThemeMode>(themeModeProvider, (previous, next) {
+      final isDark = next == ThemeMode.dark;
+      if (state.isDarkMode != isDark) {
+        state = state.copyWith(isDarkMode: isDark);
+      }
+    });
+
     // Setup reactive cancellation for water goals
     ref.listen(wellnessProvider, (previous, next) {
       if (next.hydrationGoalLiters > 0 &&
@@ -122,8 +132,13 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
 
   Future<void> _loadSettings() async {
     final prefs = await AppPreferences.instance();
+    final themeStr = prefs.getString(StorageKeys.themeMode);
+    final isDark = themeStr == null
+        ? (prefs.getBool('isDarkMode') ?? true)
+        : (themeStr == 'dark' || (themeStr == 'system' && PlatformDispatcher.instance.platformBrightness == Brightness.dark));
+
     state = SettingsState(
-      isDarkMode: prefs.getBool('isDarkMode') ?? true,
+      isDarkMode: isDark,
       notificationsEnabled: prefs.getBool('notificationsEnabled') ?? true,
       soundEffectsEnabled: prefs.getBool('soundEffectsEnabled') ?? false,
       hapticsEnabled: prefs.getBool('hapticsEnabled') ?? true,
@@ -246,10 +261,21 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     }
   }
 
-  void _rescheduleAllNotifications() {
+  Future<void> _rescheduleAllNotifications() async {
     if (!state.notificationsEnabled) return;
 
     final svc = ref.read(notificationServiceProvider);
+
+    // Show welcome notification if not shown yet
+    final prefs = await AppPreferences.instance();
+    final welcomeShown = prefs.getBool('fitora_welcome_notification_shown') ?? false;
+    if (!welcomeShown) {
+      final hasPerm = await svc.hasPermission();
+      if (hasPerm) {
+        await svc.showWelcomeNotification();
+        await prefs.setBool('fitora_welcome_notification_shown', true);
+      }
+    }
 
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -302,6 +328,8 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
       'waterReminder',
       'workoutReminder',
       'dailyGoalReminder',
+      'fitora_permissions_shown',
+      'fitora_welcome_notification_shown',
     ];
     for (final key in keys) {
       await prefs.remove(key);
