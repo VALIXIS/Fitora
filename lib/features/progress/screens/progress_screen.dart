@@ -25,26 +25,55 @@ class ProgressScreen extends ConsumerStatefulWidget {
 class _ProgressScreenState extends ConsumerState<ProgressScreen> {
   String _selectedFilter = 'Week';
 
-  double _calculateTrendPercentage(List<double> values) {
-    if (values.length < 2) return 0.0;
-    final mid = values.length ~/ 2;
-    final firstHalf = values.sublist(0, mid);
-    final secondHalf = values.sublist(mid);
+  int get _periodDays {
+    switch (_selectedFilter) {
+      case 'Day':
+        return 1;
+      case 'Week':
+        return 7;
+      case 'Month':
+        return 30;
+      case 'Year':
+        return 365;
+      default:
+        return 7;
+    }
+  }
 
-    final sum1 = firstHalf.fold<double>(0.0, (a, b) => a + b);
-    final sum2 = secondHalf.fold<double>(0.0, (a, b) => a + b);
+  double _calculateDeltaPercentage(double currentVal, double priorVal) {
+    if (priorVal == 0.0) {
+      return currentVal > 0.0 ? 100.0 : 0.0;
+    }
+    final res = ((currentVal - priorVal) / priorVal) * 100.0;
+    return res.isNaN || res.isInfinite ? 0.0 : res;
+  }
 
-    if (sum1 == 0.0) return sum2 > 0.0 ? 100.0 : 0.0;
-    return ((sum2 - sum1) / sum1) * 100.0;
+  String _headerFilterLabel() {
+    switch (_selectedFilter) {
+      case 'Day':
+        return 'Today';
+      case 'Week':
+        return 'This Week';
+      case 'Month':
+        return 'This Month';
+      case 'Year':
+        return 'This Year';
+      default:
+        return 'This Week';
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final lastWeek = today.subtract(const Duration(days: 6));
-    final summaries = ref.watch(weeklyActivityProvider(lastWeek));
+    final periodDays = _periodDays;
+    final allSummaries = ref.watch(healthActivityRangeProvider(periodDays * 2));
+    final currentSummaries = allSummaries.length >= periodDays
+        ? allSummaries.sublist(allSummaries.length - periodDays)
+        : allSummaries;
+    final priorSummaries = allSummaries.length >= periodDays * 2
+        ? allSummaries.sublist(0, periodDays)
+        : <DailyActivitySummary>[];
 
     final profile = ref.watch(personalizationControllerProvider).profile;
     final hasWeight = profile.weightKg != null && profile.weightKg! > 0;
@@ -72,10 +101,14 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                   // Activity Summary Metrics
                   _buildSectionHeader(textTheme, 'OVERVIEW'),
                   const SizedBox(height: FitoraSpacing.md),
-                  if (summaries.isEmpty) ...[
+                  if (currentSummaries.isEmpty) ...[
                     _buildEmptyActivityCard(context, textTheme),
                   ] else ...[
-                    _buildActivitySection(textTheme, summaries),
+                    _buildActivitySection(
+                      textTheme,
+                      currentSummaries,
+                      priorSummaries,
+                    ),
                   ],
                   const SizedBox(height: FitoraSpacing.xl),
 
@@ -150,7 +183,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                   ),
                   const SizedBox(width: 6),
                   Text(
-                    'This Week',
+                    _headerFilterLabel(),
                     style: textTheme.labelLarge?.copyWith(
                       color: Colors.white70,
                       fontWeight: FontWeight.bold,
@@ -229,23 +262,61 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
 
   Widget _buildActivitySection(
     TextTheme tt,
-    List<DailyActivitySummary> summaries,
+    List<DailyActivitySummary> currentSummaries,
+    List<DailyActivitySummary> priorSummaries,
   ) {
-    final summary = summaries.last;
+    int totalSteps = 0;
+    double totalCalories = 0.0;
+    int totalActiveMinutes = 0;
+    double totalDistanceKm = 0.0;
 
-    // Dynamic trend calculations
-    final stepsTrend = _calculateTrendPercentage(
-      summaries.map((s) => s.steps.toDouble()).toList(),
+    for (final s in currentSummaries) {
+      totalSteps += s.steps;
+      totalCalories += s.caloriesBurned;
+      totalActiveMinutes += s.activeMinutes;
+      totalDistanceKm += s.distanceKm;
+    }
+
+    int priorSteps = 0;
+    double priorCalories = 0.0;
+    int priorActiveMinutes = 0;
+    double priorDistanceKm = 0.0;
+
+    for (final s in priorSummaries) {
+      priorSteps += s.steps;
+      priorCalories += s.caloriesBurned;
+      priorActiveMinutes += s.activeMinutes;
+      priorDistanceKm += s.distanceKm;
+    }
+
+    final stepsTrend = _calculateDeltaPercentage(
+      totalSteps.toDouble(),
+      priorSteps.toDouble(),
     );
-    final caloriesTrend = _calculateTrendPercentage(
-      summaries.map((s) => s.caloriesBurned).toList(),
+    final caloriesTrend = _calculateDeltaPercentage(
+      totalCalories,
+      priorCalories,
     );
-    final activeTrend = _calculateTrendPercentage(
-      summaries.map((s) => s.activeMinutes.toDouble()).toList(),
+    final activeTrend = _calculateDeltaPercentage(
+      totalActiveMinutes.toDouble(),
+      priorActiveMinutes.toDouble(),
     );
-    final distanceTrend = _calculateTrendPercentage(
-      summaries.map((s) => s.distanceKm).toList(),
+    final distanceTrend = _calculateDeltaPercentage(
+      totalDistanceKm,
+      priorDistanceKm,
     );
+
+    final isSingleDay = _selectedFilter == 'Day';
+    final latestGoal = currentSummaries.isNotEmpty
+        ? currentSummaries.last.stepsGoal
+        : 10000;
+
+    final stepsValueStr = isSingleDay
+        ? totalSteps.toString()
+        : (totalSteps >= 10000
+              ? '${(totalSteps / 1000).toStringAsFixed(1)}k'
+              : totalSteps.toString());
+    final stepsUnitStr = isSingleDay ? ' / $latestGoal' : ' steps';
 
     return Column(
       children: [
@@ -254,8 +325,8 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
             Expanded(
               child: _buildOverviewCard(
                 label: 'Steps',
-                value: summary.steps.toString(),
-                unit: ' / ${summary.stepsGoal}',
+                value: stepsValueStr,
+                unit: stepsUnitStr,
                 trend:
                     '${stepsTrend >= 0 ? "+" : ""}${stepsTrend.toStringAsFixed(0)}%',
                 isPositiveTrend: stepsTrend >= 0,
@@ -268,7 +339,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
             Expanded(
               child: _buildOverviewCard(
                 label: 'Calories',
-                value: summary.caloriesBurned.toInt().toString(),
+                value: totalCalories.toInt().toString(),
                 unit: ' kcal',
                 trend:
                     '${caloriesTrend >= 0 ? "+" : ""}${caloriesTrend.toStringAsFixed(0)}%',
@@ -286,7 +357,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
             Expanded(
               child: _buildOverviewCard(
                 label: 'Active',
-                value: summary.activeMinutes.toString(),
+                value: totalActiveMinutes.toString(),
                 unit: ' min',
                 trend:
                     '${activeTrend >= 0 ? "+" : ""}${activeTrend.toStringAsFixed(0)}%',
@@ -300,7 +371,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
             Expanded(
               child: _buildOverviewCard(
                 label: 'Distance',
-                value: summary.distanceKm.toStringAsFixed(1),
+                value: totalDistanceKm.toStringAsFixed(1),
                 unit: ' km',
                 trend:
                     '${distanceTrend >= 0 ? "+" : ""}${distanceTrend.toStringAsFixed(0)}%',

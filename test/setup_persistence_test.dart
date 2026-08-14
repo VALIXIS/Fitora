@@ -46,10 +46,7 @@ void main() {
       goal: PersonalizationGoal.reduceStress,
       workoutPreference: WorkoutPreference.home,
       experienceLevel: ExperienceLevel.beginner,
-      interests: {
-        WellnessInterest.sleepTracking,
-        WellnessInterest.mindfulness,
-      },
+      interests: {WellnessInterest.sleepTracking, WellnessInterest.mindfulness},
     );
 
     await dataSource.saveProfile(profile);
@@ -64,9 +61,12 @@ void main() {
     expect(reloadedProfile?.goal, PersonalizationGoal.reduceStress);
     expect(reloadedProfile?.workoutPreference, WorkoutPreference.home);
     expect(reloadedProfile?.experienceLevel, ExperienceLevel.beginner);
-    expect(reloadedProfile?.interests, containsAll(<WellnessInterest>{
-      WellnessInterest.sleepTracking,
-      WellnessInterest.mindfulness,
-    }));
+    expect(
+      reloadedProfile?.interests,
+      containsAll(<WellnessInterest>{
+        WellnessInterest.sleepTracking,
+        WellnessInterest.mindfulness,
+      }),
+    );
   });
 }

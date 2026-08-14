@@ -16,19 +16,15 @@ void main() {
     await AppPreferences.initialize();
 
     await tester.pumpWidget(
-      const ProviderScope(
-        child: MaterialApp(
-          home: ProfileScreen(),
-        ),
-      ),
+      const ProviderScope(child: MaterialApp(home: ProfileScreen())),
     );
-    
+
     // Wait for layout
     await tester.pump();
-    
+
     // Check for layout exceptions
     expect(tester.takeException(), isNull);
-    
+
     // Reset view
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);

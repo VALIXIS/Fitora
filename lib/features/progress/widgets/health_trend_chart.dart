@@ -395,9 +395,21 @@ class HealthTrendChart extends ConsumerWidget {
           values.add(mins / 60.0);
           break;
         case HealthMetricType.water:
-          final water =
-              wellnessState.waterLogHistory[dateStr] ??
-              (isToday ? wellnessState.hydrationLiters : 0.0);
+          double water = wellnessState.waterLogHistory[dateStr] ?? -1.0;
+          if (water < 0) {
+            final dayLogs = wellnessState.waterLogs.where(
+              (e) =>
+                  e.timestamp.year == act.date.year &&
+                  e.timestamp.month == act.date.month &&
+                  e.timestamp.day == act.date.day,
+            );
+            if (dayLogs.isNotEmpty) {
+              water =
+                  dayLogs.fold<int>(0, (sum, e) => sum + e.amountMl) / 1000.0;
+            } else {
+              water = isToday ? wellnessState.hydrationLiters : 0.0;
+            }
+          }
           values.add(water);
           break;
       }
