@@ -697,6 +697,32 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     icon: Icons.water_drop_rounded,
                     color: Colors.blueAccent,
                     textTheme: textTheme,
+                    onTap: () {
+                      ref.read(wellnessProvider.notifier).addWaterLogEntry(500);
+                    },
+                    trailingAction: InkWell(
+                      onTap: () {
+                        ref
+                            .read(wellnessProvider.notifier)
+                            .addWaterLogEntry(500);
+                      },
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: Colors.blueAccent.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: Colors.blueAccent.withValues(alpha: 0.3),
+                          ),
+                        ),
+                        child: const Icon(
+                          Icons.add_rounded,
+                          color: Colors.blueAccent,
+                          size: 18,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -716,6 +742,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     required Color color,
     required TextTheme textTheme,
     VoidCallback? onTap,
+    Widget? trailingAction,
   }) {
     final card = GlowContainer(
       glowColor: color.withValues(alpha: 0.05),
@@ -731,13 +758,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: color, size: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(icon, color: color, size: 20),
+                ),
+                if (trailingAction != null) trailingAction,
+              ],
             ),
             const SizedBox(height: FitoraSpacing.md),
             Row(
@@ -963,7 +996,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       const SizedBox(height: 2),
                       Text(
                         trackedGoalsCount > 0
-                            ? '$completedGoalsCount of $trackedGoalsCount targets completed today'
+                            ? '$completedGoalsCount of $trackedGoalsCount ${trackedGoalsCount == 1 ? 'target' : 'targets'} completed today'
                             : 'No active goals tracked today',
                         style: textTheme.bodySmall?.copyWith(
                           color: Colors.white54,
