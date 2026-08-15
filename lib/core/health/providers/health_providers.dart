@@ -176,18 +176,23 @@ final dailyActivityProvider = Provider.family<DailyActivitySummary, DateTime>((
     customStepGoal: customStepGoal,
   );
 
-  final cache = ref.watch(healthCacheServiceProvider);
-  final cached =
-      cache.getDailyActivity(date) ?? DailyActivitySummary.empty(date: date);
+  final cached = cache.getDailyActivity(date) ?? DailyActivitySummary.empty(date: date);
+
+  final now = DateTime.now();
+  final isToday = date.year == now.year && date.month == now.month && date.day == now.day;
+
+  final sensorStatus = isToday ? ref.watch(sensorStatusProvider) : cached.sensorStatus;
+  final healthConnectStatus = isToday ? ref.watch(healthConnectStatusProvider) : cached.healthConnectStatus;
 
   final summaryWithDynamicGoals = cached.copyWith(
     date: date,
     stepsGoal: computedGoals.stepsGoal,
     caloriesGoal: computedGoals.caloriesGoal,
+    sensorStatus: sensorStatus,
+    healthConnectStatus: healthConnectStatus,
   );
 
-  final now = DateTime.now();
-  if (date.year == now.year && date.month == now.month && date.day == now.day) {
+  if (isToday) {
     final liveSteps = ref.watch(liveStepsProvider);
     return liveSteps.when(
       data: (sensorSteps) {

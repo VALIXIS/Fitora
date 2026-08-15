@@ -2,16 +2,26 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:fitora/core/health/domain/health_models.dart';
+import 'package:fitora/core/health/data/sensor_repository.dart';
 
 final healthPermissionsServiceProvider = Provider<HealthPermissionsService>(
-  (ref) => HealthPermissionsService(),
+  (ref) => HealthPermissionsService(ref.read(sensorRepositoryProvider)),
 );
 
 class HealthPermissionsService {
+  final SensorRepository _sensorRepo;
+
+  HealthPermissionsService(this._sensorRepo);
+
   /// Returns the current sensor permission status without requesting.
   Future<SensorStatus> checkStatus() async {
     if (defaultTargetPlatform != TargetPlatform.android) {
       // Sensor integration is Android-only for now
+      return SensorStatus.unavailable;
+    }
+
+    final snap = await _sensorRepo.getDebugSnapshot();
+    if (!snap.sensorAvailable) {
       return SensorStatus.unavailable;
     }
 
@@ -29,6 +39,11 @@ class HealthPermissionsService {
   /// Requests the permission and returns the resulting status.
   Future<SensorStatus> requestPermission() async {
     if (defaultTargetPlatform != TargetPlatform.android) {
+      return SensorStatus.unavailable;
+    }
+
+    final snap = await _sensorRepo.getDebugSnapshot();
+    if (!snap.sensorAvailable) {
       return SensorStatus.unavailable;
     }
 

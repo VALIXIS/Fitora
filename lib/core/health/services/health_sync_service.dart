@@ -29,6 +29,8 @@ class HealthSyncService extends StateNotifier<SyncStatus>
     : super(SyncStatus.offline) {
     WidgetsBinding.instance.addObserver(this);
     _startPolling();
+    // Trigger initial sync on startup
+    Future.microtask(() => syncNow());
   }
 
   // ---------------------------------------------------------------------------
@@ -122,7 +124,7 @@ class HealthSyncService extends StateNotifier<SyncStatus>
       final existingDistance = cachedSummary?.distanceKm ?? 0.0;
       final existingActiveMinutes = cachedSummary?.activeMinutes ?? 0;
 
-      // 4. Merge: always pick the MAX of cached vs new to prevent zero overwrites
+      // 4. Merge: prevent zero overwrites but allow non-zero data updates/corrections
       DailyActivitySummary mergedSummary;
 
       final hcActive =
@@ -131,36 +133,57 @@ class HealthSyncService extends StateNotifier<SyncStatus>
               hcSummary.healthConnectStatus ==
                   HealthConnectStatus.partiallyGranted);
 
+      int mergedSteps;
+      double mergedCalories;
+      double mergedDistance;
+      int mergedActiveMinutes;
+
       if (hcActive && sensorSummary != null) {
-        mergedSummary = hcSummary.copyWith(
-          steps: max(existingSteps, max(hcSummary.steps, sensorSummary.steps)),
-          caloriesBurned: max(existingCalories, hcSummary.caloriesBurned),
-          distanceKm: max(existingDistance, hcSummary.distanceKm),
-          activeMinutes: max(existingActiveMinutes, hcSummary.activeMinutes),
+        final incomingSteps = max(hcSummary.steps, sensorSummary.steps);
+        final incomingCalories = max(hcSummary.caloriesBurned, sensorSummary.caloriesBurned);
+        final incomingDistance = max(hcSummary.distanceKm, sensorSummary.distanceKm);
+        final incomingActiveMinutes = max(hcSummary.activeMinutes, sensorSummary.activeMinutes);
+
+        mergedSteps = incomingSteps == 0 ? existingSteps : incomingSteps;
+        mergedCalories = incomingCalories == 0.0 ? existingCalories : incomingCalories;
+        mergedDistance = incomingDistance == 0.0 ? existingDistance : incomingDistance;
+        mergedActiveMinutes = incomingActiveMinutes == 0 ? existingActiveMinutes : incomingActiveMinutes;
+
+        mergedSummary = hcSummary!.copyWith(
+          steps: mergedSteps,
+          caloriesBurned: mergedCalories,
+          distanceKm: mergedDistance,
+          activeMinutes: mergedActiveMinutes,
           dataSource: DataSource.healthConnectAndSensor,
           lastSyncTime: now,
         );
       } else if (hcActive) {
+        mergedSteps = hcSummary!.steps == 0 ? existingSteps : hcSummary.steps;
+        mergedCalories = hcSummary.caloriesBurned == 0.0 ? existingCalories : hcSummary.caloriesBurned;
+        mergedDistance = hcSummary.distanceKm == 0.0 ? existingDistance : hcSummary.distanceKm;
+        mergedActiveMinutes = hcSummary.activeMinutes == 0 ? existingActiveMinutes : hcSummary.activeMinutes;
+
         mergedSummary = hcSummary.copyWith(
-          steps: max(existingSteps, hcSummary.steps),
-          caloriesBurned: max(existingCalories, hcSummary.caloriesBurned),
-          distanceKm: max(existingDistance, hcSummary.distanceKm),
-          activeMinutes: max(existingActiveMinutes, hcSummary.activeMinutes),
+          steps: mergedSteps,
+          caloriesBurned: mergedCalories,
+          distanceKm: mergedDistance,
+          activeMinutes: mergedActiveMinutes,
           dataSource: DataSource.healthConnectOnly,
           lastSyncTime: now,
         );
       } else if (sensorSummary != null) {
-        // If Health Connect is inactive, use sensor data but preserve granular HC status in the returned summary
+        mergedSteps = sensorSummary.steps == 0 ? existingSteps : sensorSummary.steps;
+        mergedCalories = sensorSummary.caloriesBurned == 0.0 ? existingCalories : sensorSummary.caloriesBurned;
+        mergedDistance = sensorSummary.distanceKm == 0.0 ? existingDistance : sensorSummary.distanceKm;
+        mergedActiveMinutes = sensorSummary.activeMinutes == 0 ? existingActiveMinutes : sensorSummary.activeMinutes;
+
         final hcStatus =
             hcSummary?.healthConnectStatus ?? HealthConnectStatus.unknown;
         mergedSummary = sensorSummary.copyWith(
-          steps: max(existingSteps, sensorSummary.steps),
-          caloriesBurned: max(existingCalories, sensorSummary.caloriesBurned),
-          distanceKm: max(existingDistance, sensorSummary.distanceKm),
-          activeMinutes: max(
-            existingActiveMinutes,
-            sensorSummary.activeMinutes,
-          ),
+          steps: mergedSteps,
+          caloriesBurned: mergedCalories,
+          distanceKm: mergedDistance,
+          activeMinutes: mergedActiveMinutes,
           healthConnectStatus: hcStatus,
           dataSource: DataSource.sensorOnly,
           lastSyncTime: now,

@@ -28,10 +28,12 @@ class HealthSyncController extends StateNotifier<HealthSyncState> with WidgetsBi
     WidgetsBinding.instance.addObserver(this);
   }
 
-  late final HealthSyncService _service;
+  HealthSyncService? _serviceInstance;
+  HealthSyncService get _service => _serviceInstance!;
   bool _initialized = false;
   StreamSubscription<int>? _pedometerSubscription;
   Timer? _saveDebounceTimer;
+  Future<void>? _loadFuture;
 
   @override
   void dispose() {
@@ -62,11 +64,15 @@ class HealthSyncController extends StateNotifier<HealthSyncState> with WidgetsBi
     }
   }
 
-  Future<void> load() async {
+  Future<void> load() {
+    return _loadFuture ??= _performLoad();
+  }
+
+  Future<void> _performLoad() async {
     if (_initialized) return;
 
     final prefs = await AppPreferences.instance();
-    _service = HealthSyncService(prefs);
+    _serviceInstance = HealthSyncService(prefs);
 
     final connections = Map<HealthSource, HealthSourceConnectionState>.from(_service.loadConnections());
     final priorities = _service.loadPriorities();
@@ -146,7 +152,7 @@ class HealthSyncController extends StateNotifier<HealthSyncState> with WidgetsBi
     // Automatically trigger initial background sync simulation if at least one connected source exists
     final hasActiveConnection = connections.values.any((c) => c.isConnected);
     if (hasActiveConnection) {
-      await syncAllActive();
+      await _performSync();
     }
   }
 
@@ -222,11 +228,22 @@ class HealthSyncController extends StateNotifier<HealthSyncState> with WidgetsBi
 
   Future<void> syncAllActive() async {
     await load();
+    await _performSync();
+  }
 
+  Future<void> _performSync() async {
     final connectedSources = state.connections.values
         .where((c) => c.isConnected)
         .map((c) => c.source)
         .toList();
+
+    if (connectedSources.isEmpty) {
+      if (kDebugMode) {
+        print('[HC_DEBUG] Sync skipped: no connected sources.');
+      }
+      state = state.copyWith(isSyncing: false);
+      return;
+    }
 
     if (kDebugMode) {
       print('[HC_DEBUG] Sync started, connected sources: ${connectedSources.map((s) => s.label).join(", ")}');
@@ -237,8 +254,6 @@ class HealthSyncController extends StateNotifier<HealthSyncState> with WidgetsBi
     final updatedConnections = Map<HealthSource, HealthSourceConnectionState>.from(state.connections);
 
     try {
-      // Single direct read from Health Connect regardless of which sources are toggled.
-      // All Android sources (Google Fit, Samsung, HC) share the same HC backend.
       final now = DateTime.now();
       final today = DateTime(now.year, now.month, now.day);
 
@@ -246,14 +261,12 @@ class HealthSyncController extends StateNotifier<HealthSyncState> with WidgetsBi
 
       final repo = HealthConnectRepository(HealthConnectService(AppPreferences.prefs));
 
-      // Step read — MUST succeed for any useful data
       final hcDaily = await repo.getDailyActivity(now);
 
       if (kDebugMode) {
         print('[HC_DEBUG] HC steps read: steps=${hcDaily.steps}, cal=${hcDaily.caloriesBurned}, dist=${hcDaily.distanceKm}');
       }
 
-      // Sleep read — optional, don't let failure kill the sync
       SleepSummary? hcSleep;
       try {
         hcSleep = await repo.getSleepSummary(now);
@@ -264,15 +277,33 @@ class HealthSyncController extends StateNotifier<HealthSyncState> with WidgetsBi
 
       final sleepHours = (hcSleep?.totalSleep.inMinutes ?? 0) / 60.0;
 
+      final cacheService = HealthCacheService(AppPreferences.prefs);
+      final existingDaily = cacheService.getDailyActivity(today) ?? DailyActivitySummary.empty(date: today);
+
+      final mergedSteps = hcDaily.steps == 0 ? existingDaily.steps : hcDaily.steps;
+      final mergedCalories = hcDaily.caloriesBurned == 0.0 ? existingDaily.caloriesBurned : hcDaily.caloriesBurned;
+      final mergedDistance = hcDaily.distanceKm == 0.0 ? existingDaily.distanceKm : hcDaily.distanceKm;
+      final mergedActiveMinutes = hcDaily.activeMinutes == 0 ? existingDaily.activeMinutes : hcDaily.activeMinutes;
+
+      final updatedDaily = hcDaily.copyWith(
+        steps: mergedSteps,
+        caloriesBurned: mergedCalories,
+        distanceKm: mergedDistance,
+        activeMinutes: mergedActiveMinutes,
+        date: today,
+        healthConnectStatus: hcDaily.healthConnectStatus,
+        dataSource: hcDaily.dataSource,
+        lastSyncTime: now,
+      );
+
       final blended = HealthMetricData(
-        steps: hcDaily.steps,
+        steps: updatedDaily.steps,
         heartRate: 0.0,
-        activeCalories: hcDaily.caloriesBurned,
+        activeCalories: updatedDaily.caloriesBurned,
         sleepHours: sleepHours,
         timestamp: now,
       );
 
-      // Mark all connected sources as synced
       for (final src in connectedSources) {
         final conn = updatedConnections[src];
         if (conn != null) {
@@ -292,16 +323,6 @@ class HealthSyncController extends StateNotifier<HealthSyncState> with WidgetsBi
       await _service.saveConnections(updatedConnections);
       await _service.saveCachedData(blended);
 
-      // ── Write to canonical HealthCacheService so Home & Progress update ────
-      final cacheService = HealthCacheService(AppPreferences.prefs);
-
-      final updatedDaily = hcDaily.copyWith(
-        date: today,
-        healthConnectStatus: HealthConnectStatus.connected,
-        dataSource: DataSource.healthConnectOnly,
-        lastSyncTime: now,
-      );
-
       if (kDebugMode) {
         print('[HC_CACHE] saving: steps=${updatedDaily.steps}, cal=${updatedDaily.caloriesBurned}, dist=${updatedDaily.distanceKm}');
       }
@@ -313,7 +334,6 @@ class HealthSyncController extends StateNotifier<HealthSyncState> with WidgetsBi
         print('[HC_CACHE] verification read: steps=${verify?.steps}, cal=${verify?.caloriesBurned}');
       }
 
-      // Update today's slot in weekly
       final existingWeekly = cacheService.getWeeklyActivity() ??
           List.generate(7, (i) => DailyActivitySummary.empty(date: today.subtract(Duration(days: 6 - i))));
       final updatedWeekly = existingWeekly.map<DailyActivitySummary>((s) {
@@ -336,7 +356,7 @@ class HealthSyncController extends StateNotifier<HealthSyncState> with WidgetsBi
         ));
       }
     } catch (e) {
-      if (kDebugMode) print('[HC_DEBUG] syncAllActive EXCEPTION: $e');
+      if (kDebugMode) print('[HC_DEBUG] Sync error: $e');
 
       for (final src in connectedSources) {
         final conn = updatedConnections[src];
