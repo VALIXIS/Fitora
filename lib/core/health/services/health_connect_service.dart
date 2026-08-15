@@ -41,7 +41,7 @@ class HealthConnectService {
       final allTypes = [..._activityTypes, ..._sleepTypes];
       final grantedTypes = <HealthDataType>[];
       for (final type in allTypes) {
-        final granted = await _health.hasPermissions([type]);
+        final granted = await _health.hasPermissions([type], permissions: [HealthDataAccess.READ]);
         if (granted == true) {
           grantedTypes.add(type);
         }
@@ -82,12 +82,13 @@ class HealthConnectService {
     try {
       // Request all types together; partial grants are handled at read time
       final allTypes = [..._activityTypes, ..._sleepTypes];
-      final success = await _health.requestAuthorization(allTypes);
+      final permissions = allTypes.map((_) => HealthDataAccess.READ).toList();
+      final success = await _health.requestAuthorization(allTypes, permissions: permissions);
       if (success) {
         final allTypes = [..._activityTypes, ..._sleepTypes];
         final grantedTypes = <HealthDataType>[];
         for (final type in allTypes) {
-          final granted = await _health.hasPermissions([type]);
+          final granted = await _health.hasPermissions([type], permissions: [HealthDataAccess.READ]);
           if (granted == true) {
             grantedTypes.add(type);
           }
@@ -116,7 +117,7 @@ class HealthConnectService {
 
       final hasPermission = await _health.hasPermissions([
         HealthDataType.STEPS,
-      ]);
+      ], permissions: [HealthDataAccess.READ]);
       if (hasPermission != true) return null;
 
       return await _health.getTotalStepsInInterval(start, end);
@@ -141,7 +142,7 @@ class HealthConnectService {
       // Only query types where permission was actually granted to avoid crashing
       final grantedTypes = <HealthDataType>[];
       for (final t in queryTypes) {
-        final ok = await _health.hasPermissions([t]);
+        final ok = await _health.hasPermissions([t], permissions: [HealthDataAccess.READ]);
         if (ok == true) grantedTypes.add(t);
       }
       if (grantedTypes.isEmpty) return [];

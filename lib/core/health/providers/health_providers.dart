@@ -176,6 +176,7 @@ final dailyActivityProvider = Provider.family<DailyActivitySummary, DateTime>((
     customStepGoal: customStepGoal,
   );
 
+  final cache = ref.watch(healthCacheServiceProvider);
   final cached = cache.getDailyActivity(date) ?? DailyActivitySummary.empty(date: date);
 
   final now = DateTime.now();

@@ -168,10 +168,15 @@ class HealthSyncController extends StateNotifier<HealthSyncState> with WidgetsBi
     state = state.copyWith(isSyncing: true, syncError: null);
 
     try {
-      try {
-        final connector = _service.connectors.firstWhere((c) => c.source == source);
-        await connector.requestPermissions();
-      } catch (_) {}
+      final connector = _service.connectors.firstWhere((c) => c.source == source);
+      final perm = await connector.requestPermissions();
+      if (perm != HealthPermissionStatus.authorized) {
+        state = state.copyWith(
+          isSyncing: false,
+          syncError: 'Permissions not granted for ${source.label}',
+        );
+        return;
+      }
 
       try {
         await PedometerService().requestPermissions();

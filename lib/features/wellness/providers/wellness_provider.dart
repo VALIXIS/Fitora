@@ -67,9 +67,10 @@ class WellnessNotifier extends StateNotifier<WellnessState> {
 
       final updatedHistory = Map<String, double>.from(state.waterLogHistory);
       // Ensure yesterday's hydration is archived before zeroing
-      if (state.lastHydrationDate != today && state.hydrationLiters > 0) {
-        if (state.lastHydrationDate.isNotEmpty) {
-           updatedHistory[state.lastHydrationDate] = state.hydrationLiters;
+      final lastDate = state.lastHydrationDate;
+      if (lastDate != today && state.hydrationLiters > 0) {
+        if (lastDate != null && lastDate.isNotEmpty) {
+           updatedHistory[lastDate] = state.hydrationLiters;
         } else {
            updatedHistory[yesterdayStr] = state.hydrationLiters;
         }
