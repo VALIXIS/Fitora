@@ -5,23 +5,26 @@ import 'package:fitora/features/progress/providers/health_analytics_provider.dar
 
 void main() {
   group('HealthAnalyticsCalculator Tests', () {
-    test('calculateWeeklySummary returns empty summary when 14-day list is empty', () {
-      final summary = HealthAnalyticsCalculator.calculateWeeklySummary(
-        last14DaysActivities: [],
-        sleepLogHistory: {},
-        waterLogHistory: {},
-        sleepScoreHistory: {},
-        currentTodayWater: 0.0,
-      );
+    test(
+      'calculateWeeklySummary returns empty summary when 14-day list is empty',
+      () {
+        final summary = HealthAnalyticsCalculator.calculateWeeklySummary(
+          last14DaysActivities: [],
+          sleepLogHistory: {},
+          waterLogHistory: {},
+          sleepScoreHistory: {},
+          currentTodayWater: 0.0,
+        );
 
-      expect(summary.totalSteps, 0);
-      expect(summary.totalWaterLiters, 0.0);
-      expect(summary.avgSleepMinutes, 0.0);
-      expect(summary.totalActiveCalories, 0.0);
-      expect(summary.stepsDeltaPct, 0.0);
-      expect(summary.bestStepDay, 'N/A');
-      expect(summary.bestHydrationDay, 'N/A');
-    });
+        expect(summary.totalSteps, 0);
+        expect(summary.totalWaterLiters, 0.0);
+        expect(summary.avgSleepMinutes, 0.0);
+        expect(summary.totalActiveCalories, 0.0);
+        expect(summary.stepsDeltaPct, 0.0);
+        expect(summary.bestStepDay, 'N/A');
+        expect(summary.bestHydrationDay, 'N/A');
+      },
+    );
 
     test('calculateWeeklySummary calculates correct totals and WoW deltas', () {
       final now = DateTime(2026, 8, 12);
@@ -50,7 +53,8 @@ void main() {
 
       for (var i = 0; i < 14; i++) {
         final date = now.subtract(Duration(days: 13 - i));
-        final dateStr = "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
+        final dateStr =
+            "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
         // Water: prior week = 2.0L/day, current week = 3.0L/day
         waterHistory[dateStr] = i >= 7 ? 3.0 : 2.0;
         // Sleep: prior week = 420 mins (7h), current week = 480 mins (8h)

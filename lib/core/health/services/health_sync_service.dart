@@ -44,21 +44,21 @@ class HealthSyncService extends StateNotifier<SyncStatus>
   }
 
   @override
-  void didChangeAppLifecycleState(AppLifecycleState appState) {
-    if (appState == AppLifecycleState.resumed) {
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
       // Trigger immediate sync and restart polling on foreground
       _retryCount = 0;
       _retryTimer?.cancel();
       syncNow();
       _startPolling();
-    } else if (appState == AppLifecycleState.paused) {
+    } else if (state == AppLifecycleState.paused) {
       final bgEnabled = _cache.getBgSyncEnabled();
       if (!bgEnabled) {
         // Cancel polling to avoid unnecessary wakeups while app is in background and background sync is disabled
         _pollingTimer?.cancel();
       } else {
         // Trigger a sync immediately when app moves to background
-        _backgroundSyncNow();
+        syncNow();
       }
     }
   }
@@ -132,7 +132,7 @@ class HealthSyncService extends StateNotifier<SyncStatus>
                   HealthConnectStatus.partiallyGranted);
 
       if (hcActive && sensorSummary != null) {
-        mergedSummary = hcSummary!.copyWith(
+        mergedSummary = hcSummary.copyWith(
           steps: max(existingSteps, max(hcSummary.steps, sensorSummary.steps)),
           caloriesBurned: max(existingCalories, hcSummary.caloriesBurned),
           distanceKm: max(existingDistance, hcSummary.distanceKm),
@@ -141,7 +141,7 @@ class HealthSyncService extends StateNotifier<SyncStatus>
           lastSyncTime: now,
         );
       } else if (hcActive) {
-        mergedSummary = hcSummary!.copyWith(
+        mergedSummary = hcSummary.copyWith(
           steps: max(existingSteps, hcSummary.steps),
           caloriesBurned: max(existingCalories, hcSummary.caloriesBurned),
           distanceKm: max(existingDistance, hcSummary.distanceKm),

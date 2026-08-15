@@ -177,9 +177,11 @@ final dailyActivityProvider = Provider.family<DailyActivitySummary, DateTime>((
   );
 
   final cache = ref.watch(healthCacheServiceProvider);
-  final cached = cache.getDailyActivity(date) ?? DailyActivitySummary.empty();
+  final cached =
+      cache.getDailyActivity(date) ?? DailyActivitySummary.empty(date: date);
 
   final summaryWithDynamicGoals = cached.copyWith(
+    date: date,
     stepsGoal: computedGoals.stepsGoal,
     caloriesGoal: computedGoals.caloriesGoal,
   );
@@ -236,12 +238,14 @@ final weeklyActivityProvider =
         final cached = cachedMap[key];
 
         if (cached != null) {
-          list.add(daily.copyWith(
-            steps: max(daily.steps, cached.steps),
-            caloriesBurned: max(daily.caloriesBurned, cached.caloriesBurned),
-            distanceKm: max(daily.distanceKm, cached.distanceKm),
-            activeMinutes: max(daily.activeMinutes, cached.activeMinutes),
-          ));
+          list.add(
+            daily.copyWith(
+              steps: max(daily.steps, cached.steps),
+              caloriesBurned: max(daily.caloriesBurned, cached.caloriesBurned),
+              distanceKm: max(daily.distanceKm, cached.distanceKm),
+              activeMinutes: max(daily.activeMinutes, cached.activeMinutes),
+            ),
+          );
         } else {
           list.add(daily);
         }
@@ -251,16 +255,16 @@ final weeklyActivityProvider =
 
 final healthActivityRangeProvider =
     Provider.family<List<DailyActivitySummary>, int>((ref, daysCount) {
-  ref.watch(healthSyncServiceProvider);
-  final now = DateTime.now();
-  final today = DateTime(now.year, now.month, now.day);
-  final startDate = today.subtract(Duration(days: daysCount - 1));
+      ref.watch(healthSyncServiceProvider);
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      final startDate = today.subtract(Duration(days: daysCount - 1));
 
-  return List.generate(daysCount, (i) {
-    final date = startDate.add(Duration(days: i));
-    return ref.watch(dailyActivityProvider(date));
-  });
-});
+      return List.generate(daysCount, (i) {
+        final date = startDate.add(Duration(days: i));
+        return ref.watch(dailyActivityProvider(date));
+      });
+    });
 
 final sleepSummaryProvider = Provider.family<SleepSummary, DateTime>((
   ref,

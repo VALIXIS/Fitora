@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fitora/core/health/domain/health_models.dart';
 import 'package:fitora/core/health/providers/health_providers.dart';
 import 'package:fitora/features/progress/domain/progress_models.dart';
+import 'package:fitora/features/wellness/domain/wellness_models.dart';
 import 'package:fitora/features/wellness/providers/wellness_provider.dart';
 
 final healthTimeframeProvider = StateProvider<HealthTimeframe>((ref) {
@@ -17,6 +18,7 @@ class HealthAnalyticsCalculator {
     required List<DailyActivitySummary> last14DaysActivities,
     required Map<String, int> sleepLogHistory,
     required Map<String, double> waterLogHistory,
+    List<WaterLogEntry> waterLogs = const [],
     required Map<String, int> sleepScoreHistory,
     required double currentTodayWater,
   }) {
@@ -59,10 +61,10 @@ class HealthAnalyticsCalculator {
     ];
 
     String bestStepDay = 'N/A';
-    int maxStepVal = -1;
+    int maxStepVal = 0;
 
     String bestWaterDay = 'N/A';
-    double maxWaterVal = -1.0;
+    double maxWaterVal = 0.0;
 
     for (var i = 0; i < currentWeek.length; i++) {
       final act = currentWeek[i];
@@ -75,10 +77,14 @@ class HealthAnalyticsCalculator {
         bestStepDay = dayName;
       }
 
-      // Water lookup: check waterLogHistory, fallback to today's hydration if date is today
-      final isToday = _isSameDay(act.date, DateTime.now());
-      final dayWater =
-          waterLogHistory[dateStr] ?? (isToday ? currentTodayWater : 0.0);
+      // Water lookup
+      final dayWater = _getDailyWater(
+        dateStr: dateStr,
+        date: act.date,
+        waterLogHistory: waterLogHistory,
+        waterLogs: waterLogs,
+        currentTodayWater: currentTodayWater,
+      );
       totalWater += dayWater;
 
       if (dayWater > maxWaterVal) {
@@ -101,7 +107,13 @@ class HealthAnalyticsCalculator {
       priorSteps += act.steps;
       priorCalories += act.caloriesBurned;
       final dateStr = _dateToStr(act.date);
-      priorWater += (waterLogHistory[dateStr] ?? 0.0);
+      priorWater += _getDailyWater(
+        dateStr: dateStr,
+        date: act.date,
+        waterLogHistory: waterLogHistory,
+        waterLogs: waterLogs,
+        currentTodayWater: currentTodayWater,
+      );
       priorSleepMins += (sleepLogHistory[dateStr] ?? 0);
     }
 
@@ -130,15 +142,47 @@ class HealthAnalyticsCalculator {
       totalWaterLiters: totalWater,
       avgSleepMinutes: avgSleepMinutes,
       totalActiveCalories: totalCalories,
-      stepsDeltaPct: stepsDeltaPct,
-      waterDeltaLiters: waterDeltaLiters,
-      sleepDeltaHours: sleepDeltaHours,
-      caloriesDeltaPct: caloriesDeltaPct,
+      stepsDeltaPct: stepsDeltaPct.isNaN || stepsDeltaPct.isInfinite
+          ? 0.0
+          : stepsDeltaPct,
+      waterDeltaLiters: waterDeltaLiters.isNaN || waterDeltaLiters.isInfinite
+          ? 0.0
+          : waterDeltaLiters,
+      sleepDeltaHours: sleepDeltaHours.isNaN || sleepDeltaHours.isInfinite
+          ? 0.0
+          : sleepDeltaHours,
+      caloriesDeltaPct: caloriesDeltaPct.isNaN || caloriesDeltaPct.isInfinite
+          ? 0.0
+          : caloriesDeltaPct,
       bestStepDay: maxStepVal > 0 ? bestStepDay : 'N/A',
       bestStepValue: maxStepVal > 0 ? maxStepVal : 0,
       bestHydrationDay: maxWaterVal > 0 ? bestWaterDay : 'N/A',
       bestHydrationValue: maxWaterVal > 0 ? maxWaterVal : 0.0,
     );
+  }
+
+  static double _getDailyWater({
+    required String dateStr,
+    required DateTime date,
+    required Map<String, double> waterLogHistory,
+    required List<WaterLogEntry> waterLogs,
+    required double currentTodayWater,
+  }) {
+    if (waterLogHistory.containsKey(dateStr)) {
+      return waterLogHistory[dateStr]!;
+    }
+    final logsForDay = waterLogs.where(
+      (e) =>
+          e.timestamp.year == date.year &&
+          e.timestamp.month == date.month &&
+          e.timestamp.day == date.day,
+    );
+    if (logsForDay.isNotEmpty) {
+      final totalMl = logsForDay.fold<int>(0, (sum, e) => sum + e.amountMl);
+      return totalMl / 1000.0;
+    }
+    final isToday = _isSameDay(date, DateTime.now());
+    return isToday ? currentTodayWater : 0.0;
   }
 
   static String _dateToStr(DateTime date) {
@@ -158,6 +202,7 @@ final weeklyHealthSummaryProvider = Provider<WeeklyHealthSummaryData>((ref) {
     last14DaysActivities: last14Days,
     sleepLogHistory: wellness.sleepLogHistory,
     waterLogHistory: wellness.waterLogHistory,
+    waterLogs: wellness.waterLogs,
     sleepScoreHistory: wellness.sleepScoreHistory,
     currentTodayWater: wellness.hydrationLiters,
   );

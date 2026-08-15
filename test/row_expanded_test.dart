@@ -9,11 +9,7 @@ void main() {
           body: ListView(
             children: [
               Container(
-                child: Row(
-                  children: [
-                    Expanded(child: Text('Hello')),
-                  ],
-                ),
+                child: Row(children: [Expanded(child: Text('Hello'))]),
               ),
             ],
           ),

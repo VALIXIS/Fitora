@@ -18,23 +18,19 @@ void main() {
     await tester.pumpWidget(
       const ProviderScope(
         child: MaterialApp(
-          home: Scaffold(
-            body: SafeArea(
-              child: ProfileScreen(),
-            ),
-          ),
+          home: Scaffold(body: SafeArea(child: ProfileScreen())),
         ),
       ),
     );
-    
+
     await tester.pump();
-    
+
     if (tester.takeException() != null) {
       print('CRASH FOUND: \${tester.takeException()}');
     } else {
       print('NO CRASH FOUND. ALL WIDGETS RENDERED PERFECTLY.');
     }
-    
+
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
   });
