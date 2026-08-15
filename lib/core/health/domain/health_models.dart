@@ -117,6 +117,9 @@ class DailyActivitySummary {
       'distanceKm': distanceKm,
       'date': date.toIso8601String(),
       'lastSyncTime': lastSyncTime?.toIso8601String(),
+      'sensorStatus': sensorStatus.name,
+      'healthConnectStatus': healthConnectStatus.name,
+      'dataSource': dataSource.name,
     };
   }
 
@@ -133,7 +136,18 @@ class DailyActivitySummary {
       lastSyncTime: json['lastSyncTime'] != null
           ? DateTime.parse(json['lastSyncTime'])
           : null,
-      dataSource: DataSource.cache,
+      sensorStatus: SensorStatus.values.firstWhere(
+        (e) => e.name == json['sensorStatus'],
+        orElse: () => SensorStatus.unknown,
+      ),
+      healthConnectStatus: HealthConnectStatus.values.firstWhere(
+        (e) => e.name == json['healthConnectStatus'],
+        orElse: () => HealthConnectStatus.error,
+      ),
+      dataSource: DataSource.values.firstWhere(
+        (e) => e.name == json['dataSource'],
+        orElse: () => DataSource.cache,
+      ),
     );
   }
 

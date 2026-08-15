@@ -240,6 +240,7 @@ final appRouterProvider = Provider<GoRouter>(
                   builder: (context, state) => const ProfileScreen(),
                   routes: [
                     GoRoute(
+                      parentNavigatorKey: _rootNavigatorKey,
                       path: AppRoutes.healthSync,
                       name: AppRouteNames.healthSync,
                       pageBuilder: (context, state) => slideUpTransitionPage(

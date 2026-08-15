@@ -14,12 +14,23 @@ class HealthConnectRepository implements HealthRepository {
 
   @override
   Future<DailyActivitySummary> getDailyActivity(DateTime date) async {
-    // Use local midnight-to-midnight window for accurate timezone handling
+    // Use local midnight-to-midnight window for accurate timezone handling, but never query into the future
     final start = DateTime(date.year, date.month, date.day);
-    final end = DateTime(date.year, date.month, date.day, 23, 59, 59, 999);
     final now = DateTime.now();
+    final end = (date.year == now.year && date.month == now.month && date.day == now.day)
+        ? now
+        : DateTime(date.year, date.month, date.day, 23, 59, 59, 999);
+
+    print('[HC_DIAG] HealthConnectRepository.getDailyActivity:\n'
+        '  - requested date: $date\n'
+        '  - device local DateTime.now(): $now\n'
+        '  - query start: $start\n'
+        '  - query end: $end\n'
+        '  - timezone/offset: ${now.timeZoneName} / ${now.timeZoneOffset}');
 
     final status = await _service.getStatus();
+
+    print('[HC_DIAG] HealthConnectRepository.getDailyActivity: status=$status');
 
     if (status != HealthConnectStatus.connected &&
         status != HealthConnectStatus.partiallyGranted) {
@@ -41,8 +52,12 @@ class HealthConnectRepository implements HealthRepository {
     // Fetch steps independently — null means permission denied or HC unavailable
     final steps = (await _service.getSteps(start, end)) ?? 0;
 
+    print('[HC_DIAG] HealthConnectRepository.getDailyActivity: steps=$steps');
+
     // Fetch activity points (calories, distance) — empty if permission denied
     final activityPoints = await _service.getHealthData(start, end);
+
+    print('[HC_DIAG] HealthConnectRepository.getDailyActivity: fetched ${activityPoints.length} activity points');
 
     // Deduplicate activity points by UUID
     final uniquePoints = activityPoints
@@ -70,7 +85,7 @@ class HealthConnectRepository implements HealthRepository {
     // Active minutes: heuristic — 1 active minute per 100 steps (conservative)
     activeMinutes = (steps / 100).floor();
 
-    return DailyActivitySummary(
+    final summary = DailyActivitySummary(
       steps: steps,
       stepsGoal: 10000,
       caloriesBurned: calories,
@@ -83,6 +98,13 @@ class HealthConnectRepository implements HealthRepository {
       dataSource: DataSource.healthConnectOnly,
       lastSyncTime: now,
     );
+
+    print('[HC_DIAG] HealthConnectRepository.getDailyActivity aggregated result:\n'
+        '  - steps: ${summary.steps}\n'
+        '  - calories: ${summary.caloriesBurned}\n'
+        '  - distanceKm: ${summary.distanceKm}\n'
+        '  - activeMinutes: ${summary.activeMinutes}');
+    return summary;
   }
 
   // ---------------------------------------------------------------------------

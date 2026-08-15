@@ -3,6 +3,8 @@ import 'package:fitora/core/health/data/sensor_repository.dart';
 import 'package:fitora/core/health/domain/health_models.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:permission_handler/permission_handler.dart';
+
 /// Health repository that uses the Android step-counter sensor for step/calorie/distance data.
 /// For sleep, recovery, and hydration it delegates to the mock repository until
 /// Health Connect integration is added in Phase 4.3.
@@ -16,18 +18,33 @@ class SensorHealthRepository implements HealthRepository {
   }) : _sensorRepo = sensorRepo,
        _fallback = fallback;
 
+  Future<bool> _checkPermission() async {
+    final status = await Permission.activityRecognition.status;
+    if (status.isGranted) return true;
+    try {
+      return status.isRestricted;
+    } catch (_) {
+      return false;
+    }
+  }
+
   @override
   Future<DailyActivitySummary> getDailyActivity(DateTime date) async {
-    // Try to get live sensor steps
-    final liveSteps = await _sensorRepo.getCurrentSteps();
-
-    if (liveSteps == null) {
-      // Sensor not available — use mock data with status flag
+    final snap = await _sensorRepo.getDebugSnapshot();
+    if (!snap.sensorAvailable) {
       final mock = await _fallback.getDailyActivity(date);
       return mock.copyWith(sensorStatus: SensorStatus.unavailable);
     }
 
-    return _buildSummary(steps: liveSteps, date: date);
+    final hasPermission = await _checkPermission();
+    if (!hasPermission) {
+      final mock = await _fallback.getDailyActivity(date);
+      return mock.copyWith(sensorStatus: SensorStatus.permissionRequired);
+    }
+
+    // Try to get live sensor steps. If null (stationary), default to 0 steps with active status.
+    final liveSteps = await _sensorRepo.getCurrentSteps() ?? 0;
+    return _buildSummary(steps: liveSteps, date: date, sensorStatus: SensorStatus.active);
   }
 
   @override
@@ -65,6 +82,7 @@ class SensorHealthRepository implements HealthRepository {
   DailyActivitySummary _buildSummary({
     required int steps,
     required DateTime date,
+    required SensorStatus sensorStatus,
   }) {
     // Heuristic conversions (well-accepted approximations):
     //   1 step ≈ 0.762 m  (average stride for mixed population)
@@ -84,7 +102,7 @@ class SensorHealthRepository implements HealthRepository {
       activeMinutesGoal: 30,
       distanceKm: distanceKm,
       date: date,
-      sensorStatus: SensorStatus.active,
+      sensorStatus: sensorStatus,
     );
   }
 }
