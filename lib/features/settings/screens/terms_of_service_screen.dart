@@ -7,18 +7,24 @@ class TermsOfServiceScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
+    final theme = Theme.of(context);
+    final textTheme = theme.textTheme;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0E1312),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
+          icon: Icon(Icons.arrow_back_ios_new_rounded, color: theme.colorScheme.onSurface, size: 20),
           onPressed: () => context.pop(),
         ),
-        title: Text('Terms of Service', style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800, color: Colors.white)),
+        title: Text(
+          'Terms of Service',
+          style: textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w800,
+            color: theme.colorScheme.onSurface,
+          ),
+        ),
         centerTitle: true,
       ),
       body: SafeArea(
@@ -30,7 +36,10 @@ class TermsOfServiceScreen extends StatelessWidget {
             children: [
               Text(
                 'Fitora Terms of Service',
-                style: textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold, color: Colors.white),
+                style: textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onSurface,
+                ),
               ),
               const SizedBox(height: FitoraSpacing.md),
               Text(
@@ -46,7 +55,10 @@ class TermsOfServiceScreen extends StatelessWidget {
                 '5. Limitation of Liability\n'
                 'Fitora is not liable for any injuries, damages, or losses resulting from your use of the app or its recommended workout routines.\n\n'
                 'If you have any questions, contact us at legal@fitora.app.',
-                style: textTheme.bodyMedium?.copyWith(color: Colors.white70, height: 1.6),
+                style: textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  height: 1.6,
+                ),
               ),
             ],
           ),

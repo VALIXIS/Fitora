@@ -8,13 +8,16 @@ class FitoraBackground extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Stack(
       children: [
-        // 1. Base solid dark background
-        const Positioned.fill(
+        // 1. Base solid adaptive background
+        Positioned.fill(
           child: DecoratedBox(
             decoration: BoxDecoration(
-              color: Color(0xFF050816),
+              color: theme.colorScheme.surface,
             ),
           ),
         ),
@@ -30,7 +33,7 @@ class FitoraBackground extends StatelessWidget {
               shape: BoxShape.circle,
               gradient: RadialGradient(
                 colors: [
-                  const Color(0xFF06B6D4).withValues(alpha: 0.1),
+                  const Color(0xFF06B6D4).withValues(alpha: isDark ? 0.1 : 0.04),
                   const Color(0xFF06B6D4).withValues(alpha: 0.0),
                 ],
               ),
@@ -49,7 +52,7 @@ class FitoraBackground extends StatelessWidget {
               shape: BoxShape.circle,
               gradient: RadialGradient(
                 colors: [
-                  const Color(0xFF3B82F6).withValues(alpha: 0.08),
+                  const Color(0xFF3B82F6).withValues(alpha: isDark ? 0.08 : 0.03),
                   const Color(0xFF3B82F6).withValues(alpha: 0.0),
                 ],
               ),
@@ -68,7 +71,7 @@ class FitoraBackground extends StatelessWidget {
               shape: BoxShape.circle,
               gradient: RadialGradient(
                 colors: [
-                  const Color(0xFF8B5CF6).withValues(alpha: 0.1),
+                  const Color(0xFF8B5CF6).withValues(alpha: isDark ? 0.1 : 0.04),
                   const Color(0xFF8B5CF6).withValues(alpha: 0.0),
                 ],
               ),

@@ -7,18 +7,24 @@ class PrivacyPolicyScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
+    final theme = Theme.of(context);
+    final textTheme = theme.textTheme;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0E1312),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
+          icon: Icon(Icons.arrow_back_ios_new_rounded, color: theme.colorScheme.onSurface, size: 20),
           onPressed: () => context.pop(),
         ),
-        title: Text('Privacy Policy', style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800, color: Colors.white)),
+        title: Text(
+          'Privacy Policy',
+          style: textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w800,
+            color: theme.colorScheme.onSurface,
+          ),
+        ),
         centerTitle: true,
       ),
       body: SafeArea(
@@ -30,7 +36,10 @@ class PrivacyPolicyScreen extends StatelessWidget {
             children: [
               Text(
                 'Fitora Privacy Policy',
-                style: textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold, color: Colors.white),
+                style: textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onSurface,
+                ),
               ),
               const SizedBox(height: FitoraSpacing.md),
               Text(
@@ -45,7 +54,10 @@ class PrivacyPolicyScreen extends StatelessWidget {
                 '4. Analytics\n'
                 'We collect anonymous crash reports to improve stability. No personal identifiers are attached to these reports.\n\n'
                 'If you have any questions about this Privacy Policy, please contact us at support@fitora.app.',
-                style: textTheme.bodyMedium?.copyWith(color: Colors.white70, height: 1.6),
+                style: textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  height: 1.6,
+                ),
               ),
             ],
           ),

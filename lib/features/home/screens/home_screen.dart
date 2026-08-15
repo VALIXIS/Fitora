@@ -32,7 +32,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        PermissionManager.requestFirstLaunchPermissions(context);
+        PermissionManager.requestFirstLaunchPermissions(context, ref);
       }
     });
   }

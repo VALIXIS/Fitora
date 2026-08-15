@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart' as ph;
 import 'package:fitora/core/services/notification_service.dart';
 import 'package:fitora/core/storage/app_preferences.dart';
+import 'package:fitora/features/settings/providers/settings_provider.dart';
 
 /// Orchestrates first-launch permission requests in a user-friendly, sequential flow.
 class PermissionManager {
@@ -38,6 +40,7 @@ class PermissionManager {
   /// Health Connect is handled separately when the user enters Health Sync.
   static Future<void> requestFirstLaunchPermissions(
     BuildContext context,
+    WidgetRef ref,
   ) async {
     if (!context.mounted) return;
 
@@ -47,11 +50,12 @@ class PermissionManager {
     await markPermissionsFlowShown();
 
     if (!context.mounted) return;
-    await _showActivityRecognitionSheet(context);
+    await _showActivityRecognitionSheet(context, ref);
   }
 
   static Future<void> _showActivityRecognitionSheet(
     BuildContext context,
+    WidgetRef ref,
   ) async {
     if (!context.mounted) return;
 
@@ -59,7 +63,7 @@ class PermissionManager {
     if (!context.mounted) return;
 
     if (alreadyGranted) {
-      await _showNotificationSheet(context);
+      await _showNotificationSheet(context, ref);
       return;
     }
 
@@ -82,24 +86,30 @@ class PermissionManager {
     if (context.mounted && (granted ?? false)) {
       await requestActivityRecognition();
       if (context.mounted) {
-        await _showNotificationSheet(context);
+        await _showNotificationSheet(context, ref);
       }
     } else if (context.mounted) {
       // Skipped activity recognition – still offer notifications
-      await _showNotificationSheet(context);
+      await _showNotificationSheet(context, ref);
     }
   }
 
-  static Future<void> _showNotificationSheet(BuildContext context) async {
+  static Future<void> _showNotificationSheet(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
     if (!context.mounted) return;
 
     // Check if permission already granted to avoid a redundant prompt
     final alreadyGranted = await ph.Permission.notification.isGranted;
-    if (alreadyGranted) return;
+    if (alreadyGranted) {
+      await ref.read(settingsProvider.notifier).updateSetting('notificationsEnabled', true);
+      return;
+    }
 
     if (!context.mounted) return;
 
-    await showModalBottomSheet<bool>(
+    final granted = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -115,8 +125,13 @@ class PermissionManager {
       ),
     );
 
-    if (context.mounted) {
-      await requestNotifications();
+    if (context.mounted && (granted ?? false)) {
+      final success = await requestNotifications();
+      if (context.mounted) {
+        await ref.read(settingsProvider.notifier).updateSetting('notificationsEnabled', success);
+      }
+    } else if (context.mounted) {
+      await ref.read(settingsProvider.notifier).updateSetting('notificationsEnabled', false);
     }
   }
 }
@@ -144,15 +159,16 @@ class _PermissionSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tt = Theme.of(context).textTheme;
+    final theme = Theme.of(context);
+    final tt = theme.textTheme;
 
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 24),
       padding: const EdgeInsets.all(28),
       decoration: BoxDecoration(
-        color: const Color(0xFF0D1117),
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -163,7 +179,7 @@ class _PermissionSheet extends StatelessWidget {
             height: 4,
             margin: const EdgeInsets.only(bottom: 28),
             decoration: BoxDecoration(
-              color: Colors.white24,
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(99),
             ),
           ),
@@ -189,7 +205,7 @@ class _PermissionSheet extends StatelessWidget {
             title,
             style: tt.headlineSmall?.copyWith(
               fontWeight: FontWeight.w800,
-              color: Colors.white,
+              color: theme.colorScheme.onSurface,
             ),
             textAlign: TextAlign.center,
           ),
@@ -217,7 +233,10 @@ class _PermissionSheet extends StatelessWidget {
           // Description
           Text(
             description,
-            style: tt.bodyMedium?.copyWith(color: Colors.white60, height: 1.5),
+            style: tt.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+              height: 1.5,
+            ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 32),
@@ -229,7 +248,7 @@ class _PermissionSheet extends StatelessWidget {
               onPressed: () => Navigator.of(context).pop(true),
               style: FilledButton.styleFrom(
                 backgroundColor: iconColor,
-                foregroundColor: Colors.black,
+                foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
@@ -249,7 +268,7 @@ class _PermissionSheet extends StatelessWidget {
             child: TextButton(
               onPressed: () => Navigator.of(context).pop(false),
               style: TextButton.styleFrom(
-                foregroundColor: Colors.white38,
+                foregroundColor: theme.colorScheme.onSurface.withValues(alpha: 0.4),
                 padding: const EdgeInsets.symmetric(vertical: 12),
               ),
               child: Text(skipLabel, style: tt.labelLarge),

@@ -23,7 +23,8 @@ class SettingsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final textTheme = Theme.of(context).textTheme;
+    final theme = Theme.of(context);
+    final textTheme = theme.textTheme;
     final settings = ref.watch(settingsProvider);
     final settingsNotifier = ref.read(settingsProvider.notifier);
     final syncStatus = ref.watch(healthSyncServiceProvider);
@@ -35,9 +36,9 @@ class SettingsScreen extends ConsumerWidget {
           backgroundColor: Colors.transparent,
           elevation: 0,
           leading: IconButton(
-            icon: const Icon(
+            icon: Icon(
               Icons.arrow_back_ios_new_rounded,
-              color: Colors.white,
+              color: theme.colorScheme.onSurface,
               size: 20,
             ),
             onPressed: () => context.pop(),
@@ -46,7 +47,7 @@ class SettingsScreen extends ConsumerWidget {
             'Settings',
             style: textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w800,
-              color: Colors.white,
+              color: theme.colorScheme.onSurface,
             ),
           ),
           centerTitle: true,
@@ -63,17 +64,19 @@ class SettingsScreen extends ConsumerWidget {
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
                     // ── GENERAL ───────────────────────────────────────────────
-                    _buildSectionTitle(textTheme, 'GENERAL'),
-                    _buildSettingsCard([
+                    _buildSectionTitle(context, 'GENERAL'),
+                    _buildSettingsCard(context, [
                       _buildSwitchTile(
+                        context,
                         textTheme,
                         Icons.dark_mode_rounded,
                         'Dark Mode',
                         settings.isDarkMode,
                         (v) => settingsNotifier.updateSetting('isDarkMode', v),
                       ),
-                      _buildDivider(),
+                      _buildDivider(context),
                       _buildSwitchTile(
+                        context,
                         textTheme,
                         Icons.notifications_active_rounded,
                         'Notifications',
@@ -93,8 +96,9 @@ class SettingsScreen extends ConsumerWidget {
                           }
                         },
                       ),
-                      _buildDivider(),
+                      _buildDivider(context),
                       _buildSwitchTile(
+                        context,
                         textTheme,
                         Icons.volume_up_rounded,
                         'Sound Effects',
@@ -111,8 +115,9 @@ class SettingsScreen extends ConsumerWidget {
                           }
                         },
                       ),
-                      _buildDivider(),
+                      _buildDivider(context),
                       _buildSwitchTile(
+                        context,
                         textTheme,
                         Icons.vibration_rounded,
                         'Haptics',
@@ -126,9 +131,10 @@ class SettingsScreen extends ConsumerWidget {
                     const SizedBox(height: FitoraSpacing.xl),
 
                     // ── HEALTH SYNC ───────────────────────────────────────────
-                    _buildSectionTitle(textTheme, 'HEALTH SYNC'),
-                    _buildSettingsCard([
+                    _buildSectionTitle(context, 'HEALTH SYNC'),
+                    _buildSettingsCard(context, [
                       _buildTile(
+                        context,
                         textTheme,
                         Icons.monitor_heart_rounded,
                         'Health Integration',
@@ -137,15 +143,17 @@ class SettingsScreen extends ConsumerWidget {
                             context.pushNamed(AppRouteNames.healthSync),
                         trailingIcon: Icons.arrow_forward_ios_rounded,
                       ),
-                      _buildDivider(),
+                      _buildDivider(context),
                       _buildTile(
+                        context,
                         textTheme,
                         Icons.access_time_rounded,
                         'Last Sync',
                         _lastSyncLabel(ref),
                       ),
-                      _buildDivider(),
+                      _buildDivider(context),
                       _buildTile(
+                        context,
                         textTheme,
                         Icons.sync_rounded,
                         'Sync Now',
@@ -156,12 +164,12 @@ class SettingsScreen extends ConsumerWidget {
                                   .read(healthSyncServiceProvider.notifier)
                                   .syncNow(),
                         trailingWidget: syncStatus == SyncStatus.syncing
-                            ? const SizedBox(
+                            ? SizedBox(
                                 width: 16,
                                 height: 16,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  color: Colors.white54,
+                                  color: theme.colorScheme.onSurfaceVariant,
                                 ),
                               )
                             : null,
@@ -169,44 +177,45 @@ class SettingsScreen extends ConsumerWidget {
                     ]),
                     const SizedBox(height: FitoraSpacing.xl),
 
-                      // ── STEP COUNTER & SENSORS ─────────────────────────────────
-                      _buildSectionTitle(textTheme, 'STEP COUNTER & SENSORS'),
-                      _buildSensorSettingsSection(context, textTheme, ref),
-                      const SizedBox(height: FitoraSpacing.xl),
+                    // ── STEP COUNTER & SENSORS ─────────────────────────────────
+                    _buildSectionTitle(context, 'STEP COUNTER & SENSORS'),
+                    _buildSensorSettingsSection(context, textTheme, ref),
+                    const SizedBox(height: FitoraSpacing.xl),
 
-                      // ── REMINDERS ─────────────────────────────────────────────
-                      _buildSectionTitle(textTheme, 'REMINDERS'),
-                      _buildSettingsCard([
-                        _buildSwitchTile(
-                          textTheme,
-                          Icons.water_drop_rounded,
-                          'Hydration Reminders',
-                          settings.hydrationReminderEnabled,
-                          (v) async {
-                            if (v) {
-                              final hasPermission = await settingsNotifier
-                                  .checkNotificationPermission();
-                              if (!hasPermission && context.mounted) {
-                                final granted = await ref
-                                    .read(notificationServiceProvider)
-                                    .requestPermissions();
-                                if (!granted && context.mounted) {
-                                  _showNotificationDeniedSnackbar(context);
-                                  return;
-                                }
+                    // ── REMINDERS ─────────────────────────────────────────────
+                    _buildSectionTitle(context, 'REMINDERS'),
+                    _buildSettingsCard(context, [
+                      _buildSwitchTile(
+                        context,
+                        textTheme,
+                        Icons.water_drop_rounded,
+                        'Hydration Reminders',
+                        settings.hydrationReminderEnabled,
+                        (v) async {
+                          if (v) {
+                            final hasPermission = await settingsNotifier
+                                .checkNotificationPermission();
+                            if (!hasPermission && context.mounted) {
+                              final granted = await ref
+                                  .read(notificationServiceProvider)
+                                  .requestPermissions();
+                              if (!granted && context.mounted) {
+                                _showNotificationDeniedSnackbar(context);
+                                return;
                               }
                             }
-                          
-                            await settingsNotifier.updateSetting(
-                              'hydrationReminderEnabled',
-                              v,
-                            );
+                          }
+                          await settingsNotifier.updateSetting(
+                            'hydrationReminderEnabled',
+                            v,
+                          );
                         },
                         iconColor: Colors.blueAccent,
                       ),
                       if (settings.hydrationReminderEnabled) ...[
-                        _buildDivider(),
+                        _buildDivider(context),
                         _buildTile(
+                          context,
                           textTheme,
                           Icons.timer_rounded,
                           'Reminder Interval',
@@ -221,8 +230,9 @@ class SettingsScreen extends ConsumerWidget {
                           trailingIcon: Icons.expand_more_rounded,
                         ),
                       ],
-                      _buildDivider(),
+                      _buildDivider(context),
                       _buildSwitchTile(
+                        context,
                         textTheme,
                         Icons.directions_walk_rounded,
                         'Step Goal Encouragement',
@@ -233,8 +243,9 @@ class SettingsScreen extends ConsumerWidget {
                         ),
                         iconColor: Colors.greenAccent,
                       ),
-                      _buildDivider(),
+                      _buildDivider(context),
                       _buildSwitchTile(
+                        context,
                         textTheme,
                         Icons.bedtime_rounded,
                         'Sleep Schedule Reminders',
@@ -245,8 +256,9 @@ class SettingsScreen extends ConsumerWidget {
                         ),
                         iconColor: Colors.deepPurpleAccent,
                       ),
-                      _buildDivider(),
+                      _buildDivider(context),
                       _buildSwitchTile(
+                        context,
                         textTheme,
                         Icons.summarize_rounded,
                         'Daily Health Summary',
@@ -257,8 +269,9 @@ class SettingsScreen extends ConsumerWidget {
                         ),
                         iconColor: Colors.orangeAccent,
                       ),
-                      _buildDivider(),
+                      _buildDivider(context),
                       _buildSwitchTile(
+                        context,
                         textTheme,
                         Icons.do_not_disturb_on_rounded,
                         'Quiet Hours',
@@ -270,8 +283,9 @@ class SettingsScreen extends ConsumerWidget {
                         iconColor: Colors.grey,
                       ),
                       if (settings.quietHoursEnabled) ...[
-                        _buildDivider(),
+                        _buildDivider(context),
                         _buildTile(
+                          context,
                           textTheme,
                           Icons.nights_stay_rounded,
                           'Quiet Hours Start',
@@ -284,8 +298,9 @@ class SettingsScreen extends ConsumerWidget {
                           ),
                           trailingIcon: Icons.expand_more_rounded,
                         ),
-                        _buildDivider(),
+                        _buildDivider(context),
                         _buildTile(
+                          context,
                           textTheme,
                           Icons.wb_sunny_rounded,
                           'Quiet Hours End',
@@ -299,16 +314,24 @@ class SettingsScreen extends ConsumerWidget {
                           trailingIcon: Icons.expand_more_rounded,
                         ),
                       ],
-                      _buildDivider(),
+                      _buildDivider(context),
                       _buildTile(
+                        context,
                         textTheme,
                         Icons.notifications_active_rounded,
                         'Test Notification',
                         null,
                         onTap: () async {
-                          await ref
-                              .read(notificationServiceProvider)
-                              .showTestNotification();
+                          final svc = ref.read(notificationServiceProvider);
+                          final hasPerm = await svc.hasPermission();
+                          if (!hasPerm) {
+                            final granted = await svc.requestPermissions();
+                            if (!granted && context.mounted) {
+                              _showNotificationDeniedSnackbar(context);
+                              return;
+                            }
+                          }
+                          await svc.showTestNotification();
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
@@ -327,9 +350,10 @@ class SettingsScreen extends ConsumerWidget {
                     const SizedBox(height: FitoraSpacing.xl),
 
                     // ── UNITS ─────────────────────────────────────────────────
-                    _buildSectionTitle(textTheme, 'UNITS'),
-                    _buildSettingsCard([
+                    _buildSectionTitle(context, 'UNITS'),
+                    _buildSettingsCard(context, [
                       _buildTile(
+                        context,
                         textTheme,
                         Icons.straighten_rounded,
                         'System',
@@ -345,17 +369,19 @@ class SettingsScreen extends ConsumerWidget {
                     const SizedBox(height: FitoraSpacing.xl),
 
                     // ── DATA ──────────────────────────────────────────────────
-                    _buildSectionTitle(textTheme, 'DATA'),
-                    _buildSettingsCard([
+                    _buildSectionTitle(context, 'DATA'),
+                    _buildSettingsCard(context, [
                       _buildTile(
+                        context,
                         textTheme,
                         Icons.download_rounded,
                         'Export Data',
                         null,
                         onTap: () => _exportData(context, ref),
                       ),
-                      _buildDivider(),
+                      _buildDivider(context),
                       _buildTile(
+                        context,
                         textTheme,
                         Icons.delete_forever_rounded,
                         'Reset Progress',
@@ -367,8 +393,8 @@ class SettingsScreen extends ConsumerWidget {
                     const SizedBox(height: FitoraSpacing.xl),
 
                     // ── ABOUT ─────────────────────────────────────────────────
-                    _buildSectionTitle(textTheme, 'ABOUT'),
-                    _buildSettingsCard([
+                    _buildSectionTitle(context, 'ABOUT'),
+                    _buildSettingsCard(context, [
                       Consumer(
                         builder: (context, ref, _) {
                           final packageInfoAsync = ref.watch(
@@ -381,6 +407,7 @@ class SettingsScreen extends ConsumerWidget {
                             error: (_, _) => 'v1.0.0',
                           );
                           return _buildTile(
+                            context,
                             textTheme,
                             Icons.info_outline_rounded,
                             'App Version',
@@ -388,16 +415,18 @@ class SettingsScreen extends ConsumerWidget {
                           );
                         },
                       ),
-                      _buildDivider(),
+                      _buildDivider(context),
                       _buildTile(
+                        context,
                         textTheme,
                         Icons.sports_gymnastics_rounded,
                         'About Fitora',
                         null,
                         onTap: () => context.pushNamed(AppRouteNames.about),
                       ),
-                      _buildDivider(),
+                      _buildDivider(context),
                       _buildTile(
+                        context,
                         textTheme,
                         Icons.privacy_tip_rounded,
                         'Privacy Policy',
@@ -405,8 +434,9 @@ class SettingsScreen extends ConsumerWidget {
                         onTap: () =>
                             context.pushNamed(AppRouteNames.privacyPolicy),
                       ),
-                      _buildDivider(),
+                      _buildDivider(context),
                       _buildTile(
+                        context,
                         textTheme,
                         Icons.gavel_rounded,
                         'Terms of Service',
@@ -434,6 +464,7 @@ class SettingsScreen extends ConsumerWidget {
     WidgetRef ref,
   ) {
     final sensorStatus = ref.watch(sensorStatusProvider);
+    final theme = Theme.of(context);
 
     String statusText;
     Color statusColor;
@@ -452,26 +483,28 @@ class SettingsScreen extends ConsumerWidget {
         break;
       case SensorStatus.unavailable:
         statusText = 'Sensor Unavailable';
-        statusColor = Colors.white38;
+        statusColor = theme.colorScheme.onSurface.withValues(alpha: 0.38);
         statusIcon = Icons.do_not_disturb_rounded;
         break;
       case SensorStatus.unknown:
         statusText = 'Checking...';
-        statusColor = Colors.white54;
+        statusColor = theme.colorScheme.onSurface.withValues(alpha: 0.54);
         statusIcon = Icons.sensors_rounded;
         break;
     }
 
-    return _buildSettingsCard([
+    return _buildSettingsCard(context, [
       _buildTile(
+        context,
         tt,
         statusIcon,
         'Step Sensor Status',
         statusText,
         trailingIconColor: statusColor,
       ),
-      _buildDivider(),
+      _buildDivider(context),
       _buildTile(
+        context,
         tt,
         Icons.fact_check_rounded,
         'Verify Sensor Permission',
@@ -488,8 +521,11 @@ class SettingsScreen extends ConsumerWidget {
                   isOK
                       ? 'Step counter sensor is active and tracking your steps!'
                       : 'Step tracking permission is disabled. Tap Open Settings to enable it.',
+                  style: TextStyle(
+                    color: theme.colorScheme.onInverseSurface,
+                  ),
                 ),
-                backgroundColor: const Color(0xFF0D1117),
+                backgroundColor: theme.colorScheme.inverseSurface,
                 duration: const Duration(seconds: 4),
                 action: isOK
                     ? null
@@ -505,7 +541,7 @@ class SettingsScreen extends ConsumerWidget {
         trailingIcon: Icons.refresh_rounded,
       ),
       if (sensorStatus == SensorStatus.permissionRequired) ...[
-        _buildDivider(),
+        _buildDivider(context),
         Padding(
           padding: const EdgeInsets.all(FitoraSpacing.md),
           child: Container(
@@ -543,7 +579,7 @@ class SettingsScreen extends ConsumerWidget {
                 Text(
                   'If you accidentally tapped "Don\'t allow" for physical activity or motion permissions, tap below to grant permission or open system App Settings to re-enable step recording.',
                   style: tt.bodySmall?.copyWith(
-                    color: Colors.white70,
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                     fontSize: 11,
                     height: 1.4,
                   ),
@@ -627,10 +663,11 @@ class SettingsScreen extends ConsumerWidget {
     WidgetRef ref,
     int currentMins,
   ) {
-    final tt = Theme.of(context).textTheme;
+    final theme = Theme.of(context);
+    final tt = theme.textTheme;
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF0D1117),
+      backgroundColor: theme.colorScheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -645,7 +682,7 @@ class SettingsScreen extends ConsumerWidget {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.white24,
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(99),
                 ),
               ),
@@ -655,7 +692,7 @@ class SettingsScreen extends ConsumerWidget {
               'Reminder Interval',
               style: tt.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: theme.colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 16),
@@ -665,12 +702,12 @@ class SettingsScreen extends ConsumerWidget {
                   'Every $m mins',
                   style: TextStyle(
                     color: m == currentMins
-                        ? FitoraColors.calmCyan
-                        : Colors.white,
+                        ? theme.colorScheme.primary
+                        : theme.colorScheme.onSurface,
                   ),
                 ),
                 trailing: m == currentMins
-                    ? Icon(Icons.check_rounded, color: FitoraColors.calmCyan)
+                    ? Icon(Icons.check_rounded, color: theme.colorScheme.primary)
                     : null,
                 onTap: () {
                   ref
@@ -697,9 +734,7 @@ class SettingsScreen extends ConsumerWidget {
       helpText: 'Select time',
       builder: (ctx, child) => Theme(
         data: Theme.of(ctx).copyWith(
-          colorScheme: Theme.of(
-            ctx,
-          ).colorScheme.copyWith(primary: FitoraColors.calmCyan),
+          colorScheme: Theme.of(ctx).colorScheme.copyWith(primary: FitoraColors.calmCyan),
         ),
         child: child!,
       ),
@@ -727,24 +762,23 @@ class SettingsScreen extends ConsumerWidget {
   // ── Confirm reset ─────────────────────────────────────────────────────────
 
   void _confirmReset(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1A2626),
         title: const Text(
           'Reset Progress',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
         content: const Text(
           'Are you sure you want to reset all your progress and personalization settings? This action cannot be undone.',
-          style: TextStyle(color: Colors.white70),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text(
+            child: Text(
               'Cancel',
-              style: TextStyle(color: Colors.white54),
+              style: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
             ),
           ),
           TextButton(
@@ -822,26 +856,29 @@ class SettingsScreen extends ConsumerWidget {
 
   // ── Shared UI Helpers ─────────────────────────────────────────────────────
 
-  Widget _buildSectionTitle(TextTheme textTheme, String title) {
+  Widget _buildSectionTitle(BuildContext context, String title) {
     return Padding(
       padding: const EdgeInsets.only(left: 4, bottom: 8),
       child: Text(
         title,
-        style: textTheme.labelSmall?.copyWith(
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
           fontWeight: FontWeight.bold,
           letterSpacing: 1.5,
-          color: Colors.white54,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
         ),
       ),
     );
   }
 
-  Widget _buildSettingsCard(List<Widget> children) {
+  Widget _buildSettingsCard(BuildContext context, List<Widget> children) {
+    final theme = Theme.of(context);
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
+        color: theme.cardTheme.color,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+        ),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -851,33 +888,35 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildDivider() {
+  Widget _buildDivider(BuildContext context) {
     return Divider(
-      color: Colors.white.withValues(alpha: 0.05),
+      color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5),
       height: 1,
       indent: 56,
     );
   }
 
   Widget _buildSwitchTile(
+    BuildContext context,
     TextTheme tt,
     IconData icon,
     String title,
     bool value,
     ValueChanged<bool> onChanged, {
-    Color iconColor = Colors.white70,
+    Color? iconColor,
   }) {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
-          Icon(icon, color: iconColor, size: 24),
+          Icon(icon, color: iconColor ?? theme.colorScheme.onSurfaceVariant, size: 24),
           const SizedBox(width: 16),
           Expanded(
             child: Text(
               title,
               style: tt.bodyMedium?.copyWith(
-                color: Colors.white,
+                color: theme.colorScheme.onSurface,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -885,10 +924,10 @@ class SettingsScreen extends ConsumerWidget {
           Switch(
             value: value,
             onChanged: onChanged,
-            activeThumbColor: FitoraColors.mintGreen,
-            activeTrackColor: FitoraColors.mintGreen.withValues(alpha: 0.3),
-            inactiveThumbColor: Colors.white54,
-            inactiveTrackColor: Colors.white.withValues(alpha: 0.1),
+            activeThumbColor: theme.colorScheme.primary,
+            activeTrackColor: theme.colorScheme.primary.withValues(alpha: 0.3),
+            inactiveThumbColor: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+            inactiveTrackColor: theme.colorScheme.onSurface.withValues(alpha: 0.1),
           ),
         ],
       ),
@@ -896,6 +935,7 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   Widget _buildTile(
+    BuildContext context,
     TextTheme tt,
     IconData icon,
     String title,
@@ -906,13 +946,14 @@ class SettingsScreen extends ConsumerWidget {
     Color? trailingIconColor,
     Widget? trailingWidget,
   }) {
+    final theme = Theme.of(context);
     final content = Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       child: Row(
         children: [
           Icon(
             icon,
-            color: isDestructive ? Colors.redAccent : Colors.white70,
+            color: isDestructive ? Colors.redAccent : theme.colorScheme.onSurfaceVariant,
             size: 24,
           ),
           const SizedBox(width: 16),
@@ -920,23 +961,24 @@ class SettingsScreen extends ConsumerWidget {
             child: Text(
               title,
               style: tt.bodyMedium?.copyWith(
-                color: isDestructive ? Colors.redAccent : Colors.white,
+                color: isDestructive ? Colors.redAccent : theme.colorScheme.onSurface,
                 fontWeight: FontWeight.w600,
               ),
             ),
           ),
-          ?trailingWidget,
+          // ignore: use_null_aware_elements
+          if (trailingWidget != null) trailingWidget,
           if (trailingText != null) ...[
             Text(
               trailingText,
-              style: tt.bodySmall?.copyWith(color: Colors.white54),
+              style: tt.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
             ),
             const SizedBox(width: 8),
           ],
           if (trailingIcon != null)
             Icon(
               trailingIcon,
-              color: trailingIconColor ?? Colors.white30,
+              color: trailingIconColor ?? theme.colorScheme.onSurface.withValues(alpha: 0.3),
               size: 14,
             ),
         ],
