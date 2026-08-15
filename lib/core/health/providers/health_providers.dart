@@ -196,9 +196,7 @@ final dailyActivityProvider = Provider.family<DailyActivitySummary, DateTime>((
         final cal = summaryWithDynamicGoals.caloriesBurned > 0
             ? summaryWithDynamicGoals.caloriesBurned
             : double.parse((totalSteps * 0.04).toStringAsFixed(1));
-        final activeMins = summaryWithDynamicGoals.activeMinutes > 0
-            ? summaryWithDynamicGoals.activeMinutes
-            : (totalSteps / 100).round();
+        final activeMins = summaryWithDynamicGoals.activeMinutes;
 
         return summaryWithDynamicGoals.copyWith(
           steps: totalSteps,

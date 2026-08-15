@@ -23,13 +23,15 @@ final dailyGoalStatusProvider = Provider.family<DailyGoalStatus, DateTime>((
 
   MetricAvailability stepsAvailability;
   if (activity.sensorStatus == SensorStatus.active ||
-      activity.healthConnectStatus == HealthConnectStatus.connected) {
+      activity.healthConnectStatus == HealthConnectStatus.connected ||
+      activity.steps > 0 ||
+      stepsGoal > 0) {
     stepsAvailability = MetricAvailability.available;
   } else if (activity.sensorStatus == SensorStatus.permissionRequired ||
       activity.healthConnectStatus == HealthConnectStatus.permissionRequired) {
     stepsAvailability = MetricAvailability.permissionRequired;
   } else {
-    stepsAvailability = MetricAvailability.unavailable;
+    stepsAvailability = MetricAvailability.available;
   }
 
   final stepsMetric = GoalMetric(
@@ -114,7 +116,9 @@ final dailyGoalStatusProvider = Provider.family<DailyGoalStatus, DateTime>((
   final caloriesGoal = activity.caloriesGoal;
 
   MetricAvailability caloriesAvailability;
-  if (activity.healthConnectStatus == HealthConnectStatus.connected) {
+  if (activity.healthConnectStatus == HealthConnectStatus.connected ||
+      activity.sensorStatus == SensorStatus.active ||
+      activity.caloriesBurned > 0) {
     caloriesAvailability = MetricAvailability.available;
   } else if (activity.healthConnectStatus ==
       HealthConnectStatus.permissionRequired) {
