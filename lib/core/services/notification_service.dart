@@ -1,6 +1,7 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
@@ -23,10 +24,23 @@ class NotificationService {
     if (_isInitialized) return;
 
     tz.initializeTimeZones();
+    try {
+      final String timeZoneName = (await FlutterTimezone.getLocalTimezone()).identifier;
+      tz.setLocalLocation(tz.getLocation(timeZoneName));
+    } catch (e) {
+      try {
+        final String sysTz = DateTime.now().timeZoneName;
+        tz.setLocalLocation(tz.getLocation(sysTz));
+      } catch (_) {
+        try {
+          tz.setLocalLocation(tz.getLocation('Asia/Kolkata'));
+        } catch (_) {}
+      }
+    }
 
     await _plugin.initialize(
       settings: const InitializationSettings(
-        android: AndroidInitializationSettings('@drawable/ic_notification'),
+        android: AndroidInitializationSettings('@mipmap/ic_launcher'),
         iOS: DarwinInitializationSettings(
           requestAlertPermission: false,
           requestBadgePermission: false,
@@ -34,7 +48,32 @@ class NotificationService {
         ),
       ),
     );
+
+    final androidImpl = _plugin.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+    if (androidImpl != null) {
+      const channel = AndroidNotificationChannel(
+        'health_reminders',
+        'Health Reminders',
+        description: 'Notifications for health and wellness tracking',
+        importance: Importance.high,
+        playSound: true,
+        enableVibration: true,
+      );
+      await androidImpl.createNotificationChannel(channel);
+    }
+
     _isInitialized = true;
+  }
+
+  Future<bool> canScheduleExact() async {
+    final androidImpl = _plugin.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+    return (await androidImpl?.canScheduleExactNotifications()) ?? false;
+  }
+
+  Future<void> requestExactAlarmPermission() async {
+    await Permission.scheduleExactAlarm.request();
   }
 
   Future<bool> requestPermissions() async {
@@ -59,7 +98,11 @@ class NotificationService {
           AndroidFlutterLocalNotificationsPlugin
         >();
     if (androidImpl != null) {
-      granted = await androidImpl.requestNotificationsPermission();
+      final status = await Permission.notification.request();
+      granted = status.isGranted;
+      try {
+        await androidImpl.requestNotificationsPermission();
+      } catch (_) {}
     }
 
     return granted ?? false;
@@ -103,6 +146,13 @@ class NotificationService {
     // 1. Cancel all managed reminders first to prevent duplicates
     await cancelManagedReminders();
 
+    final androidImpl = _plugin.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+    final bool canScheduleExactAlarm = (await androidImpl?.canScheduleExactNotifications()) ?? false;
+    final scheduleMode = canScheduleExactAlarm
+        ? AndroidScheduleMode.exactAllowWhileIdle
+        : AndroidScheduleMode.inexactAllowWhileIdle;
+
     final now = tz.TZDateTime.now(tz.local);
 
     const hydrationMessages = [
@@ -130,17 +180,17 @@ class NotificationService {
       'Another step towards your health goals. Keep it up tomorrow!',
     ];
 
-    final androidDetails = const AndroidNotificationDetails(
+    const androidDetails = AndroidNotificationDetails(
       'health_reminders',
       'Health Reminders',
       channelDescription: 'Notifications for health and wellness tracking',
-      importance: Importance.defaultImportance,
-      priority: Priority.defaultPriority,
+      importance: Importance.high,
+      priority: Priority.high,
       icon: '@mipmap/ic_launcher',
     );
-    final platformDetails = NotificationDetails(
+    const platformDetails = NotificationDetails(
       android: androidDetails,
-      iOS: const DarwinNotificationDetails(),
+      iOS: DarwinNotificationDetails(),
     );
 
     // Schedule for Today (0), Tomorrow (1), Day After (2)
@@ -193,7 +243,7 @@ class NotificationService {
                 body: hydrationMessages[slot % hydrationMessages.length],
                 scheduledDate: currentSchedule,
                 notificationDetails: platformDetails,
-                androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+                androidScheduleMode: scheduleMode,
               );
             }
           }
@@ -203,7 +253,6 @@ class NotificationService {
           slot++;
         }
       }
-
 
       // Step Goal Reminder (3:00 PM / 15:00)
       if (stepEnabled && !(isToday && stepGoalMetToday)) {
@@ -229,7 +278,7 @@ class NotificationService {
             body: stepMessages[dayOffset % stepMessages.length],
             scheduledDate: schedule,
             notificationDetails: platformDetails,
-            androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+            androidScheduleMode: scheduleMode,
           );
         }
       }
@@ -252,7 +301,7 @@ class NotificationService {
             body: sleepMessages[dayOffset % sleepMessages.length],
             scheduledDate: schedule,
             notificationDetails: platformDetails,
-            androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+            androidScheduleMode: scheduleMode,
           );
         }
       }
@@ -275,7 +324,7 @@ class NotificationService {
             body: summaryMessages[dayOffset % summaryMessages.length],
             scheduledDate: schedule,
             notificationDetails: platformDetails,
-            androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+            androidScheduleMode: scheduleMode,
           );
         }
       }
@@ -331,7 +380,7 @@ class NotificationService {
           channelDescription: 'Notifications for health and wellness tracking',
           importance: Importance.high,
           priority: Priority.high,
-          icon: '@drawable/ic_notification',
+          icon: '@mipmap/ic_launcher',
         ),
         iOS: DarwinNotificationDetails(),
       ),
@@ -351,7 +400,7 @@ class NotificationService {
           channelDescription: 'Notifications for health and wellness tracking',
           importance: Importance.high,
           priority: Priority.high,
-          icon: '@drawable/ic_notification',
+          icon: '@mipmap/ic_launcher',
         ),
         iOS: DarwinNotificationDetails(),
       ),

@@ -9,6 +9,14 @@ import 'package:fitora/core/storage/app_preferences.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:fitora/core/health/providers/health_providers.dart';
 import 'package:fitora/features/wellness/providers/wellness_provider.dart';
+final exactAlarmPermissionProvider = FutureProvider<bool>((ref) async {
+  final svc = ref.watch(notificationServiceProvider);
+  return await svc.canScheduleExact();
+});
+
+final batteryOptimizationExemptProvider = FutureProvider<bool>((ref) async {
+  return await ph.Permission.ignoreBatteryOptimizations.isGranted;
+});
 
 class SettingsState {
   final bool isDarkMode;
@@ -306,6 +314,17 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
   Future<bool> checkNotificationPermission() async {
     final status = await ph.Permission.notification.status;
     return status.isGranted;
+  }
+
+  Future<bool> checkExactAlarmPermission() async {
+    final svc = ref.read(notificationServiceProvider);
+    return await svc.canScheduleExact();
+  }
+
+  Future<void> requestExactAlarmPermission() async {
+    final svc = ref.read(notificationServiceProvider);
+    await svc.requestExactAlarmPermission();
+    await _rescheduleAllNotifications();
   }
 
   Future<void> resetToDefaults() async {

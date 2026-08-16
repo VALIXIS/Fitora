@@ -197,8 +197,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final activity = ref.watch(dailyActivityProvider(today));
-    final syncStatus = ref.watch(healthSyncServiceProvider);
-
     final profile = ref.watch(personalizationControllerProvider).profile;
     final authSession = ref.watch(authStateProvider);
     final String greetingPrefix = getDynamicGreeting(now);
@@ -229,8 +227,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       child: Scaffold(
         backgroundColor: Colors.transparent,
         body: RefreshIndicator(
-          onRefresh: () =>
-              ref.read(healthSyncServiceProvider.notifier).syncNow(),
+          onRefresh: () => Future.value(),
           color: const Color(0xFF06B6D4),
           backgroundColor: const Color(0xFF0D1117),
           child: CustomScrollView(
@@ -238,7 +235,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             slivers: [
               // ── Premium SafeArea Header ─────────────────────────────────────────
               SliverToBoxAdapter(
-                child: _buildHeader(textTheme, activity, greeting, syncStatus),
+                child: _buildHeader(textTheme, activity, greeting),
               ),
 
               // ── Scrollable Dashboard Grid ──────────────────────────────────────
@@ -401,7 +398,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     TextTheme textTheme,
     DailyActivitySummary activity,
     String greeting,
-    SyncStatus syncStatus,
   ) {
     return SafeArea(
       bottom: false,
@@ -697,31 +693,58 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     icon: Icons.water_drop_rounded,
                     color: Colors.blueAccent,
                     textTheme: textTheme,
-                    onTap: () {
-                      ref.read(wellnessProvider.notifier).addWaterLogEntry(500);
-                    },
-                    trailingAction: InkWell(
-                      onTap: () {
-                        ref
-                            .read(wellnessProvider.notifier)
-                            .addWaterLogEntry(500);
-                      },
-                      borderRadius: BorderRadius.circular(12),
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: Colors.blueAccent.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: Colors.blueAccent.withValues(alpha: 0.3),
+                    onTap: null,
+                    trailingAction: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        InkWell(
+                          onTap: () {
+                            ref
+                                .read(wellnessProvider.notifier)
+                                .removeHydration(0.25);
+                          },
+                          borderRadius: BorderRadius.circular(12),
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: Colors.blueAccent.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: Colors.blueAccent.withValues(alpha: 0.3),
+                              ),
+                            ),
+                            child: const Icon(
+                              Icons.remove_rounded,
+                              color: Colors.blueAccent,
+                              size: 18,
+                            ),
                           ),
                         ),
-                        child: const Icon(
-                          Icons.add_rounded,
-                          color: Colors.blueAccent,
-                          size: 18,
+                        const SizedBox(width: 6),
+                        InkWell(
+                          onTap: () {
+                            ref
+                                .read(wellnessProvider.notifier)
+                                .addHydration(0.25);
+                          },
+                          borderRadius: BorderRadius.circular(12),
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: Colors.blueAccent.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: Colors.blueAccent.withValues(alpha: 0.3),
+                              ),
+                            ),
+                            child: const Icon(
+                              Icons.add_rounded,
+                              color: Colors.blueAccent,
+                              size: 18,
+                            ),
+                          ),
                         ),
-                      ),
+                      ],
                     ),
                   ),
                 ),
@@ -1314,129 +1337,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     if (key == 'steps') {
       await ref.read(sensorStatusProvider.notifier).requestPermission();
     } else {
-      context.pushNamed(AppRouteNames.healthSync);
+      // Disabled for release
     }
-  }
-
-  Widget _buildSyncPrompt(
-    BuildContext context,
-    TextTheme textTheme,
-    DailyActivitySummary activity,
-  ) {
-    if (activity.lastSyncTime != null) return const SizedBox.shrink();
-
-    final hasSensorIssue =
-        activity.sensorStatus == SensorStatus.unknown ||
-        activity.sensorStatus == SensorStatus.permissionRequired;
-
-    return GlowContainer(
-      glowColor: FitoraColors.mintGreen.withValues(alpha: 0.08),
-      borderRadius: BorderRadius.circular(20),
-      padding: EdgeInsets.zero,
-      child: Container(
-        padding: const EdgeInsets.all(FitoraSpacing.lg),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.02),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: FitoraColors.mintGreen.withValues(alpha: 0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.link_rounded,
-                    color: FitoraColors.mintGreen,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: FitoraSpacing.md),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Connect Health Data',
-                        style: textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        hasSensorIssue
-                            ? 'Enable sensors or connect health integration to sync your activity.'
-                            : 'Sync steps and metrics automatically with your health source.',
-                        style: textTheme.bodySmall?.copyWith(
-                          color: Colors.white54,
-                          fontSize: 11,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: FitoraSpacing.md),
-            Row(
-              children: [
-                if (hasSensorIssue) ...[
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () async {
-                        await ref
-                            .read(healthSyncServiceProvider.notifier)
-                            .syncNow();
-                      },
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: Colors.white10),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                      ),
-                      child: Text(
-                        'Permissions',
-                        style: textTheme.labelLarge?.copyWith(
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: FitoraSpacing.sm),
-                ],
-                Expanded(
-                  child: FilledButton(
-                    onPressed: () =>
-                        context.pushNamed(AppRouteNames.healthSync),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: FitoraColors.mintGreen,
-                      foregroundColor: Colors.black,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                    ),
-                    child: Text(
-                      'Connect Now',
-                      style: textTheme.labelLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    ).animate().fadeIn(delay: 300.ms, duration: 400.ms).slideY(begin: 0.05, end: 0);
   }
 }

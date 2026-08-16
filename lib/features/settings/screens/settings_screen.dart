@@ -27,7 +27,8 @@ class SettingsScreen extends ConsumerWidget {
     final textTheme = theme.textTheme;
     final settings = ref.watch(settingsProvider);
     final settingsNotifier = ref.read(settingsProvider.notifier);
-    final syncStatus = ref.watch(healthSyncServiceProvider);
+    final hasExactPermission = ref.watch(exactAlarmPermissionProvider).value ?? true;
+    final isBatteryOptimized = ref.watch(batteryOptimizationExemptProvider).value ?? false;
 
     return FitoraBackground(
       child: Scaffold(
@@ -130,56 +131,9 @@ class SettingsScreen extends ConsumerWidget {
                     ]),
                     const SizedBox(height: FitoraSpacing.xl),
 
-                    // ── HEALTH SYNC ───────────────────────────────────────────
-                    _buildSectionTitle(context, 'HEALTH SYNC'),
-                    _buildSettingsCard(context, [
-                      _buildTile(
-                        context,
-                        textTheme,
-                        Icons.monitor_heart_rounded,
-                        'Health Integration',
-                        _syncStatusLabel(syncStatus),
-                        onTap: () =>
-                            context.pushNamed(AppRouteNames.healthSync),
-                        trailingIcon: Icons.arrow_forward_ios_rounded,
-                      ),
-                      _buildDivider(context),
-                      _buildTile(
-                        context,
-                        textTheme,
-                        Icons.access_time_rounded,
-                        'Last Sync',
-                        _lastSyncLabel(ref),
-                      ),
-                      _buildDivider(context),
-                      _buildTile(
-                        context,
-                        textTheme,
-                        Icons.sync_rounded,
-                        'Sync Now',
-                        null,
-                        onTap: syncStatus == SyncStatus.syncing
-                            ? null
-                            : () => ref
-                                  .read(healthSyncServiceProvider.notifier)
-                                  .syncNow(),
-                        trailingWidget: syncStatus == SyncStatus.syncing
-                            ? SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                ),
-                              )
-                            : null,
-                      ),
-                    ]),
-                    const SizedBox(height: FitoraSpacing.xl),
-
                     // ── STEP COUNTER & SENSORS ─────────────────────────────────
                     _buildSectionTitle(context, 'STEP COUNTER & SENSORS'),
-                    _buildSensorSettingsSection(context, textTheme, ref),
+                    _buildSensorSettingsSection(context, textTheme, ref, isBatteryOptimized),
                     const SizedBox(height: FitoraSpacing.xl),
 
                     // ── REMINDERS ─────────────────────────────────────────────
@@ -346,6 +300,27 @@ class SettingsScreen extends ConsumerWidget {
                         trailingIcon: Icons.send_rounded,
                         trailingIconColor: FitoraColors.calmCyan,
                       ),
+                      if (settings.hydrationReminderEnabled ||
+                          settings.stepReminderEnabled ||
+                          settings.sleepReminderEnabled ||
+                          settings.dailySummaryEnabled) ...[
+                        if (!hasExactPermission) ...[
+                          _buildDivider(context),
+                          _buildTile(
+                            context,
+                            textTheme,
+                            Icons.warning_amber_rounded,
+                            'Exact Alarms Disabled',
+                            'Tap to allow exact timing',
+                            onTap: () async {
+                              await settingsNotifier.requestExactAlarmPermission();
+                              ref.invalidate(exactAlarmPermissionProvider);
+                            },
+                            trailingIcon: Icons.arrow_forward_ios_rounded,
+                            trailingIconColor: Colors.amber,
+                          ),
+                        ]
+                      ]
                     ]),
                     const SizedBox(height: FitoraSpacing.xl),
 
@@ -462,6 +437,7 @@ class SettingsScreen extends ConsumerWidget {
     BuildContext context,
     TextTheme tt,
     WidgetRef ref,
+    bool isBatteryOptimized,
   ) {
     final sensorStatus = ref.watch(sensorStatusProvider);
     final theme = Theme.of(context);
@@ -540,6 +516,47 @@ class SettingsScreen extends ConsumerWidget {
         },
         trailingIcon: Icons.refresh_rounded,
       ),
+      _buildDivider(context),
+      _buildTile(
+        context,
+        tt,
+        Icons.battery_saver_rounded,
+        'Battery Optimization',
+        isBatteryOptimized ? 'Optimized' : 'Request Unrestricted',
+        onTap: () async {
+          if (isBatteryOptimized) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Fitora is already unrestricted and optimized!')),
+            );
+          } else {
+            await showDialog(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                title: const Text('Background Activity'),
+                content: const Text(
+                  'Allowing Fitora to run in the background prevents Android from pausing the step counters and health sync operations when the phone is idle.',
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(ctx).pop(),
+                    child: const Text('Cancel'),
+                  ),
+                  TextButton(
+                    onPressed: () async {
+                      Navigator.of(ctx).pop();
+                      await ph.Permission.ignoreBatteryOptimizations.request();
+                      ref.invalidate(batteryOptimizationExemptProvider);
+                    },
+                    child: const Text('Optimize'),
+                  ),
+                ],
+              ),
+            );
+          }
+        },
+        trailingIcon: Icons.bolt_rounded,
+        trailingIconColor: isBatteryOptimized ? FitoraColors.mintGreen : Colors.amber,
+      ),
       if (sensorStatus == SensorStatus.permissionRequired) ...[
         _buildDivider(context),
         Padding(
@@ -614,38 +631,6 @@ class SettingsScreen extends ConsumerWidget {
         ),
       ],
     ]);
-  }
-
-  String _syncStatusLabel(SyncStatus status) {
-    switch (status) {
-      case SyncStatus.syncing:
-        return 'Syncing...';
-      case SyncStatus.synced:
-        return 'Connected';
-      case SyncStatus.error:
-        return 'Sync Failed';
-      default:
-        return 'Not Connected';
-    }
-  }
-
-  String _lastSyncLabel(WidgetRef ref) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final activity = ref.watch(dailyActivityProvider(today));
-    final lastSync = activity.lastSyncTime;
-    if (lastSync == null) return 'Never';
-    final diff = now.difference(lastSync);
-    if (diff.inSeconds < 60) return 'Just now';
-    if (diff.inMinutes < 60) return '${diff.inMinutes} min ago';
-    final hourVal = lastSync.toLocal().hour == 0
-        ? 12
-        : (lastSync.toLocal().hour > 12
-              ? lastSync.toLocal().hour - 12
-              : lastSync.toLocal().hour);
-    final amPm = lastSync.toLocal().hour >= 12 ? 'PM' : 'AM';
-    final minute = lastSync.toLocal().minute.toString().padLeft(2, '0');
-    return '$hourVal:$minute $amPm';
   }
 
   // ── Reminder helpers ──────────────────────────────────────────────────────

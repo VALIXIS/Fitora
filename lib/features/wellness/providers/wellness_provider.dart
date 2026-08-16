@@ -256,6 +256,52 @@ class WellnessNotifier extends StateNotifier<WellnessState> {
     await addWaterLogEntry(amountMl);
   }
 
+  Future<void> removeHydration(double amount) async {
+    final amountMl = (amount * 1000).round();
+    if (amountMl <= 0) return;
+    _recordWellnessActivity();
+    final now = DateTime.now();
+    final today = _todayStr();
+
+    final todayLogs = state.waterLogs.where((e) =>
+      e.timestamp.year == now.year &&
+      e.timestamp.month == now.month &&
+      e.timestamp.day == now.day
+    ).toList();
+
+    if (todayLogs.isEmpty) return;
+
+    final todayTotalMl = todayLogs.fold<int>(0, (sum, e) => sum + e.amountMl);
+    final targetTotalMl = (todayTotalMl - amountMl).clamp(0, 99900);
+
+    final updatedLogs = List<WaterLogEntry>.from(state.waterLogs)
+      ..removeWhere((e) =>
+        e.timestamp.year == now.year &&
+        e.timestamp.month == now.month &&
+        e.timestamp.day == now.day
+      );
+    
+    if (targetTotalMl > 0) {
+      updatedLogs.add(WaterLogEntry(
+        id: '${now.millisecondsSinceEpoch}_${now.microsecond}',
+        amountMl: targetTotalMl,
+        timestamp: now,
+      ));
+    }
+
+    double newHydration = (targetTotalMl / 1000.0).clamp(0.0, 99.9);
+    final updatedHistory = Map<String, double>.from(state.waterLogHistory)
+      ..[today] = newHydration;
+
+    state = state.copyWith(
+      waterLogs: updatedLogs,
+      hydrationLiters: newHydration,
+      waterLogHistory: updatedHistory,
+    );
+    updateRecovery();
+    await _persist();
+  }
+
   Future<void> setHydrationGoal(double goal) async {
     state = state.copyWith(hydrationGoalLiters: goal.clamp(1.0, 10.0));
     updateRecovery();

@@ -43,18 +43,27 @@ class TermsOfServiceScreen extends StatelessWidget {
               ),
               const SizedBox(height: FitoraSpacing.md),
               Text(
-                'Last updated: June 5, 2026\n\n'
-                '1. Acceptance of Terms\n'
-                'By using the Fitora app, you agree to these terms. If you do not agree to these terms, please do not use the app.\n\n'
-                '2. Medical Disclaimer\n'
-                'Fitora provides fitness and wellness tracking, not medical advice. Always consult a qualified healthcare professional before starting any new diet or exercise regimen.\n\n'
-                '3. User Responsibilities\n'
-                'You are responsible for your own safety during workouts. Stop immediately if you feel pain, dizziness, or severe discomfort.\n\n'
-                '4. Intellectual Property\n'
-                'All app design, text, graphics, and underlying code are the property of Fitora. You may not reproduce or distribute them without permission.\n\n'
-                '5. Limitation of Liability\n'
-                'Fitora is not liable for any injuries, damages, or losses resulting from your use of the app or its recommended workout routines.\n\n'
-                'If you have any questions, contact us at legal@fitora.app.',
+                'Last Updated: August 2026\n\n'
+                'These Terms of Service ("Terms") govern your use of the Fitora mobile application operated by VALIXIS. By using Fitora, you agree to these Terms.\n\n'
+                '1. About Fitora\n'
+                'Fitora is a fitness and wellness application designed to help users track activity, manage goals, monitor wellness information, and build healthier routines. Fitora is provided for general fitness and wellness purposes only.\n\n'
+                '2. Not Medical Advice\n'
+                'Fitora is not a medical device and does not provide medical diagnosis, treatment, prevention, or professional medical advice. Information displayed by Fitora should not be used as a substitute for advice from a qualified healthcare professional.\n\n'
+                '3. Your Account\n'
+                'If Fitora requires an account, you are responsible for maintaining credentials security and for activity under your account.\n\n'
+                '4. Acceptable Use\n'
+                'You agree not to use Fitora for unlawful purposes, compromise app security, reverse engineer software, or access unauthorized accounts.\n\n'
+                '5. Fitness Data\n'
+                'Fitness information displayed by Fitora depends on input from your device sensors, operating system, or user entries. Measurements may not always be completely accurate. Do not rely on Fitora for clinical or emergency decisions.\n\n'
+                '6. Notifications and Reminders\n'
+                'Notification delivery may be affected by device permissions, battery optimization, or OS settings outside our control.\n\n'
+                '7. Intellectual Property\n'
+                'Fitora, including branding, visual design, text, and code, is owned by or licensed to VALIXIS and protected by applicable intellectual property laws.\n\n'
+                '8. Disclaimer & Limitation of Liability\n'
+                'Fitora is provided on an "as is" basis without warranties of uninterrupted service. To the maximum extent permitted by law, VALIXIS will not be liable for indirect or consequential damages.\n\n'
+                '9. Contact\n'
+                'VALIXIS\n'
+                'For questions regarding these Terms, contact us at: official.valixis@gmail.com',
                 style: textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                   height: 1.6,

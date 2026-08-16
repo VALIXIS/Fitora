@@ -18,14 +18,6 @@ class OnboardingScreen extends HookConsumerWidget {
     final controller = ref.read(onboardingControllerProvider.notifier);
     final pageController = usePageController(initialPage: state.pageIndex);
 
-    useEffect(() {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (context.mounted) {
-          PermissionManager.requestFirstLaunchPermissions(context, ref);
-        }
-      });
-      return null;
-    }, const []);
 
     useEffect(() {
       if (!pageController.hasClients) {

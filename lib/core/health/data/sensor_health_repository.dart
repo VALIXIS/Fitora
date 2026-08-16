@@ -78,19 +78,18 @@ class SensorHealthRepository implements HealthRepository {
   Future<HydrationSummary> getHydrationSummary(DateTime date) =>
       _fallback.getHydrationSummary(date);
 
-  /// Derives calories, distance, and active minutes from a step count.
+  /// Derives calories, distance, and active minutes from a step count using canonical formulas.
   DailyActivitySummary _buildSummary({
     required int steps,
     required DateTime date,
     required SensorStatus sensorStatus,
   }) {
-    // Heuristic conversions (well-accepted approximations):
-    //   1 step ≈ 0.762 m  (average stride for mixed population)
-    //   ~1 kcal per 20 steps (moderate pace)
-    //   Active minutes: every 100 steps/min = 1 active minute
-    final distanceKm = steps * 0.000762;
-    final calories = steps / 20.0;
-    // We estimate active minutes conservatively at ~1 min per 100 steps
+    // Canonical step metric formulas:
+    //   Distance: 1 step = 0.00075 km (0.75m stride length)
+    //   Calories: 1 step = 0.04 kcal (1 kcal per 25 steps)
+    //   Active minutes: 1 minute per 100 steps
+    final distanceKm = steps * 0.00075;
+    final calories = steps * 0.04;
     final activeMinutes = (steps / 100).floor();
 
     return DailyActivitySummary(

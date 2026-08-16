@@ -110,29 +110,21 @@ final healthConnectStatusProvider =
     StateNotifierProvider<HealthConnectStatusNotifier, HealthConnectStatus>((
       ref,
     ) {
-      return HealthConnectStatusNotifier(
-        ref.read(healthConnectServiceProvider),
-      );
+      return HealthConnectStatusNotifier();
     });
 
 class HealthConnectStatusNotifier extends StateNotifier<HealthConnectStatus> {
-  final HealthConnectService _service;
-
-  HealthConnectStatusNotifier(this._service)
-    : super(HealthConnectStatus.unknown) {
+  HealthConnectStatusNotifier()
+    : super(HealthConnectStatus.unavailable) {
     checkStatus();
   }
 
   Future<void> checkStatus() async {
-    state = await _service.getStatus();
+    state = HealthConnectStatus.unavailable;
   }
 
   Future<void> requestPermissions() async {
-    state = HealthConnectStatus.syncing;
-    final granted = await _service.requestPermissions();
-    state = granted
-        ? HealthConnectStatus.connected
-        : HealthConnectStatus.permissionRequired;
+    state = HealthConnectStatus.unavailable;
   }
 }
 
@@ -193,18 +185,21 @@ final dailyActivityProvider = Provider.family<DailyActivitySummary, DateTime>((
     healthConnectStatus: healthConnectStatus,
   );
 
+  final isHCConnected = healthConnectStatus == HealthConnectStatus.connected ||
+      healthConnectStatus == HealthConnectStatus.partiallyGranted;
+
   if (isToday) {
+    if (isHCConnected) {
+      return summaryWithDynamicGoals;
+    }
+
     final liveSteps = ref.watch(liveStepsProvider);
     return liveSteps.when(
       data: (sensorSteps) {
-        final totalSteps = max(summaryWithDynamicGoals.steps, sensorSteps);
-        final dist = summaryWithDynamicGoals.distanceKm > 0
-            ? summaryWithDynamicGoals.distanceKm
-            : double.parse((totalSteps * 0.00075).toStringAsFixed(2));
-        final cal = summaryWithDynamicGoals.caloriesBurned > 0
-            ? summaryWithDynamicGoals.caloriesBurned
-            : double.parse((totalSteps * 0.04).toStringAsFixed(1));
-        final activeMins = summaryWithDynamicGoals.activeMinutes;
+        final totalSteps = sensorSteps;
+        final dist = double.parse((totalSteps * 0.00075).toStringAsFixed(2));
+        final cal = double.parse((totalSteps * 0.04).toStringAsFixed(1));
+        final activeMins = (totalSteps / 100).floor();
 
         return summaryWithDynamicGoals.copyWith(
           steps: totalSteps,

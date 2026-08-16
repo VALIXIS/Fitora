@@ -338,23 +338,9 @@ class HealthTrendChart extends ConsumerWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            'Sync your health device or log daily activities to see trend analytics.',
+            'Log daily activities to see trend analytics.',
             style: tt.bodySmall?.copyWith(color: Colors.white54),
             textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: FitoraSpacing.md),
-          FilledButton.icon(
-            onPressed: () => context.pushNamed(AppRouteNames.healthSync),
-            icon: const Icon(Icons.sync_rounded, size: 16),
-            label: const Text('Connect Health Source'),
-            style: FilledButton.styleFrom(
-              backgroundColor: _getMetricColor(metric),
-              foregroundColor: Colors.black,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
           ),
         ],
       ),

@@ -262,49 +262,76 @@ class HealthSyncController extends StateNotifier<HealthSyncState> with WidgetsBi
       final now = DateTime.now();
       final today = DateTime(now.year, now.month, now.day);
 
-      if (kDebugMode) print('[HC_DEBUG] Reading from HealthConnectRepository...');
+      if (kDebugMode) print('[HC_DEBUG] Reading weekly data from HealthConnectRepository...');
 
       final repo = HealthConnectRepository(HealthConnectService(AppPreferences.prefs));
-
-      final hcDaily = await repo.getDailyActivity(now);
-
-      if (kDebugMode) {
-        print('[HC_DEBUG] HC steps read: steps=${hcDaily.steps}, cal=${hcDaily.caloriesBurned}, dist=${hcDaily.distanceKm}');
-      }
-
-      SleepSummary? hcSleep;
-      try {
-        hcSleep = await repo.getSleepSummary(now);
-        if (kDebugMode && hcSleep != null) print('[HC_DEBUG] HC sleep: ${hcSleep.totalSleep.inMinutes} min');
-      } catch (e) {
-        if (kDebugMode) print('[HC_DEBUG] Sleep read failed (non-fatal): $e');
-      }
-
-      final sleepHours = (hcSleep?.totalSleep.inMinutes ?? 0) / 60.0;
-
       final cacheService = HealthCacheService(AppPreferences.prefs);
-      final existingDaily = cacheService.getDailyActivity(today) ?? DailyActivitySummary.empty(date: today);
 
-      final mergedSteps = hcDaily.steps == 0 ? existingDaily.steps : hcDaily.steps;
-      final mergedCalories = hcDaily.caloriesBurned == 0.0 ? existingDaily.caloriesBurned : hcDaily.caloriesBurned;
-      final mergedDistance = hcDaily.distanceKm == 0.0 ? existingDaily.distanceKm : hcDaily.distanceKm;
-      final mergedActiveMinutes = hcDaily.activeMinutes == 0 ? existingDaily.activeMinutes : hcDaily.activeMinutes;
+      final startOfWeek = today.subtract(const Duration(days: 6));
+      final hcWeek = await repo.getWeeklyActivity(startOfWeek);
 
-      final updatedDaily = hcDaily.copyWith(
-        steps: mergedSteps,
-        caloriesBurned: mergedCalories,
-        distanceKm: mergedDistance,
-        activeMinutes: mergedActiveMinutes,
-        date: today,
-        healthConnectStatus: hcDaily.healthConnectStatus,
-        dataSource: hcDaily.dataSource,
-        lastSyncTime: now,
+      final List<DailyActivitySummary> updatedWeekly = [];
+      SleepSummary? todaySleep;
+
+      for (final hcDaily in hcWeek) {
+        final dayDate = DateTime(hcDaily.date.year, hcDaily.date.month, hcDaily.date.day);
+        final existingDaily = cacheService.getDailyActivity(dayDate) ?? DailyActivitySummary.empty(date: dayDate);
+
+        final mergedSteps = hcDaily.steps == 0 ? existingDaily.steps : hcDaily.steps;
+        final mergedCalories = hcDaily.caloriesBurned == 0.0 ? existingDaily.caloriesBurned : hcDaily.caloriesBurned;
+        final mergedDistance = hcDaily.distanceKm == 0.0 ? existingDaily.distanceKm : hcDaily.distanceKm;
+        final mergedActiveMinutes = hcDaily.activeMinutes == 0 ? existingDaily.activeMinutes : hcDaily.activeMinutes;
+
+        final updatedDaily = hcDaily.copyWith(
+          steps: mergedSteps,
+          caloriesBurned: mergedCalories,
+          distanceKm: mergedDistance,
+          activeMinutes: mergedActiveMinutes,
+          date: dayDate,
+          healthConnectStatus: hcDaily.healthConnectStatus,
+          dataSource: hcDaily.dataSource,
+          lastSyncTime: now,
+        );
+
+        await cacheService.saveDailyActivity(updatedDaily);
+        updatedWeekly.add(updatedDaily);
+
+        if (dayDate.year == today.year && dayDate.month == today.month && dayDate.day == today.day) {
+          try {
+            todaySleep = await repo.getSleepSummary(today);
+          } catch (_) {}
+        }
+
+        // Fetch and save sleep for this specific day
+        try {
+          final sleepSum = await repo.getSleepSummary(dayDate);
+          final sleepMins = sleepSum.totalSleep.inMinutes;
+          if (sleepMins > 0) {
+            await cacheService.saveSleepSummary(SleepSummary(
+              totalSleep: Duration(minutes: sleepMins),
+              remSleep: Duration.zero,
+              deepSleep: Duration.zero,
+              lightSleep: Duration(minutes: sleepMins),
+              sleepScore: sleepSum.sleepScore,
+              date: dayDate,
+            ));
+          }
+        } catch (_) {}
+      }
+
+      await cacheService.saveWeeklyActivity(updatedWeekly);
+
+      final todaySummary = updatedWeekly.firstWhere(
+        (s) => s.date.year == today.year && s.date.month == today.month && s.date.day == today.day,
+        orElse: () => DailyActivitySummary.empty(date: today),
       );
 
+      final sleepHours = (todaySleep?.totalSleep.inMinutes ?? 0) / 60.0;
+
       final blended = HealthMetricData(
-        steps: updatedDaily.steps,
+        steps: todaySummary.steps,
         heartRate: 0.0,
-        activeCalories: updatedDaily.caloriesBurned,
+        activeCalories: todaySummary.caloriesBurned,
         sleepHours: sleepHours,
         timestamp: now,
       );
@@ -327,39 +354,6 @@ class HealthSyncController extends StateNotifier<HealthSyncState> with WidgetsBi
 
       await _service.saveConnections(updatedConnections);
       await _service.saveCachedData(blended);
-
-      if (kDebugMode) {
-        print('[HC_CACHE] saving: steps=${updatedDaily.steps}, cal=${updatedDaily.caloriesBurned}, dist=${updatedDaily.distanceKm}');
-      }
-
-      await cacheService.saveDailyActivity(updatedDaily);
-
-      final verify = cacheService.getDailyActivity(today);
-      if (kDebugMode) {
-        print('[HC_CACHE] verification read: steps=${verify?.steps}, cal=${verify?.caloriesBurned}');
-      }
-
-      final existingWeekly = cacheService.getWeeklyActivity() ??
-          List.generate(7, (i) => DailyActivitySummary.empty(date: today.subtract(Duration(days: 6 - i))));
-      final updatedWeekly = existingWeekly.map<DailyActivitySummary>((s) {
-        if (s.date.year == today.year && s.date.month == today.month && s.date.day == today.day) {
-          return updatedDaily;
-        }
-        return s;
-      }).toList();
-      await cacheService.saveWeeklyActivity(updatedWeekly);
-
-      final sleepMins = hcSleep?.totalSleep.inMinutes ?? 0;
-      if (sleepMins > 0) {
-        await cacheService.saveSleepSummary(SleepSummary(
-          totalSleep: Duration(minutes: sleepMins),
-          remSleep: Duration.zero,
-          deepSleep: Duration.zero,
-          lightSleep: Duration(minutes: sleepMins),
-          sleepScore: 80,
-          date: today,
-        ));
-      }
     } catch (e) {
       if (kDebugMode) print('[HC_DEBUG] Sync error: $e');
 

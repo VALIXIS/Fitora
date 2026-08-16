@@ -1172,19 +1172,6 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
               style: tt.bodySmall?.copyWith(color: Colors.white70),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: FitoraSpacing.lg),
-            FilledButton.icon(
-              onPressed: () => context.pushNamed(AppRouteNames.healthSync),
-              icon: const Icon(Icons.link_rounded),
-              label: const Text('Connect Health Source'),
-              style: FilledButton.styleFrom(
-                backgroundColor: FitoraColors.mintGreen,
-                foregroundColor: Colors.black,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
           ],
         ),
       ),

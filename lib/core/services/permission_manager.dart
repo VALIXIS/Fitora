@@ -4,6 +4,7 @@ import 'package:permission_handler/permission_handler.dart' as ph;
 import 'package:fitora/core/services/notification_service.dart';
 import 'package:fitora/core/storage/app_preferences.dart';
 import 'package:fitora/features/settings/providers/settings_provider.dart';
+import 'package:fitora/core/utils/app_logger.dart';
 
 /// Orchestrates first-launch permission requests in a user-friendly, sequential flow.
 class PermissionManager {
@@ -12,66 +13,65 @@ class PermissionManager {
   /// Returns true if the first-launch permission flow has already been shown.
   static Future<bool> wasPermissionsFlowShown() async {
     final prefs = await AppPreferences.instance();
-    return prefs.getBool(_kPermissionsShownKey) ?? false;
+    final val = prefs.getBool(_kPermissionsShownKey) ?? false;
+    AppLogger.info('[PM] wasPermissionsFlowShown: $val');
+    return val;
   }
 
   /// Marks the first-launch permission flow as shown.
   static Future<void> markPermissionsFlowShown() async {
+    AppLogger.info('[PM] markPermissionsFlowShown: writing true to prefs');
     final prefs = await AppPreferences.instance();
     await prefs.setBool(_kPermissionsShownKey, true);
+    AppLogger.info('[PM] markPermissionsFlowShown: done');
   }
 
-  /// Step 1 – Activity Recognition permission.
-  /// Returns true if granted.
-  static Future<bool> requestActivityRecognition() async {
-    final result = await ph.Permission.activityRecognition.request();
-    return result.isGranted;
-  }
-
-  /// Step 2 – Notification permission (Android 13+ / iOS).
-  /// Returns true if granted.
-  static Future<bool> requestNotifications() async {
-    final svc = NotificationService();
-    return await svc.requestPermissions();
-  }
-
-  /// Shows the sequential first-launch permission bottom sheet.
+  /// Shows the sequential first-launch permission bottom sheets.
   /// Requests Activity Recognition first, then Notifications.
-  /// Health Connect is handled separately when the user enters Health Sync.
   static Future<void> requestFirstLaunchPermissions(
     BuildContext context,
     WidgetRef ref,
   ) async {
+    AppLogger.info('[PM] requestFirstLaunchPermissions: called');
     if (!context.mounted) return;
 
     final alreadyShown = await wasPermissionsFlowShown();
-    if (alreadyShown) return;
-
-    await markPermissionsFlowShown();
+    if (alreadyShown) {
+      AppLogger.info('[PM] requestFirstLaunchPermissions: already shown – aborting');
+      return;
+    }
 
     if (!context.mounted) return;
     await _showActivityRecognitionSheet(context, ref);
   }
 
+  // ── Step 1: Activity Recognition ─────────────────────────────────────────────
+
   static Future<void> _showActivityRecognitionSheet(
     BuildContext context,
     WidgetRef ref,
   ) async {
+    AppLogger.info('[PM] _showActivityRecognitionSheet: checking existing grant');
     if (!context.mounted) return;
 
     final alreadyGranted = await ph.Permission.activityRecognition.isGranted;
+    AppLogger.info('[PM] activityRecognition.isGranted=$alreadyGranted');
     if (!context.mounted) return;
 
     if (alreadyGranted) {
+      AppLogger.info('[PM] activity recognition already granted – going to notifications');
       await _showNotificationSheet(context, ref);
       return;
     }
 
-    final granted = await showModalBottomSheet<bool>(
+    AppLogger.info('[PM] showing Step Tracking custom sheet');
+    final userTappedAllow = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => const _PermissionSheet(
+      isDismissible: false,
+      enableDrag: false,
+      builder: (_) => const _PermissionSheet(
         icon: Icons.directions_walk_rounded,
         iconColor: Color(0xFF06B6D4),
         title: 'Step Tracking',
@@ -83,37 +83,50 @@ class PermissionManager {
       ),
     );
 
-    if (context.mounted && (granted ?? false)) {
-      await requestActivityRecognition();
-      if (context.mounted) {
-        await _showNotificationSheet(context, ref);
-      }
-    } else if (context.mounted) {
-      // Skipped activity recognition – still offer notifications
+    // Sheet is now FULLY CLOSED – safe to call native dialog
+    AppLogger.info('[PM] Step Tracking sheet closed, userTappedAllow=$userTappedAllow');
+    if (userTappedAllow == true) {
+      AppLogger.info('[PM] Requesting Activity Recognition native dialog...');
+      final result = await ph.Permission.activityRecognition.request();
+      AppLogger.info('[PM] Activity Recognition result: $result');
+    }
+
+    if (context.mounted) {
       await _showNotificationSheet(context, ref);
     }
   }
+
+  // ── Step 2: Notifications ─────────────────────────────────────────────────────
 
   static Future<void> _showNotificationSheet(
     BuildContext context,
     WidgetRef ref,
   ) async {
+    AppLogger.info('[PM] _showNotificationSheet: checking existing grant');
     if (!context.mounted) return;
 
-    // Check if permission already granted to avoid a redundant prompt
     final alreadyGranted = await ph.Permission.notification.isGranted;
+    AppLogger.info('[PM] notification.isGranted=$alreadyGranted');
     if (alreadyGranted) {
-      await ref.read(settingsProvider.notifier).updateSetting('notificationsEnabled', true);
+      AppLogger.info('[PM] notification already granted – saving & finishing');
+      await ref
+          .read(settingsProvider.notifier)
+          .updateSetting('notificationsEnabled', true);
+      await markPermissionsFlowShown();
       return;
     }
 
     if (!context.mounted) return;
 
-    final granted = await showModalBottomSheet<bool>(
+    AppLogger.info('[PM] showing Stay on Track custom sheet');
+    final userTappedAllow = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => const _PermissionSheet(
+      // Allow drag/dismiss so the user is NEVER stuck if something goes wrong
+      isDismissible: true,
+      enableDrag: true,
+      builder: (_) => const _PermissionSheet(
         icon: Icons.notifications_active_rounded,
         iconColor: Color(0xFF8B5CF6),
         title: 'Stay on Track',
@@ -125,18 +138,39 @@ class PermissionManager {
       ),
     );
 
-    if (context.mounted && (granted ?? false)) {
-      final success = await requestNotifications();
-      if (context.mounted) {
-        await ref.read(settingsProvider.notifier).updateSetting('notificationsEnabled', success);
+    // Sheet is now FULLY CLOSED – the activity is topmost and focused again
+    AppLogger.info('[PM] Stay on Track sheet closed, userTappedAllow=$userTappedAllow');
+
+    bool notificationGranted = false;
+    if (userTappedAllow == true) {
+      AppLogger.info('[PM] Requesting POST_NOTIFICATIONS native dialog...');
+      final status = await ph.Permission.notification.request();
+      notificationGranted = status.isGranted;
+      AppLogger.info('[PM] POST_NOTIFICATIONS result: $status, granted=$notificationGranted');
+
+      // Initialise notification channels after permission is granted
+      if (notificationGranted) {
+        final svc = NotificationService();
+        await svc.initialize();
+        AppLogger.info('[PM] NotificationService initialized after grant');
       }
-    } else if (context.mounted) {
-      await ref.read(settingsProvider.notifier).updateSetting('notificationsEnabled', false);
+    } else {
+      AppLogger.info('[PM] User skipped notification permission');
     }
+
+    if (context.mounted) {
+      await ref
+          .read(settingsProvider.notifier)
+          .updateSetting('notificationsEnabled', notificationGranted);
+    }
+
+    // Mark as completed AFTER the full flow so Home screen never re-triggers
+    await markPermissionsFlowShown();
+    AppLogger.info('[PM] Permission flow marked as completed');
   }
 }
 
-// ── Permission Sheet Widget ───────────────────────────────────────────────────
+// ── Permission Sheet Widget ────────────────────────────────────────────────────
 
 class _PermissionSheet extends StatelessWidget {
   final IconData icon;
@@ -168,7 +202,9 @@ class _PermissionSheet extends StatelessWidget {
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5)),
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+        ),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -241,7 +277,7 @@ class _PermissionSheet extends StatelessWidget {
           ),
           const SizedBox(height: 32),
 
-          // Allow button
+          // Allow button – pops the sheet with true; native dialog fires AFTER sheet closes
           SizedBox(
             width: double.infinity,
             child: FilledButton(
@@ -262,7 +298,7 @@ class _PermissionSheet extends StatelessWidget {
           ),
           const SizedBox(height: 12),
 
-          // Skip button
+          // Skip button – pops the sheet with false
           SizedBox(
             width: double.infinity,
             child: TextButton(

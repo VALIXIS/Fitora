@@ -448,7 +448,7 @@ class ProfileScreen extends ConsumerWidget {
         'Help & Support',
         onTap: () {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Support email: support@fitora.app')),
+            const SnackBar(content: Text('Support email: official.valixis@gmail.com')),
           );
         },
       ),

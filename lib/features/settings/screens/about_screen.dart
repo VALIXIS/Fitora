@@ -46,7 +46,7 @@ class AboutScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: FitoraSpacing.xs),
                     Text(
-                      'Track Better. Live Healthier.',
+                      'Move with intention. Build momentum every day.',
                       style: textTheme.bodyMedium?.copyWith(
                         color: FitoraColors.mintGreen,
                         fontWeight: FontWeight.bold,
@@ -62,22 +62,28 @@ class AboutScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: FitoraSpacing.xl),
-                    _buildSectionTitle(context, 'OUR MISSION'),
+                    _buildSectionTitle(context, 'ABOUT FITORA'),
                     _buildInfoCard(
                       context,
                       textTheme,
-                      'Fitora is built to give you full control over your fitness journey. We believe health tracking should be intuitive, beautiful, and private. By leveraging on-device sensors and health connections, Fitora provides premium-quality analytics without compromises.',
+                      'Fitora is a personal fitness and wellness companion designed to help you understand your daily activity, build healthy routines, and stay consistent with your goals.\n\n'
+                      'Fitora brings important wellness information into one simple experience, including activity tracking, step progress, calories, distance, active minutes, hydration, sleep, goals, reminders, and progress insights.\n\n'
+                      'Our goal is simple: help you build better habits, one day at a time.',
                     ),
                     const SizedBox(height: FitoraSpacing.xl),
-                    _buildSectionTitle(context, 'PRIVACY & SECURITY'),
+                    _buildSectionTitle(context, 'MEDICAL DISCLAIMER'),
                     _buildInfoCard(
                       context,
                       textTheme,
-                      'Your privacy is our priority. All biometric and health data is processed and stored securely on your device.',
+                      'Fitora is designed for personal fitness and wellness purposes. It is not a medical device and does not provide medical diagnosis, treatment, or professional medical advice. For medical questions or concerns, consult a qualified healthcare professional.',
                     ),
                     const SizedBox(height: FitoraSpacing.xl),
-                    _buildSectionTitle(context, 'SUPPORT & CONTACT'),
-                    _buildLinkCard(context, textTheme, Icons.email_rounded, 'support@fitora.app'),
+                    _buildSectionTitle(context, 'DEVELOPER & SUPPORT'),
+                    _buildInfoCard(
+                      context,
+                      textTheme,
+                      'Developed by VALIXIS\nVersion 1.0.0\nEmail: official.valixis@gmail.com',
+                    ),
                     const SizedBox(height: 100),
                   ],
                 ),
@@ -140,39 +146,6 @@ class AboutScreen extends StatelessWidget {
             color: theme.colorScheme.onSurfaceVariant,
             height: 1.6,
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLinkCard(BuildContext context, TextTheme tt, IconData icon, String text) {
-    final theme = Theme.of(context);
-    return GlowContainer(
-      glowColor: FitoraColors.mintGreen.withValues(alpha: 0.03),
-      borderRadius: BorderRadius.circular(20),
-      padding: EdgeInsets.zero,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: FitoraSpacing.lg, vertical: 16),
-        decoration: BoxDecoration(
-          color: theme.cardTheme.color,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5)),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: FitoraColors.mintGreen, size: 24),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Text(
-                text,
-                style: tt.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurface,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            Icon(Icons.arrow_forward_ios_rounded, color: theme.colorScheme.onSurface.withValues(alpha: 0.3), size: 14),
-          ],
         ),
       ),
     );
