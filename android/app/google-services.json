@@ -14,27 +14,19 @@
       },
       "oauth_client": [
         {
-          "client_id": "42856190078-49pv50nevno9uiqe89ltlmvrlc555gh2.apps.googleusercontent.com",
+          "client_id": "42856190078-m3mnl7kdd7cvn0vun66dq4r4a1a0htfk.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.subhash.fitora",
-            "certificate_hash": "f3ae1e7d352a6f5d0451dce7338ec35144c6e11d"
+            "certificate_hash": "025bb7e629bb4d2a8a67153d47eb8d3cac74326b"
           }
         },
         {
-          "client_id": "42856190078-6u43e2qgg2ipn9cngr3a6lfo7dkv8sol.apps.googleusercontent.com",
+          "client_id": "42856190078-vulnh74c6q3gq14u1hh3d7vbrsc6sfeq.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.subhash.fitora",
-            "certificate_hash": "4821686564ccf3dd59c2470ff62e09284531531e"
-          }
-        },
-        {
-          "client_id": "42856190078-vphr2fr0ardhuh3ac4qkip01bk4plhu9.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.subhash.fitora",
-            "certificate_hash": "46764240a9b255db644c2f105454e29010b14cdc"
+            "certificate_hash": "6ba12b6f15b50dbb9c4ece385dd8cffd5b3aacd6"
           }
         },
         {

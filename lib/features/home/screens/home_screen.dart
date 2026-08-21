@@ -43,14 +43,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) {
-        final tt = Theme.of(context).textTheme;
+        final theme = Theme.of(context);
+        final tt = theme.textTheme;
         return Container(
           margin: const EdgeInsets.fromLTRB(16, 0, 16, 24),
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: const Color(0xFF0D1117),
+            color: theme.colorScheme.surface,
             borderRadius: BorderRadius.circular(28),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+            border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5)),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,

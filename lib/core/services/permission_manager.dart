@@ -4,6 +4,7 @@ import 'package:permission_handler/permission_handler.dart' as ph;
 import 'package:fitora/core/services/notification_service.dart';
 import 'package:fitora/core/storage/app_preferences.dart';
 import 'package:fitora/features/settings/providers/settings_provider.dart';
+import 'package:fitora/core/health/providers/health_providers.dart';
 import 'package:fitora/core/utils/app_logger.dart';
 
 /// Orchestrates first-launch permission requests in a user-friendly, sequential flow.
@@ -87,8 +88,8 @@ class PermissionManager {
     AppLogger.info('[PM] Step Tracking sheet closed, userTappedAllow=$userTappedAllow');
     if (userTappedAllow == true) {
       AppLogger.info('[PM] Requesting Activity Recognition native dialog...');
-      final result = await ph.Permission.activityRecognition.request();
-      AppLogger.info('[PM] Activity Recognition result: $result');
+      await ref.read(sensorStatusProvider.notifier).requestPermission();
+      AppLogger.info('[PM] Activity Recognition request completed');
     }
 
     if (context.mounted) {

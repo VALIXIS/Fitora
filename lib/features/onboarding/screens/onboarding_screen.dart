@@ -90,7 +90,7 @@ class OnboardingScreen extends HookConsumerWidget {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0E1312),
+      backgroundColor: colorScheme.surface,
       body: Column(
         children: [
           Expanded(
