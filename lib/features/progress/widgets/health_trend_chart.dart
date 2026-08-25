@@ -43,9 +43,9 @@ class HealthTrendChart extends ConsumerWidget {
       child: Container(
         padding: const EdgeInsets.all(FitoraSpacing.xl),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.02),
+          color: Theme.of(context).cardTheme.color ?? Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+          border: Border.all(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -62,7 +62,7 @@ class HealthTrendChart extends ConsumerWidget {
                       style: tt.labelSmall?.copyWith(
                         fontWeight: FontWeight.bold,
                         letterSpacing: 1.2,
-                        color: Colors.white54,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -73,7 +73,7 @@ class HealthTrendChart extends ConsumerWidget {
                       style: tt.bodySmall?.copyWith(
                         color: hasData
                             ? FitoraColors.mintGreen
-                            : Colors.white38,
+                            : Theme.of(context).colorScheme.onSurfaceVariant,
                         fontWeight: FontWeight.bold,
                         fontSize: 11,
                       ),

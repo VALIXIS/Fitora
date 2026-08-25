@@ -85,7 +85,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
           physics: const BouncingScrollPhysics(),
           slivers: [
             // ── Premium SafeArea Header ─────────────────────────────────────────
-            SliverToBoxAdapter(child: _buildHeader(textTheme)),
+            SliverToBoxAdapter(child: _buildHeader(context, textTheme)),
 
             // ── Scrollable Content List ────────────────────────────────────────
             SliverPadding(
@@ -146,7 +146,8 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     );
   }
 
-  Widget _buildHeader(TextTheme textTheme) {
+  Widget _buildHeader(BuildContext context, TextTheme textTheme) {
+    final theme = Theme.of(context);
     return SafeArea(
       bottom: false,
       child: Padding(
@@ -163,15 +164,15 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
               'Analytics',
               style: textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.w900,
-                color: Colors.white,
+                color: theme.colorScheme.onSurface,
               ),
             ),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.05),
+                color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(99),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5)),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -185,7 +186,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                   Text(
                     _headerFilterLabel(),
                     style: textTheme.labelLarge?.copyWith(
-                      color: Colors.white70,
+                      color: theme.colorScheme.onSurfaceVariant,
                       fontWeight: FontWeight.bold,
                       fontSize: 11,
                     ),
@@ -324,6 +325,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
           children: [
             Expanded(
               child: _buildOverviewCard(
+                context,
                 label: 'Steps',
                 value: stepsValueStr,
                 unit: stepsUnitStr,
@@ -338,6 +340,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
             const SizedBox(width: FitoraSpacing.sm),
             Expanded(
               child: _buildOverviewCard(
+                context,
                 label: 'Calories',
                 value: totalCalories.toInt().toString(),
                 unit: ' kcal',
@@ -356,6 +359,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
           children: [
             Expanded(
               child: _buildOverviewCard(
+                context,
                 label: 'Active',
                 value: totalActiveMinutes.toString(),
                 unit: ' min',
@@ -370,6 +374,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
             const SizedBox(width: FitoraSpacing.sm),
             Expanded(
               child: _buildOverviewCard(
+                context,
                 label: 'Distance',
                 value: totalDistanceKm.toStringAsFixed(1),
                 unit: ' km',
@@ -387,7 +392,8 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.05, end: 0);
   }
 
-  Widget _buildOverviewCard({
+  Widget _buildOverviewCard(
+    BuildContext context, {
     required String label,
     required String value,
     required String unit,
@@ -397,6 +403,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     required Color color,
     required TextTheme textTheme,
   }) {
+    final theme = Theme.of(context);
     return GlowContainer(
       glowColor: color.withValues(alpha: 0.05),
       borderRadius: BorderRadius.circular(20),
@@ -404,9 +411,9 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
       child: Container(
         padding: const EdgeInsets.all(FitoraSpacing.md),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.02),
+          color: theme.cardTheme.color ?? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+          border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -472,7 +479,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                     value,
                     style: textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.w900,
-                      color: Colors.white,
+                      color: theme.colorScheme.onSurface,
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -484,7 +491,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                     child: Text(
                       unit,
                       style: textTheme.labelSmall?.copyWith(
-                        color: Colors.white54,
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ),
@@ -495,7 +502,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
             Text(
               label.toUpperCase(),
               style: textTheme.labelSmall?.copyWith(
-                color: Colors.white30,
+                color: theme.colorScheme.onSurfaceVariant,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 0.5,
               ),
@@ -529,6 +536,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                       child: GestureDetector(
                         onTap: () => _showMoodDialog(context, ref, mood),
                         child: _buildOverviewCard(
+                          context,
                           label: 'Mood',
                           value: mood,
                           unit: '',
@@ -545,6 +553,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                       child: GestureDetector(
                         onTap: () => _showBreathingDialog(context, ref),
                         child: _buildOverviewCard(
+                          context,
                           label: 'Breathing',
                           value: '${wellness.breathingMinutes} min',
                           unit: '',
@@ -573,6 +582,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     TextTheme tt,
     WellnessState wellness,
   ) {
+    final theme = Theme.of(context);
     final liters = wellness.hydrationLiters;
     final goal = wellness.hydrationGoalLiters;
     final progress = goal > 0 ? (liters / goal).clamp(0.0, 1.0) : 0.0;
@@ -588,9 +598,9 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
       child: Container(
         padding: const EdgeInsets.all(FitoraSpacing.xl),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.02),
+          color: theme.cardTheme.color ?? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+          border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -618,7 +628,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                       style: tt.labelSmall?.copyWith(
                         fontWeight: FontWeight.bold,
                         letterSpacing: 1.0,
-                        color: Colors.white54,
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -628,9 +638,9 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                   children: [
                     if (liters > 0)
                       IconButton(
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.refresh_rounded,
-                          color: Colors.white30,
+                          color: theme.colorScheme.onSurfaceVariant,
                           size: 20,
                         ),
                         onPressed: () => ref
@@ -703,7 +713,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                         '${liters.toStringAsFixed(2)} L',
                         style: tt.titleLarge?.copyWith(
                           fontWeight: FontWeight.w900,
-                          color: Colors.white,
+                          color: theme.colorScheme.onSurface,
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -711,7 +721,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                         goal > 0
                             ? 'Goal: ${goal.toStringAsFixed(1)} L (1 glass = 250ml)'
                             : 'Set Daily Water Goal',
-                        style: tt.bodySmall?.copyWith(color: Colors.white54),
+                        style: tt.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                       ),
                     ],
                   ),

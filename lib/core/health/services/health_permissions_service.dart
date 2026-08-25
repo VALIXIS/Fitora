@@ -42,19 +42,22 @@ class HealthPermissionsService {
       return SensorStatus.unavailable;
     }
 
-    final snap = await _sensorRepo.getDebugSnapshot();
-    if (!snap.sensorAvailable) {
-      return SensorStatus.unavailable;
-    }
-
     // Pre-Android 10: no runtime permission required
     if (await _isPreAndroid10()) {
       return SensorStatus.active;
     }
 
     final result = await Permission.activityRecognition.request();
-    if (result.isGranted) return SensorStatus.active;
-    return SensorStatus.permissionRequired;
+    if (!result.isGranted) {
+      return SensorStatus.permissionRequired;
+    }
+
+    final snap = await _sensorRepo.getDebugSnapshot();
+    if (!snap.sensorAvailable) {
+      return SensorStatus.unavailable;
+    }
+
+    return SensorStatus.active;
   }
 
   Future<bool> _isPreAndroid10() async {

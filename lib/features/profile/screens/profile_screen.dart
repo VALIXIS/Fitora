@@ -19,7 +19,8 @@ class ProfileScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final textTheme = Theme.of(context).textTheme;
+    final theme = Theme.of(context);
+    final textTheme = theme.textTheme;
     final personalizationState = ref.watch(personalizationControllerProvider);
     final profile = personalizationState.profile;
     final authSession = ref.watch(authStateProvider);
@@ -40,7 +41,7 @@ class ProfileScreen extends ConsumerWidget {
             'Profile',
             style: textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w900,
-              color: Colors.white,
+              color: theme.colorScheme.onSurface,
               letterSpacing: 0.5,
             ),
           ),
@@ -66,15 +67,15 @@ class ProfileScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: FitoraSpacing.xl),
 
-                    _buildSectionTitle(textTheme, 'HEALTH OVERVIEW'),
-                    _buildHealthOverview(textTheme, profile),
+                    _buildSectionTitle(context, textTheme, 'HEALTH OVERVIEW'),
+                    _buildHealthOverview(context, textTheme, profile),
                     const SizedBox(height: FitoraSpacing.xl),
 
-                    _buildSectionTitle(textTheme, 'PERSONALIZATION'),
-                    _buildPersonalizationDetails(textTheme, profile),
+                    _buildSectionTitle(context, textTheme, 'PERSONALIZATION'),
+                    _buildPersonalizationDetails(context, textTheme, profile),
                     const SizedBox(height: FitoraSpacing.xl),
 
-                    _buildSectionTitle(textTheme, 'GOALS'),
+                    _buildSectionTitle(context, textTheme, 'GOALS'),
                     _buildGoalsSection(
                       context,
                       textTheme,
@@ -84,7 +85,7 @@ class ProfileScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: FitoraSpacing.xl),
 
-                    _buildSectionTitle(textTheme, 'QUICK ACTIONS'),
+                    _buildSectionTitle(context, textTheme, 'QUICK ACTIONS'),
                     _buildQuickActions(context, textTheme),
                     const SizedBox(height: FitoraSpacing.xl),
 
@@ -119,7 +120,8 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildSectionTitle(TextTheme textTheme, String title) {
+  Widget _buildSectionTitle(BuildContext context, TextTheme textTheme, String title) {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.only(left: 4, bottom: 12),
       child: Text(
@@ -127,13 +129,14 @@ class ProfileScreen extends ConsumerWidget {
         style: textTheme.labelSmall?.copyWith(
           fontWeight: FontWeight.bold,
           letterSpacing: 1.5,
-          color: Colors.white30,
+          color: theme.colorScheme.onSurfaceVariant,
         ),
       ),
     );
   }
 
-  Widget _buildCard(List<Widget> children, {Color? highlightColor}) {
+  Widget _buildCard(BuildContext context, List<Widget> children, {Color? highlightColor}) {
+    final theme = Theme.of(context);
     final glowColor = highlightColor ?? FitoraColors.calmCyan;
     return GlowContainer(
       glowColor: glowColor.withValues(alpha: 0.03),
@@ -142,12 +145,12 @@ class ProfileScreen extends ConsumerWidget {
       child: Container(
         width: double.infinity,
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.02),
+          color: theme.cardTheme.color ?? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color:
                 highlightColor?.withValues(alpha: 0.2) ??
-                Colors.white.withValues(alpha: 0.08),
+                theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
           ),
         ),
         child: Column(
@@ -166,7 +169,8 @@ class ProfileScreen extends ConsumerWidget {
     String name,
     String subtitle,
   ) {
-    return _buildCard(highlightColor: FitoraColors.mintGreen, [
+    final theme = Theme.of(context);
+    return _buildCard(context, highlightColor: FitoraColors.mintGreen, [
       Padding(
         padding: const EdgeInsets.all(FitoraSpacing.lg),
         child: Row(
@@ -194,13 +198,13 @@ class ProfileScreen extends ConsumerWidget {
                     name,
                     style: tt.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: theme.colorScheme.onSurface,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     subtitle,
-                    style: tt.bodySmall?.copyWith(color: Colors.white70),
+                    style: tt.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                   ),
                   const SizedBox(height: 6),
                   Container(
@@ -236,7 +240,7 @@ class ProfileScreen extends ConsumerWidget {
     ]);
   }
 
-  Widget _buildHealthOverview(TextTheme tt, PersonalizationProfile profile) {
+  Widget _buildHealthOverview(BuildContext context, TextTheme tt, PersonalizationProfile profile) {
     double bmi = 0.0;
     if (profile.weightKg != null &&
         profile.heightCm != null &&
@@ -250,11 +254,12 @@ class ProfileScreen extends ConsumerWidget {
         Row(
           children: [
             Expanded(
-              child: _buildHealthMetric(tt, 'Age', '${profile.age ?? 25}'),
+              child: _buildHealthMetric(context, tt, 'Age', '${profile.age ?? 25}'),
             ),
             const SizedBox(width: FitoraSpacing.sm),
             Expanded(
               child: _buildHealthMetric(
+                context,
                 tt,
                 'Height',
                 '${profile.heightCm?.round() ?? 170} cm',
@@ -263,6 +268,7 @@ class ProfileScreen extends ConsumerWidget {
             const SizedBox(width: FitoraSpacing.sm),
             Expanded(
               child: _buildHealthMetric(
+                context,
                 tt,
                 'Weight',
                 '${profile.weightKg?.toStringAsFixed(1) ?? 65.0} kg',
@@ -272,7 +278,7 @@ class ProfileScreen extends ConsumerWidget {
         ),
         if (bmi > 0) ...[
           const SizedBox(height: FitoraSpacing.sm),
-          _buildCard([
+          _buildCard(context, [
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
               child: Row(
@@ -290,14 +296,14 @@ class ProfileScreen extends ConsumerWidget {
                         Text(
                           'BMI (Body Mass Index)',
                           style: tt.bodyMedium?.copyWith(
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.onSurface,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           _getBmiCategory(bmi),
-                          style: tt.labelSmall?.copyWith(color: Colors.white70),
+                          style: tt.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
                         ),
                       ],
                     ),
@@ -325,7 +331,8 @@ class ProfileScreen extends ConsumerWidget {
     return 'Obese';
   }
 
-  Widget _buildHealthMetric(TextTheme tt, String label, String value) {
+  Widget _buildHealthMetric(BuildContext context, TextTheme tt, String label, String value) {
+    final theme = Theme.of(context);
     return GlowContainer(
       glowColor: FitoraColors.calmCyan.withValues(alpha: 0.02),
       borderRadius: BorderRadius.circular(20),
@@ -333,9 +340,9 @@ class ProfileScreen extends ConsumerWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: FitoraSpacing.lg),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.02),
+          color: theme.cardTheme.color ?? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+          border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -344,14 +351,14 @@ class ProfileScreen extends ConsumerWidget {
               value,
               style: tt.titleMedium?.copyWith(
                 fontWeight: FontWeight.w900,
-                color: Colors.white,
+                color: theme.colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 4),
             Text(
               label.toUpperCase(),
               style: tt.labelSmall?.copyWith(
-                color: Colors.white30,
+                color: theme.colorScheme.onSurfaceVariant,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 0.5,
               ),
@@ -363,19 +370,22 @@ class ProfileScreen extends ConsumerWidget {
   }
 
   Widget _buildPersonalizationDetails(
+    BuildContext context,
     TextTheme tt,
     PersonalizationProfile profile,
   ) {
-    return _buildCard([
+    return _buildCard(context, [
       _buildTile(
+        context,
         tt,
         Icons.track_changes_rounded,
         'Primary Goal',
         profile.goal?.label ?? 'General Fitness',
         iconColor: FitoraColors.mintGreen,
       ),
-      _buildDivider(),
+      _buildDivider(context),
       _buildTile(
+        context,
         tt,
         Icons.spa_rounded,
         'Wellness Focus',
@@ -399,8 +409,9 @@ class ProfileScreen extends ConsumerWidget {
     final waterGoalStr = wellness.hydrationGoalLiters > 0
         ? '${wellness.hydrationGoalLiters.toStringAsFixed(1)}L'
         : '2.5L';
-    return _buildCard([
+    return _buildCard(context, [
       _buildTile(
+        context,
         tt,
         Icons.directions_walk_rounded,
         'Daily Steps',
@@ -408,8 +419,9 @@ class ProfileScreen extends ConsumerWidget {
         iconColor: FitoraColors.calmCyan,
         onTap: () => showStepGoalPicker(context, ref, activity.stepsGoal),
       ),
-      _buildDivider(),
+      _buildDivider(context),
       _buildTile(
+        context,
         tt,
         Icons.water_drop_rounded,
         'Water Goal',
@@ -420,29 +432,33 @@ class ProfileScreen extends ConsumerWidget {
   }
 
   Widget _buildQuickActions(BuildContext context, TextTheme tt) {
-    return _buildCard([
+    return _buildCard(context, [
       _buildActionTile(
+        context,
         tt,
         Icons.settings_rounded,
         'Settings',
         onTap: () => context.pushNamed(AppRouteNames.settings),
       ),
-      _buildDivider(),
+      _buildDivider(context),
       _buildActionTile(
+        context,
         tt,
         Icons.info_outline_rounded,
         'About Fitora',
         onTap: () => context.pushNamed(AppRouteNames.about),
       ),
-      _buildDivider(),
+      _buildDivider(context),
       _buildActionTile(
+        context,
         tt,
         Icons.lock_outline_rounded,
         'Privacy Policy',
         onTap: () => context.pushNamed(AppRouteNames.privacyPolicy),
       ),
-      _buildDivider(),
+      _buildDivider(context),
       _buildActionTile(
+        context,
         tt,
         Icons.help_outline_rounded,
         'Help & Support',
@@ -455,15 +471,16 @@ class ProfileScreen extends ConsumerWidget {
     ]);
   }
 
-  Widget _buildDivider() {
+  Widget _buildDivider(BuildContext context) {
     return Divider(
-      color: Colors.white.withValues(alpha: 0.05),
+      color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.3),
       height: 1,
       indent: 56,
     );
   }
 
   Widget _buildTile(
+    BuildContext context,
     TextTheme tt,
     IconData icon,
     String title,
@@ -472,17 +489,18 @@ class ProfileScreen extends ConsumerWidget {
     Color? valueColor,
     VoidCallback? onTap,
   }) {
+    final theme = Theme.of(context);
     final tile = Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       child: Row(
         children: [
-          Icon(icon, color: iconColor ?? Colors.white70, size: 24),
+          Icon(icon, color: iconColor ?? theme.colorScheme.onSurfaceVariant, size: 24),
           const SizedBox(width: 16),
           Expanded(
             child: Text(
               title,
               style: tt.bodyMedium?.copyWith(
-                color: Colors.white,
+                color: theme.colorScheme.onSurface,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -490,7 +508,7 @@ class ProfileScreen extends ConsumerWidget {
           Text(
             value,
             style: tt.bodyMedium?.copyWith(
-              color: valueColor ?? Colors.white70,
+              color: valueColor ?? theme.colorScheme.onSurfaceVariant,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -509,11 +527,13 @@ class ProfileScreen extends ConsumerWidget {
   }
 
   Widget _buildActionTile(
+    BuildContext context,
     TextTheme tt,
     IconData icon,
     String title, {
     required VoidCallback onTap,
   }) {
+    final theme = Theme.of(context);
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
@@ -521,20 +541,20 @@ class ProfileScreen extends ConsumerWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         child: Row(
           children: [
-            Icon(icon, color: Colors.white70, size: 24),
+            Icon(icon, color: theme.colorScheme.onSurfaceVariant, size: 24),
             const SizedBox(width: 16),
             Expanded(
               child: Text(
                 title,
                 style: tt.bodyMedium?.copyWith(
-                  color: Colors.white,
+                  color: theme.colorScheme.onSurface,
                   fontWeight: FontWeight.w600,
                 ),
               ),
             ),
-            const Icon(
+            Icon(
               Icons.arrow_forward_ios_rounded,
-              color: Colors.white30,
+              color: theme.colorScheme.onSurfaceVariant,
               size: 14,
             ),
           ],
