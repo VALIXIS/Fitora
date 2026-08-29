@@ -13,6 +13,7 @@ import 'package:fitora/features/settings/providers/settings_provider.dart';
 import 'package:fitora/shared/widgets/glow_container.dart';
 import 'package:fitora/features/wellness/providers/wellness_provider.dart';
 import 'package:fitora/shared/widgets/fitora_background.dart';
+import 'package:fitora/features/profile/widgets/achievements_grid.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -25,7 +26,8 @@ class ProfileScreen extends ConsumerWidget {
     final profile = personalizationState.profile;
     final authSession = ref.watch(authStateProvider);
     final wellness = ref.watch(wellnessProvider);
-    final activity = ref.watch(dailyActivityProvider(DateTime.now()));
+    final today = ref.watch(todayProvider);
+    final activity = ref.watch(dailyActivityProvider(today));
 
     String displayName = authSession.user?.displayName ?? '';
     if (displayName.isEmpty) displayName = profile.name ?? '';
@@ -89,6 +91,8 @@ class ProfileScreen extends ConsumerWidget {
                     _buildQuickActions(context, textTheme),
                     const SizedBox(height: FitoraSpacing.xl),
 
+                    const AchievementsGrid(),
+                    const SizedBox(height: FitoraSpacing.xl),
 
                     Consumer(
                       builder: (context, ref, _) {

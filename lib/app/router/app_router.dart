@@ -24,6 +24,8 @@ import 'package:fitora/features/settings/screens/privacy_policy_screen.dart';
 import 'package:fitora/features/settings/screens/terms_of_service_screen.dart';
 import 'package:fitora/features/profile/screens/edit_profile_screen.dart';
 import 'package:fitora/shared/screens/not_found_screen.dart';
+import 'package:fitora/features/sleep/screens/sleep_detail_screen.dart';
+import 'package:fitora/features/sleep/screens/sleep_schedule_screen.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorKeys = [
@@ -228,6 +230,30 @@ final appRouterProvider = Provider<GoRouter>(
                     state: state,
                     child: const ProgressScreen(),
                   ),
+                  routes: [
+                    GoRoute(
+                      parentNavigatorKey: _rootNavigatorKey,
+                      path: AppRoutes.sleepDetail,
+                      name: AppRouteNames.sleepDetail,
+                      pageBuilder: (context, state) => slideUpTransitionPage(
+                        context: context,
+                        state: state,
+                        child: const SleepDetailScreen(),
+                      ),
+                      routes: [
+                        GoRoute(
+                          parentNavigatorKey: _rootNavigatorKey,
+                          path: AppRoutes.sleepSchedule,
+                          name: AppRouteNames.sleepSchedule,
+                          pageBuilder: (context, state) => slideUpTransitionPage(
+                            context: context,
+                            state: state,
+                            child: const SleepScheduleScreen(),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ],
             ),

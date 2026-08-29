@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-import 'package:fitora/app/router/app_routes.dart';
 import 'package:fitora/core/constants/spacing.dart';
 import 'package:fitora/core/theme/fitora_colors.dart';
 import 'package:fitora/shared/widgets/glow_container.dart';
@@ -14,6 +12,9 @@ import 'package:fitora/features/personalization/providers/personalization_contro
 import 'package:fitora/features/progress/widgets/weekly_summary_card.dart';
 import 'package:fitora/features/progress/widgets/health_trend_chart.dart';
 import 'package:fitora/shared/widgets/fitora_background.dart';
+import 'package:fitora/features/workouts/widgets/log_workout_modal.dart';
+import 'package:go_router/go_router.dart';
+import 'package:fitora/features/settings/providers/settings_provider.dart';
 
 class ProgressScreen extends ConsumerStatefulWidget {
   const ProgressScreen({super.key});
@@ -81,6 +82,13 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     return FitoraBackground(
       child: Scaffold(
         backgroundColor: Colors.transparent,
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: () => LogWorkoutModal.show(context),
+          label: const Text('Log Workout', style: TextStyle(fontWeight: FontWeight.bold)),
+          icon: const Icon(Icons.add_rounded),
+          backgroundColor: FitoraColors.mintGreen,
+          foregroundColor: Colors.black,
+        ),
         body: CustomScrollView(
           physics: const BouncingScrollPhysics(),
           slivers: [
@@ -516,11 +524,11 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
   Widget _buildRecoverySection(BuildContext context, TextTheme tt) {
     return Consumer(
       builder: (context, ref, _) {
-        final sleep = ref.watch(sleepSummaryProvider(DateTime.now()));
+        final today = ref.watch(todayProvider);
+        final sleep = ref.watch(sleepSummaryProvider(today));
         final wellness = ref.watch(wellnessProvider);
-        final now = DateTime.now();
         final todayStr =
-            "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
+            "${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}";
         final mood = wellness.loggedMoods[todayStr] ?? 'Not logged';
 
         return Column(
@@ -779,7 +787,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     final hours = sleep.totalSleep.inHours;
     final minutes = sleep.totalSleep.inMinutes.remainder(60);
 
-    const double sleepGoalMinutes = 480.0;
+    final sleepGoalMinutes = ref.watch(settingsProvider).sleepTargetDurationMinutes.toDouble();
     final progress = (totalMinutes / sleepGoalMinutes).clamp(0.0, 1.0);
 
     String qualityText = 'Unknown';
@@ -805,185 +813,192 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
         sleep.remSleep.inMinutes > 0 ||
         sleep.lightSleep.inMinutes > 0;
 
-    return GlowContainer(
-      glowColor: FitoraColors.calmCyan.withValues(alpha: 0.05),
-      borderRadius: BorderRadius.circular(24),
-      padding: EdgeInsets.zero,
-      child: Container(
-        padding: const EdgeInsets.all(FitoraSpacing.xl),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.02),
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: FitoraColors.calmCyan.withValues(alpha: 0.1),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.bedtime_rounded,
-                        color: FitoraColors.calmCyan,
-                        size: 20,
-                      ),
-                    ),
-                    const SizedBox(width: FitoraSpacing.md),
-                    Text(
-                      'SLEEP ANALYSIS',
-                      style: tt.labelSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.0,
-                        color: Colors.white54,
-                      ),
-                    ),
-                  ],
-                ),
-                if (totalMinutes > 0)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: qualityColor.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: qualityColor.withValues(alpha: 0.3),
-                      ),
-                    ),
-                    child: Text(
-                      qualityText.toUpperCase(),
-                      style: tt.labelSmall?.copyWith(
-                        color: qualityColor,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-            const SizedBox(height: FitoraSpacing.lg),
-            if (totalMinutes == 0) ...[
-              Text(
-                'Sleep information will appear after your first night of tracking.',
-                style: tt.bodySmall?.copyWith(color: Colors.white38),
-              ),
-            ] else ...[
+    final goalHours = (sleepGoalMinutes / 60).toInt();
+    final goalMins = (sleepGoalMinutes % 60).toInt();
+    final goalStr = goalMins > 0 ? '${goalHours}h ${goalMins}m' : '$goalHours hrs';
+
+    return GestureDetector(
+      onTap: () => context.push('/progress/sleep-detail'),
+      child: GlowContainer(
+        glowColor: FitoraColors.calmCyan.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(24),
+        padding: EdgeInsets.zero,
+        child: Container(
+          padding: const EdgeInsets.all(FitoraSpacing.xl),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.02),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
               Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Stack(
-                    alignment: Alignment.center,
+                  Row(
                     children: [
-                      SizedBox(
-                        width: 76,
-                        height: 76,
-                        child: CircularProgressIndicator(
-                          value: progress,
-                          strokeWidth: 7,
-                          backgroundColor: Colors.white.withValues(alpha: 0.05),
-                          valueColor: const AlwaysStoppedAnimation<Color>(
-                            FitoraColors.calmCyan,
-                          ),
-                          strokeCap: StrokeCap.round,
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: FitoraColors.calmCyan.withValues(alpha: 0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.bedtime_rounded,
+                          color: FitoraColors.calmCyan,
+                          size: 20,
                         ),
                       ),
+                      const SizedBox(width: FitoraSpacing.md),
                       Text(
-                        '${(progress * 100).toInt()}%',
-                        style: tt.labelLarge?.copyWith(
-                          color: FitoraColors.calmCyan,
-                          fontWeight: FontWeight.w900,
+                        'SLEEP ANALYSIS',
+                        style: tt.labelSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.0,
+                          color: Colors.white54,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(width: FitoraSpacing.xl),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '${hours}h ${minutes}m',
-                          style: tt.titleLarge?.copyWith(
-                            fontWeight: FontWeight.w900,
-                            color: Colors.white,
-                          ),
+                  if (totalMinutes > 0)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: qualityColor.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: qualityColor.withValues(alpha: 0.3),
                         ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'Sleep Goal: 8 hrs',
-                          style: tt.bodySmall?.copyWith(color: Colors.white54),
+                      ),
+                      child: Text(
+                        qualityText.toUpperCase(),
+                        style: tt.labelSmall?.copyWith(
+                          color: qualityColor,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.5,
                         ),
-                      ],
+                      ),
                     ),
-                  ),
                 ],
               ),
-              if (hasStages) ...[
-                const SizedBox(height: FitoraSpacing.lg),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(99),
-                  child: SizedBox(
-                    height: 8,
-                    child: Row(
+              const SizedBox(height: FitoraSpacing.lg),
+              if (totalMinutes == 0) ...[
+                Text(
+                  'Sleep information will appear after your first night of tracking.',
+                  style: tt.bodySmall?.copyWith(color: Colors.white38),
+                ),
+              ] else ...[
+                Row(
+                  children: [
+                    Stack(
+                      alignment: Alignment.center,
                       children: [
-                        if (sleep.deepSleep.inMinutes > 0)
-                          Expanded(
-                            flex: sleep.deepSleep.inMinutes,
-                            child: Container(color: Colors.indigoAccent),
+                        SizedBox(
+                          width: 76,
+                          height: 76,
+                          child: CircularProgressIndicator(
+                            value: progress,
+                            strokeWidth: 7,
+                            backgroundColor: Colors.white.withValues(alpha: 0.05),
+                            valueColor: const AlwaysStoppedAnimation<Color>(
+                              FitoraColors.calmCyan,
+                            ),
+                            strokeCap: StrokeCap.round,
                           ),
-                        if (sleep.remSleep.inMinutes > 0)
-                          Expanded(
-                            flex: sleep.remSleep.inMinutes,
-                            child: Container(color: FitoraColors.calmCyan),
+                        ),
+                        Text(
+                          '${(progress * 100).toInt()}%',
+                          style: tt.labelLarge?.copyWith(
+                            color: FitoraColors.calmCyan,
+                            fontWeight: FontWeight.w900,
                           ),
-                        if (sleep.lightSleep.inMinutes > 0)
-                          Expanded(
-                            flex: sleep.lightSleep.inMinutes,
-                            child: Container(color: FitoraColors.lavender),
-                          ),
+                        ),
                       ],
                     ),
-                  ),
-                ),
-                const SizedBox(height: FitoraSpacing.sm),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    if (sleep.deepSleep.inMinutes > 0)
-                      _buildSleepStageLabel(
-                        tt,
-                        'Deep',
-                        '${sleep.deepSleep.inHours}h ${sleep.deepSleep.inMinutes.remainder(60)}m',
-                        Colors.indigoAccent,
+                    const SizedBox(width: FitoraSpacing.xl),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '${hours}h ${minutes}m',
+                            style: tt.titleLarge?.copyWith(
+                              fontWeight: FontWeight.w900,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Sleep Goal: $goalStr',
+                            style: tt.bodySmall?.copyWith(color: Colors.white54),
+                          ),
+                        ],
                       ),
-                    if (sleep.remSleep.inMinutes > 0)
-                      _buildSleepStageLabel(
-                        tt,
-                        'REM',
-                        '${sleep.remSleep.inHours}h ${sleep.remSleep.inMinutes.remainder(60)}m',
-                        FitoraColors.calmCyan,
-                      ),
-                    if (sleep.lightSleep.inMinutes > 0)
-                      _buildSleepStageLabel(
-                        tt,
-                        'Light',
-                        '${sleep.lightSleep.inHours}h ${sleep.lightSleep.inMinutes.remainder(60)}m',
-                        FitoraColors.lavender,
-                      ),
+                    ),
                   ],
                 ),
+                if (hasStages) ...[
+                  const SizedBox(height: FitoraSpacing.lg),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(99),
+                    child: SizedBox(
+                      height: 8,
+                      child: Row(
+                        children: [
+                          if (sleep.deepSleep.inMinutes > 0)
+                            Expanded(
+                              flex: sleep.deepSleep.inMinutes,
+                              child: Container(color: Colors.indigoAccent),
+                            ),
+                          if (sleep.remSleep.inMinutes > 0)
+                            Expanded(
+                              flex: sleep.remSleep.inMinutes,
+                              child: Container(color: FitoraColors.calmCyan),
+                            ),
+                          if (sleep.lightSleep.inMinutes > 0)
+                            Expanded(
+                              flex: sleep.lightSleep.inMinutes,
+                              child: Container(color: FitoraColors.lavender),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: FitoraSpacing.sm),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      if (sleep.deepSleep.inMinutes > 0)
+                        _buildSleepStageLabel(
+                          tt,
+                          'Deep',
+                          '${sleep.deepSleep.inHours}h ${sleep.deepSleep.inMinutes.remainder(60)}m',
+                          Colors.indigoAccent,
+                        ),
+                      if (sleep.remSleep.inMinutes > 0)
+                        _buildSleepStageLabel(
+                          tt,
+                          'REM',
+                          '${sleep.remSleep.inHours}h ${sleep.remSleep.inMinutes.remainder(60)}m',
+                          FitoraColors.calmCyan,
+                        ),
+                      if (sleep.lightSleep.inMinutes > 0)
+                        _buildSleepStageLabel(
+                          tt,
+                          'Light',
+                          '${sleep.lightSleep.inHours}h ${sleep.lightSleep.inMinutes.remainder(60)}m',
+                          FitoraColors.lavender,
+                        ),
+                    ],
+                  ),
+                ],
               ],
             ],
-          ],
+          ),
         ),
       ),
     );

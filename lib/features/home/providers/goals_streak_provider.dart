@@ -6,6 +6,7 @@ import 'package:fitora/core/health/providers/health_providers.dart';
 import 'package:fitora/core/health/domain/health_models.dart';
 import 'package:fitora/features/wellness/providers/wellness_provider.dart';
 import 'package:fitora/features/home/domain/goals_streak_models.dart';
+import 'package:fitora/features/settings/providers/settings_provider.dart';
 
 final dailyGoalStatusProvider = Provider.family<DailyGoalStatus, DateTime>((
   ref,
@@ -87,7 +88,7 @@ final dailyGoalStatusProvider = Provider.family<DailyGoalStatus, DateTime>((
       ? wellness.sleepMinutes.toDouble()
       : (wellness.sleepLogHistory[dateStr]?.toDouble() ?? 0.0);
   final sleepCurrent = max(hcSleepMinutes, manualSleepMinutes);
-  final sleepGoal = 480.0; // 8 hours is default sleep target
+  final sleepGoal = ref.watch(settingsProvider).sleepTargetDurationMinutes.toDouble();
 
   MetricAvailability sleepAvailability;
   if (sleepCurrent > 0 || manualSleepMinutes > 0) {

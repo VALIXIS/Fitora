@@ -1,3 +1,4 @@
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fitora/core/health/domain/health_models.dart';
 import 'package:fitora/core/health/data/sensor_repository.dart';
@@ -14,6 +15,7 @@ import 'package:fitora/core/constants/storage_keys.dart';
 import 'package:fitora/core/health/utils/goal_calculator.dart';
 import 'package:fitora/features/personalization/providers/personalization_controller.dart';
 import 'package:fitora/features/health_sync/providers/health_sync_provider.dart';
+import 'package:fitora/features/workouts/providers/workout_provider.dart';
 
 // ---------------------------------------------------------------------------
 // Core Services
@@ -110,21 +112,92 @@ final healthConnectStatusProvider =
     StateNotifierProvider<HealthConnectStatusNotifier, HealthConnectStatus>((
       ref,
     ) {
-      return HealthConnectStatusNotifier();
+      final service = ref.watch(healthConnectServiceProvider);
+      return HealthConnectStatusNotifier(service);
     });
 
-class HealthConnectStatusNotifier extends StateNotifier<HealthConnectStatus> {
-  HealthConnectStatusNotifier()
-    : super(HealthConnectStatus.unavailable) {
+class HealthConnectStatusNotifier extends StateNotifier<HealthConnectStatus>
+    with WidgetsBindingObserver {
+  final HealthConnectService _service;
+
+  HealthConnectStatusNotifier(this._service)
+      : super(HealthConnectStatus.unavailable) {
+    WidgetsBinding.instance.addObserver(this);
     checkStatus();
   }
 
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      checkStatus();
+    }
+  }
+
   Future<void> checkStatus() async {
-    state = HealthConnectStatus.unavailable;
+    try {
+      final status = await _service.getStatus();
+      state = status;
+    } catch (_) {
+      state = HealthConnectStatus.error;
+    }
   }
 
   Future<void> requestPermissions() async {
-    state = HealthConnectStatus.unavailable;
+    try {
+      final success = await _service.requestPermissions();
+      if (success) {
+        await checkStatus();
+      } else {
+        state = HealthConnectStatus.permissionRequired;
+      }
+    } catch (_) {
+      state = HealthConnectStatus.error;
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Today Date Provider (Driven by App Lifecycle)
+// ---------------------------------------------------------------------------
+
+final todayProvider = StateNotifierProvider<TodayNotifier, DateTime>((ref) {
+  return TodayNotifier();
+});
+
+class TodayNotifier extends StateNotifier<DateTime> with WidgetsBindingObserver {
+  TodayNotifier() : super(_getToday()) {
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  static DateTime _getToday() {
+    final now = DateTime.now();
+    return DateTime(now.year, now.month, now.day);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      updateDate();
+    }
+  }
+
+  void updateDate() {
+    final currentToday = _getToday();
+    if (state != currentToday) {
+      state = currentToday;
+    }
   }
 }
 
@@ -171,8 +244,8 @@ final dailyActivityProvider = Provider.family<DailyActivitySummary, DateTime>((
   final cache = ref.watch(healthCacheServiceProvider);
   final cached = cache.getDailyActivity(date) ?? DailyActivitySummary.empty(date: date);
 
-  final now = DateTime.now();
-  final isToday = date.year == now.year && date.month == now.month && date.day == now.day;
+  final today = ref.watch(todayProvider);
+  final isToday = date.year == today.year && date.month == today.month && date.day == today.day;
 
   final sensorStatus = isToday ? ref.watch(sensorStatusProvider) : cached.sensorStatus;
   final healthConnectStatus = isToday ? ref.watch(healthConnectStatusProvider) : cached.healthConnectStatus;
@@ -188,9 +261,35 @@ final dailyActivityProvider = Provider.family<DailyActivitySummary, DateTime>((
   final isHCConnected = healthConnectStatus == HealthConnectStatus.connected ||
       healthConnectStatus == HealthConnectStatus.partiallyGranted;
 
+  DailyActivitySummary applyWorkouts(DailyActivitySummary summary) {
+    try {
+      final workouts = ref.watch(workoutProvider);
+      final dayWorkouts = workouts.where((w) {
+        return w.timestamp.year == date.year &&
+            w.timestamp.month == date.month &&
+            w.timestamp.day == date.day;
+      });
+
+      double workoutCal = 0.0;
+      int workoutMin = 0;
+      for (final w in dayWorkouts) {
+        workoutCal += w.estimatedCalories;
+        workoutMin += w.durationMinutes;
+      }
+
+      if (workoutMin > 0 || workoutCal > 0) {
+        return summary.copyWith(
+          caloriesBurned: summary.caloriesBurned + workoutCal,
+          activeMinutes: summary.activeMinutes + workoutMin,
+        );
+      }
+    } catch (_) {}
+    return summary;
+  }
+
   if (isToday) {
     if (isHCConnected) {
-      return summaryWithDynamicGoals;
+      return applyWorkouts(summaryWithDynamicGoals);
     }
 
     final liveSteps = ref.watch(liveStepsProvider);
@@ -201,19 +300,19 @@ final dailyActivityProvider = Provider.family<DailyActivitySummary, DateTime>((
         final cal = double.parse((totalSteps * 0.04).toStringAsFixed(1));
         final activeMins = (totalSteps / 100).floor();
 
-        return summaryWithDynamicGoals.copyWith(
+        return applyWorkouts(summaryWithDynamicGoals.copyWith(
           steps: totalSteps,
           distanceKm: dist,
           caloriesBurned: cal,
           activeMinutes: activeMins,
-        );
+        ));
       },
-      loading: () => summaryWithDynamicGoals,
-      error: (_, _) => summaryWithDynamicGoals,
+      loading: () => applyWorkouts(summaryWithDynamicGoals),
+      error: (_, _) => applyWorkouts(summaryWithDynamicGoals),
     );
   }
 
-  return summaryWithDynamicGoals;
+  return applyWorkouts(summaryWithDynamicGoals);
 });
 
 final weeklyActivityProvider =

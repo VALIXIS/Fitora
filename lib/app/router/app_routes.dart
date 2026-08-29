@@ -14,6 +14,9 @@ class AppRoutes {
   static const String authEmail = '/auth/email';
   static const String onboarding = '/onboarding';
   static const String profileSetup = '/profile-setup';
+  
+  static const String sleepDetail = 'sleep-detail';
+  static const String sleepSchedule = 'schedule';
 }
 
 class AppRouteNames {
@@ -31,4 +34,7 @@ class AppRouteNames {
   static const String editProfile = 'editProfile';
   static const String privacyPolicy = 'privacyPolicy';
   static const String termsOfService = 'termsOfService';
+  
+  static const String sleepDetail = 'sleepDetail';
+  static const String sleepSchedule = 'sleepSchedule';
 }

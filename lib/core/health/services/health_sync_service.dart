@@ -93,6 +93,7 @@ class HealthSyncService extends StateNotifier<SyncStatus>
   /// cached non-zero data with zero values — protecting against permissions
   /// being revoked or Health Connect being temporarily unavailable.
   Future<void> syncNow({bool isBackground = false}) async {
+    if (!mounted) return;
     if (state == SyncStatus.syncing) return;
     state = SyncStatus.syncing;
 
@@ -241,11 +242,15 @@ class HealthSyncService extends StateNotifier<SyncStatus>
       }
 
       _retryCount = 0; // Reset retry counter on success
-      state = SyncStatus.synced;
+      if (mounted) {
+        state = SyncStatus.synced;
+      }
     } catch (e, st) {
       AppLogger.error('Sync error: $e', st);
-      state = SyncStatus.error;
-      _scheduleRetry();
+      if (mounted) {
+        state = SyncStatus.error;
+        _scheduleRetry();
+      }
     }
   }
 

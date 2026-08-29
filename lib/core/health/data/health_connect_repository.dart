@@ -142,15 +142,15 @@ class HealthConnectRepository implements HealthRepository {
       );
     }
 
-    // Query noon-yesterday → noon-today to capture full nightly sleep window
+    // Query noon-date → noon-(date+1) to capture full nightly sleep window belonging to this sleep day
     final start = DateTime(
       date.year,
       date.month,
       date.day,
       12,
       0,
-    ).subtract(const Duration(days: 1));
-    final end = DateTime(date.year, date.month, date.day, 12, 0);
+    );
+    final end = start.add(const Duration(days: 1));
 
     final sleepPoints = await _service.getSleepData(start, end);
 
@@ -180,6 +180,8 @@ class HealthConnectRepository implements HealthRepository {
       lightSleep: Duration(minutes: totalMinutes),
       sleepScore: sleepScore,
       date: date,
+      startTime: merged.isNotEmpty ? merged.first.start : null,
+      endTime: merged.isNotEmpty ? merged.last.end : null,
     );
   }
 

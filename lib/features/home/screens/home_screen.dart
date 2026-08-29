@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-import 'package:fitora/app/router/app_routes.dart';
 import 'package:fitora/core/constants/spacing.dart';
 import 'package:fitora/core/theme/fitora_colors.dart';
 import 'package:fitora/shared/widgets/glow_container.dart';
@@ -18,6 +16,10 @@ import 'package:fitora/shared/widgets/fitora_background.dart';
 import 'package:fitora/core/services/permission_manager.dart';
 import 'package:fitora/features/home/providers/goals_streak_provider.dart';
 import 'package:fitora/features/home/domain/goals_streak_models.dart';
+import 'package:fitora/features/home/widgets/streak_banner.dart';
+import 'package:fitora/features/workouts/widgets/log_workout_modal.dart';
+import 'package:permission_handler/permission_handler.dart' as ph;
+import 'package:fitora/features/settings/providers/settings_provider.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -195,11 +197,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
+    final today = ref.watch(todayProvider);
     final activity = ref.watch(dailyActivityProvider(today));
     final profile = ref.watch(personalizationControllerProvider).profile;
     final authSession = ref.watch(authStateProvider);
+    final now = DateTime.now();
     final String greetingPrefix = getDynamicGreeting(now);
 
     String? name = profile.name;
@@ -227,6 +229,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return FitoraBackground(
       child: Scaffold(
         backgroundColor: Colors.transparent,
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: () => LogWorkoutModal.show(context),
+          label: const Text('Quick Log', style: TextStyle(fontWeight: FontWeight.bold)),
+          icon: const Icon(Icons.add_rounded),
+          backgroundColor: FitoraColors.mintGreen,
+          foregroundColor: Colors.black,
+        ),
         body: RefreshIndicator(
           onRefresh: () => Future.value(),
           color: const Color(0xFF06B6D4),
@@ -247,6 +256,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
                     const SizedBox(height: FitoraSpacing.sm),
+                    const StreakBanner(),
+                    const _BatteryWarningCard(),
 
                     // Hero Steps Card (Visual Centerpiece)
                     _buildHeroStepsCard(textTheme, activity),
@@ -1340,5 +1351,97 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     } else {
       // Disabled for release
     }
+  }
+}
+
+class _BatteryWarningCard extends ConsumerWidget {
+  const _BatteryWarningCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isExempt = ref.watch(batteryOptimizationExemptProvider).value ?? false;
+    final isDismissed = ref.watch(batteryWarningDismissedProvider);
+
+    // Only show if battery optimizations are active (not exempted) and warning was not dismissed
+    if (isExempt || isDismissed) {
+      return const SizedBox.shrink();
+    }
+
+    final theme = Theme.of(context);
+    final tt = theme.textTheme;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.errorContainer.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: theme.colorScheme.error.withValues(alpha: 0.3),
+          width: 1.5,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.battery_alert_rounded,
+                color: theme.colorScheme.error,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Background Sync Restricted',
+                  style: tt.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.close_rounded, size: 18, color: Colors.white54),
+                onPressed: () {
+                  ref.read(batteryWarningDismissedProvider.notifier).dismiss();
+                },
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Android battery optimization may pause Fitora during periods of inactivity. If step updates freeze, consider setting battery use to "Unrestricted" in Settings.',
+            style: tt.bodySmall?.copyWith(
+              color: Colors.white70,
+              fontSize: 11,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton(
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  backgroundColor: theme.colorScheme.error.withValues(alpha: 0.2),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onPressed: () async {
+                  await ph.Permission.ignoreBatteryOptimizations.request();
+                  ref.invalidate(batteryOptimizationExemptProvider);
+                },
+                child: const Text('Resolve', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 }

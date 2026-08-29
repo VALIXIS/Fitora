@@ -305,16 +305,8 @@ class HealthSyncController extends StateNotifier<HealthSyncState> with WidgetsBi
         // Fetch and save sleep for this specific day
         try {
           final sleepSum = await repo.getSleepSummary(dayDate);
-          final sleepMins = sleepSum.totalSleep.inMinutes;
-          if (sleepMins > 0) {
-            await cacheService.saveSleepSummary(SleepSummary(
-              totalSleep: Duration(minutes: sleepMins),
-              remSleep: Duration.zero,
-              deepSleep: Duration.zero,
-              lightSleep: Duration(minutes: sleepMins),
-              sleepScore: sleepSum.sleepScore,
-              date: dayDate,
-            ));
+          if (sleepSum.totalSleep.inMinutes > 0) {
+            await cacheService.saveSleepSummary(sleepSum);
           }
         } catch (_) {}
       }

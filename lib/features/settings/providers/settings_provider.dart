@@ -18,6 +18,23 @@ final batteryOptimizationExemptProvider = FutureProvider<bool>((ref) async {
   return await ph.Permission.ignoreBatteryOptimizations.isGranted;
 });
 
+final batteryWarningDismissedProvider =
+    StateNotifierProvider<BatteryWarningDismissedNotifier, bool>((ref) {
+  return BatteryWarningDismissedNotifier();
+});
+
+class BatteryWarningDismissedNotifier extends StateNotifier<bool> {
+  static const _key = 'fitora_battery_warning_dismissed';
+
+  BatteryWarningDismissedNotifier()
+      : super(AppPreferences.prefs.getBool(_key) ?? false);
+
+  Future<void> dismiss() async {
+    state = true;
+    await AppPreferences.prefs.setBool(_key, true);
+  }
+}
+
 class SettingsState {
   final bool isDarkMode;
   final bool notificationsEnabled;
@@ -38,6 +55,13 @@ class SettingsState {
   final int quietHoursStartHour;
   final int quietHoursEndHour;
 
+  // Sleep Target
+  final int sleepTargetDurationMinutes;
+  final int sleepTargetBedtimeHour;
+  final int sleepTargetBedtimeMinute;
+  final int sleepTargetWakeHour;
+  final int sleepTargetWakeMinute;
+
   const SettingsState({
     this.isDarkMode = true,
     this.notificationsEnabled = true,
@@ -53,6 +77,11 @@ class SettingsState {
     this.quietHoursEnabled = true,
     this.quietHoursStartHour = 22,
     this.quietHoursEndHour = 8,
+    this.sleepTargetDurationMinutes = 480,
+    this.sleepTargetBedtimeHour = 23,
+    this.sleepTargetBedtimeMinute = 0,
+    this.sleepTargetWakeHour = 7,
+    this.sleepTargetWakeMinute = 0,
   });
 
   SettingsState copyWith({
@@ -70,6 +99,11 @@ class SettingsState {
     bool? quietHoursEnabled,
     int? quietHoursStartHour,
     int? quietHoursEndHour,
+    int? sleepTargetDurationMinutes,
+    int? sleepTargetBedtimeHour,
+    int? sleepTargetBedtimeMinute,
+    int? sleepTargetWakeHour,
+    int? sleepTargetWakeMinute,
   }) {
     return SettingsState(
       isDarkMode: isDarkMode ?? this.isDarkMode,
@@ -89,6 +123,15 @@ class SettingsState {
       quietHoursEnabled: quietHoursEnabled ?? this.quietHoursEnabled,
       quietHoursStartHour: quietHoursStartHour ?? this.quietHoursStartHour,
       quietHoursEndHour: quietHoursEndHour ?? this.quietHoursEndHour,
+      sleepTargetDurationMinutes:
+          sleepTargetDurationMinutes ?? this.sleepTargetDurationMinutes,
+      sleepTargetBedtimeHour:
+          sleepTargetBedtimeHour ?? this.sleepTargetBedtimeHour,
+      sleepTargetBedtimeMinute:
+          sleepTargetBedtimeMinute ?? this.sleepTargetBedtimeMinute,
+      sleepTargetWakeHour: sleepTargetWakeHour ?? this.sleepTargetWakeHour,
+      sleepTargetWakeMinute:
+          sleepTargetWakeMinute ?? this.sleepTargetWakeMinute,
     );
   }
 }
@@ -165,6 +208,11 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
       quietHoursEnabled: prefs.getBool('quietHoursEnabled') ?? true,
       quietHoursStartHour: prefs.getInt('quietHoursStartHour') ?? 22,
       quietHoursEndHour: prefs.getInt('quietHoursEndHour') ?? 8,
+      sleepTargetDurationMinutes: prefs.getInt('sleepTargetDurationMinutes') ?? 480,
+      sleepTargetBedtimeHour: prefs.getInt('sleepTargetBedtimeHour') ?? 23,
+      sleepTargetBedtimeMinute: prefs.getInt('sleepTargetBedtimeMinute') ?? 0,
+      sleepTargetWakeHour: prefs.getInt('sleepTargetWakeHour') ?? 7,
+      sleepTargetWakeMinute: prefs.getInt('sleepTargetWakeMinute') ?? 0,
     );
   }
 
@@ -266,6 +314,31 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
         await prefs.setInt(key, v);
         state = state.copyWith(quietHoursEndHour: v);
         _rescheduleAllNotifications();
+
+      case 'sleepTargetDurationMinutes':
+        final v = value as int;
+        await prefs.setInt(key, v);
+        state = state.copyWith(sleepTargetDurationMinutes: v);
+
+      case 'sleepTargetBedtimeHour':
+        final v = value as int;
+        await prefs.setInt(key, v);
+        state = state.copyWith(sleepTargetBedtimeHour: v);
+
+      case 'sleepTargetBedtimeMinute':
+        final v = value as int;
+        await prefs.setInt(key, v);
+        state = state.copyWith(sleepTargetBedtimeMinute: v);
+
+      case 'sleepTargetWakeHour':
+        final v = value as int;
+        await prefs.setInt(key, v);
+        state = state.copyWith(sleepTargetWakeHour: v);
+
+      case 'sleepTargetWakeMinute':
+        final v = value as int;
+        await prefs.setInt(key, v);
+        state = state.copyWith(sleepTargetWakeMinute: v);
     }
   }
 

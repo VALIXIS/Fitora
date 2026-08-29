@@ -165,6 +165,8 @@ class SleepSummary {
   final Duration lightSleep;
   final int sleepScore; // 0-100
   final DateTime date;
+  final DateTime? startTime;
+  final DateTime? endTime;
 
   const SleepSummary({
     required this.totalSleep,
@@ -173,6 +175,8 @@ class SleepSummary {
     required this.lightSleep,
     required this.sleepScore,
     required this.date,
+    this.startTime,
+    this.endTime,
   });
 
   Map<String, dynamic> toJson() {
@@ -183,6 +187,8 @@ class SleepSummary {
       'lightSleep': lightSleep.inMinutes,
       'sleepScore': sleepScore,
       'date': date.toIso8601String(),
+      'startTime': startTime?.toIso8601String(),
+      'endTime': endTime?.toIso8601String(),
     };
   }
 
@@ -194,6 +200,8 @@ class SleepSummary {
       lightSleep: Duration(minutes: json['lightSleep'] ?? 0),
       sleepScore: json['sleepScore'] ?? 0,
       date: DateTime.parse(json['date']),
+      startTime: json['startTime'] != null ? DateTime.parse(json['startTime']) : null,
+      endTime: json['endTime'] != null ? DateTime.parse(json['endTime']) : null,
     );
   }
 }
