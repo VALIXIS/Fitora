@@ -14,6 +14,7 @@ import 'package:fitora/features/progress/widgets/health_trend_chart.dart';
 import 'package:fitora/shared/widgets/fitora_background.dart';
 import 'package:fitora/features/workouts/widgets/log_workout_modal.dart';
 import 'package:fitora/features/sleep/widgets/log_sleep_modal.dart';
+import 'package:fitora/features/sleep/widgets/sleep_analysis_modal.dart';
 import 'package:go_router/go_router.dart';
 import 'package:fitora/features/settings/providers/settings_provider.dart';
 
@@ -819,7 +820,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     final goalStr = goalMins > 0 ? '${goalHours}h ${goalMins}m' : '$goalHours hrs';
 
     return GestureDetector(
-      onTap: () => showSleepLogModal(context, ref),
+      onTap: () => showSleepAnalysisModal(context, ref),
       child: GlowContainer(
         glowColor: FitoraColors.calmCyan.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(24),
@@ -896,7 +897,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                 Row(
                   children: [
                     ElevatedButton.icon(
-                      onPressed: () => showSleepLogModal(context, ref),
+                      onPressed: () => showSleepAnalysisModal(context, ref),
                       icon: const Icon(Icons.add, size: 16),
                       label: const Text('Log Sleep'),
                       style: ElevatedButton.styleFrom(
