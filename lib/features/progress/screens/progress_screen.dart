@@ -13,9 +13,7 @@ import 'package:fitora/features/progress/widgets/weekly_summary_card.dart';
 import 'package:fitora/features/progress/widgets/health_trend_chart.dart';
 import 'package:fitora/shared/widgets/fitora_background.dart';
 import 'package:fitora/features/workouts/widgets/log_workout_modal.dart';
-import 'package:fitora/features/sleep/widgets/log_sleep_modal.dart';
 import 'package:fitora/features/sleep/widgets/sleep_analysis_modal.dart';
-import 'package:go_router/go_router.dart';
 import 'package:fitora/features/settings/providers/settings_provider.dart';
 
 class ProgressScreen extends ConsumerStatefulWidget {

@@ -4,14 +4,23 @@ import 'package:fitora/core/constants/spacing.dart';
 import 'package:fitora/core/theme/fitora_colors.dart';
 import 'package:fitora/shared/widgets/glow_container.dart';
 import 'package:fitora/shared/widgets/fitora_background.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:fitora/features/settings/providers/settings_provider.dart';
 
-class AboutScreen extends StatelessWidget {
+class AboutScreen extends ConsumerWidget {
   const AboutScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
+
+    final packageInfoAsync = ref.watch(packageInfoProvider);
+    final versionText = packageInfoAsync.when(
+      data: (info) => 'Version ${info.version} (Build ${info.buildNumber})',
+      loading: () => 'Version 1.1.1',
+      error: (_, _) => 'Version 1.1.1',
+    );
 
     return FitoraBackground(
       child: Scaffold(
@@ -55,7 +64,7 @@ class AboutScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: FitoraSpacing.sm),
                     Text(
-                      'Version 1.0.0',
+                      versionText,
                       style: textTheme.labelMedium?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                         letterSpacing: 1.2,
@@ -82,7 +91,7 @@ class AboutScreen extends StatelessWidget {
                     _buildInfoCard(
                       context,
                       textTheme,
-                      'Developed by VALIXIS\nVersion 1.0.0\nEmail: official.valixis@gmail.com',
+                      'Developed by VALIXIS\n$versionText\nEmail: official.valixis@gmail.com',
                     ),
                     const SizedBox(height: 100),
                   ],
