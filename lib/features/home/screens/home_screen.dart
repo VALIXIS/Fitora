@@ -18,6 +18,7 @@ import 'package:fitora/features/home/providers/goals_streak_provider.dart';
 import 'package:fitora/features/home/domain/goals_streak_models.dart';
 import 'package:fitora/features/home/widgets/streak_banner.dart';
 import 'package:fitora/features/workouts/widgets/log_workout_modal.dart';
+import 'package:fitora/features/sleep/widgets/log_sleep_modal.dart';
 import 'package:permission_handler/permission_handler.dart' as ph;
 import 'package:fitora/features/settings/providers/settings_provider.dart';
 
@@ -1196,6 +1197,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         metric.availability == MetricAvailability.available) {
       return GestureDetector(
         onTap: () => showStepGoalPicker(context, ref, metric.goal.toInt()),
+        child: card,
+      );
+    }
+    if (metric.key == 'sleep') {
+      return GestureDetector(
+        onTap: () => showSleepLogModal(context, ref),
         child: card,
       );
     }

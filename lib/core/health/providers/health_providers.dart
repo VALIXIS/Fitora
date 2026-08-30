@@ -16,6 +16,7 @@ import 'package:fitora/core/health/utils/goal_calculator.dart';
 import 'package:fitora/features/personalization/providers/personalization_controller.dart';
 import 'package:fitora/features/health_sync/providers/health_sync_provider.dart';
 import 'package:fitora/features/workouts/providers/workout_provider.dart';
+import 'package:fitora/features/wellness/providers/wellness_provider.dart';
 
 // ---------------------------------------------------------------------------
 // Core Services
@@ -372,15 +373,58 @@ final sleepSummaryProvider = Provider.family<SleepSummary, DateTime>((
 ) {
   ref.watch(healthSyncServiceProvider);
   final cache = ref.watch(healthCacheServiceProvider);
-  return cache.getSleepSummary(date) ??
-      SleepSummary(
-        totalSleep: Duration.zero,
-        remSleep: Duration.zero,
-        deepSleep: Duration.zero,
-        lightSleep: Duration.zero,
-        sleepScore: 0,
-        date: date,
-      );
+  final hcSleep = cache.getSleepSummary(date);
+
+  final wellness = ref.watch(wellnessProvider);
+  final now = DateTime.now();
+  final isToday =
+      date.year == now.year && date.month == now.month && date.day == now.day;
+  final dateStr =
+      "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
+
+  int manualMinutes = 0;
+  int qualityScore = 80;
+  if (isToday) {
+    manualMinutes = wellness.sleepMinutes;
+    qualityScore =
+        wellness.sleepQualityScore > 0 ? wellness.sleepQualityScore : 80;
+  } else {
+    manualMinutes = wellness.sleepLogHistory[dateStr] ?? 0;
+    qualityScore =
+        wellness.sleepScoreHistory[dateStr] ?? (manualMinutes > 0 ? 80 : 0);
+  }
+
+  final hcMinutes = hcSleep?.totalSleep.inMinutes ?? 0;
+  final effectiveMinutes = max(hcMinutes, manualMinutes);
+
+  if (effectiveMinutes == 0) {
+    return SleepSummary(
+      totalSleep: Duration.zero,
+      remSleep: Duration.zero,
+      deepSleep: Duration.zero,
+      lightSleep: Duration.zero,
+      sleepScore: 0,
+      date: date,
+    );
+  }
+
+  final score = (hcSleep != null && hcSleep.sleepScore > 0)
+      ? hcSleep.sleepScore
+      : (qualityScore > 0
+          ? qualityScore
+          : ((effectiveMinutes / 480.0) * 100).clamp(0, 100).round());
+
+  return SleepSummary(
+    totalSleep: Duration(minutes: effectiveMinutes),
+    remSleep:
+        hcSleep?.remSleep ?? Duration(minutes: (effectiveMinutes * 0.20).round()),
+    deepSleep:
+        hcSleep?.deepSleep ?? Duration(minutes: (effectiveMinutes * 0.25).round()),
+    lightSleep:
+        hcSleep?.lightSleep ?? Duration(minutes: (effectiveMinutes * 0.55).round()),
+    sleepScore: score,
+    date: date,
+  );
 });
 
 final recoverySummaryProvider = Provider.family<RecoverySummary, DateTime>((

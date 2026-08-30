@@ -10,6 +10,7 @@ import 'package:fitora/features/sleep/providers/sleep_providers.dart';
 import 'package:fitora/features/settings/providers/settings_provider.dart';
 import 'package:fitora/core/health/domain/sleep_calculations.dart';
 import 'package:fitora/app/router/app_routes.dart';
+import 'package:fitora/features/sleep/widgets/log_sleep_modal.dart';
 
 class SleepDetailScreen extends ConsumerStatefulWidget {
   const SleepDetailScreen({super.key});
@@ -222,33 +223,45 @@ class _SleepDetailScreenState extends ConsumerState<SleepDetailScreen> {
           ),
           SizedBox(height: FitoraSpacing.xl),
           if (!hasSleepData) ...[
-            const Icon(Icons.bedtime_outlined, size: 48, color: Colors.white24),
+            const Icon(Icons.bedtime_outlined, size: 48, color: FitoraColors.calmCyan),
             SizedBox(height: FitoraSpacing.md),
             Text(
-              'No sleep data recorded',
-              style: tt.titleMedium?.copyWith(color: Colors.white54, fontWeight: FontWeight.bold),
+              'No sleep logged for this night',
+              style: tt.titleMedium?.copyWith(color: Colors.white, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: FitoraSpacing.xs),
             Text(
-              status == HealthConnectStatus.connected
-                  ? 'We couldn\'t find any sleep records for this night.'
-                  : 'Enable Fitora\'s Health Connect permissions to import your nightly sleep sessions.',
-              style: tt.bodySmall?.copyWith(color: Colors.white38),
+              'Log how many hours you slept or set your target sleep schedule dial.',
+              style: tt.bodySmall?.copyWith(color: Colors.white54),
               textAlign: TextAlign.center,
             ),
-            if (status != HealthConnectStatus.connected) ...[
-              SizedBox(height: FitoraSpacing.lg),
-              ElevatedButton.icon(
-                onPressed: () => context.pushNamed(AppRouteNames.healthSync),
-                icon: const Icon(Icons.settings),
-                label: const Text('Manage Permissions'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: FitoraColors.calmCyan,
-                  foregroundColor: Colors.black,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(99)),
+            SizedBox(height: FitoraSpacing.lg),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                ElevatedButton.icon(
+                  onPressed: () => showSleepLogModal(context, ref),
+                  icon: const Icon(Icons.add, size: 18),
+                  label: const Text('Log Sleep'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: FitoraColors.calmCyan,
+                    foregroundColor: Colors.black,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(99)),
+                  ),
                 ),
-              ),
-            ],
+                const SizedBox(width: 12),
+                OutlinedButton.icon(
+                  onPressed: () => context.pushNamed(AppRouteNames.sleepSchedule),
+                  icon: const Icon(Icons.access_time_rounded, size: 18),
+                  label: const Text('Target Schedule Dial'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: FitoraColors.calmCyan,
+                    side: const BorderSide(color: FitoraColors.calmCyan),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(99)),
+                  ),
+                ),
+              ],
+            ),
           ] else ...[
             Row(
               children: [

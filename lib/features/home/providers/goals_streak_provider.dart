@@ -90,15 +90,7 @@ final dailyGoalStatusProvider = Provider.family<DailyGoalStatus, DateTime>((
   final sleepCurrent = max(hcSleepMinutes, manualSleepMinutes);
   final sleepGoal = ref.watch(settingsProvider).sleepTargetDurationMinutes.toDouble();
 
-  MetricAvailability sleepAvailability;
-  if (sleepCurrent > 0 || manualSleepMinutes > 0) {
-    sleepAvailability = MetricAvailability.available;
-  } else if (activity.healthConnectStatus ==
-      HealthConnectStatus.permissionRequired) {
-    sleepAvailability = MetricAvailability.permissionRequired;
-  } else {
-    sleepAvailability = MetricAvailability.unavailable;
-  }
+  const sleepAvailability = MetricAvailability.available;
 
   final sleepMetric = GoalMetric(
     key: 'sleep',

@@ -1,0 +1,287 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:fitora/core/constants/spacing.dart';
+import 'package:fitora/core/theme/fitora_colors.dart';
+import 'package:fitora/features/wellness/providers/wellness_provider.dart';
+import 'package:fitora/features/settings/providers/settings_provider.dart';
+import 'package:fitora/features/sleep/widgets/circular_sleep_dial.dart';
+import 'package:fitora/core/health/domain/sleep_calculations.dart';
+
+Future<void> showSleepLogModal(BuildContext context, WidgetRef ref) async {
+  await showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (context) => const _LogSleepModal(),
+  );
+}
+
+class _LogSleepModal extends ConsumerStatefulWidget {
+  const _LogSleepModal();
+
+  @override
+  ConsumerState<_LogSleepModal> createState() => _LogSleepModalState();
+}
+
+class _LogSleepModalState extends ConsumerState<_LogSleepModal> {
+  late int _bedHour;
+  late int _bedMin;
+  late int _wakeHour;
+  late int _wakeMin;
+
+  @override
+  void initState() {
+    super.initState();
+    final settings = ref.read(settingsProvider);
+    _bedHour = settings.sleepTargetBedtimeHour;
+    _bedMin = settings.sleepTargetBedtimeMinute;
+    _wakeHour = settings.sleepTargetWakeHour;
+    _wakeMin = settings.sleepTargetWakeMinute;
+  }
+
+  void _onDialChanged(int bedHour, int bedMin, int wakeHour, int wakeMin) {
+    setState(() {
+      _bedHour = bedHour;
+      _bedMin = bedMin;
+      _wakeHour = wakeHour;
+      _wakeMin = wakeMin;
+    });
+  }
+
+  Future<void> _onSave() async {
+    final duration = SleepCalculations.calculateTargetDuration(
+      _bedHour,
+      _bedMin,
+      _wakeHour,
+      _wakeMin,
+    );
+    final totalMinutes = duration.inMinutes;
+
+    // 1. Save sleep log to Wellness provider
+    await ref.read(wellnessProvider.notifier).logSleep(
+          minutes: totalMinutes,
+          qualityScore: 80,
+        );
+
+    // 2. Save Target Sleep Schedule to Settings provider
+    final settingsNotifier = ref.read(settingsProvider.notifier);
+    await settingsNotifier.updateSetting('sleepTargetBedtimeHour', _bedHour);
+    await settingsNotifier.updateSetting('sleepTargetBedtimeMinute', _bedMin);
+    await settingsNotifier.updateSetting('sleepTargetWakeHour', _wakeHour);
+    await settingsNotifier.updateSetting('sleepTargetWakeMinute', _wakeMin);
+    await settingsNotifier.updateSetting('sleepTargetDurationMinutes', totalMinutes);
+
+    if (mounted) {
+      context.pop();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final tt = theme.textTheme;
+
+    final duration = SleepCalculations.calculateTargetDuration(
+      _bedHour,
+      _bedMin,
+      _wakeHour,
+      _wakeMin,
+    );
+    final hours = duration.inHours;
+    final mins = duration.inMinutes.remainder(60);
+    final durationStr = mins > 0 ? '${hours}h ${mins}m' : '${hours}h 0m';
+
+    final bedTimeStr = TimeOfDay(hour: _bedHour, minute: _bedMin).format(context);
+    final wakeTimeStr = TimeOfDay(hour: _wakeHour, minute: _wakeMin).format(context);
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+      padding: const EdgeInsets.all(FitoraSpacing.xl),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Header
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: FitoraColors.calmCyan.withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.bedtime_rounded,
+                      color: FitoraColors.calmCyan,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Log Sleep & Schedule',
+                    style: tt.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                  ),
+                ],
+              ),
+              IconButton(
+                icon: Icon(
+                  Icons.close_rounded,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+                onPressed: () => context.pop(),
+              ),
+            ],
+          ),
+          const SizedBox(height: FitoraSpacing.sm),
+
+          Text(
+            'Drag handles on the circular dial meter to set bedtime & wake-up time.',
+            style: tt.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: FitoraSpacing.lg),
+
+          // Interactive Circular Sleep Dial Meter
+          Center(
+            child: SizedBox(
+              width: 260,
+              height: 260,
+              child: CircularSleepDial(
+                initialBedHour: _bedHour,
+                initialBedMinute: _bedMin,
+                initialWakeHour: _wakeHour,
+                initialWakeMinute: _wakeMin,
+                onChanged: _onDialChanged,
+              ),
+            ),
+          ),
+          const SizedBox(height: FitoraSpacing.lg),
+
+          // Schedule Summary Card
+          Container(
+            padding: const EdgeInsets.all(FitoraSpacing.md),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                Column(
+                  children: [
+                    Text(
+                      'BEDTIME',
+                      style: tt.labelSmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '🌙 $bedTimeStr',
+                      style: tt.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.onSurface,
+                      ),
+                    ),
+                  ],
+                ),
+                Container(
+                  width: 1,
+                  height: 24,
+                  color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+                ),
+                Column(
+                  children: [
+                    Text(
+                      'SLEEP DURATION',
+                      style: tt.labelSmall?.copyWith(
+                        color: FitoraColors.calmCyan,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      durationStr,
+                      style: tt.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w900,
+                        color: FitoraColors.calmCyan,
+                      ),
+                    ),
+                  ],
+                ),
+                Container(
+                  width: 1,
+                  height: 24,
+                  color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+                ),
+                Column(
+                  children: [
+                    Text(
+                      'WAKE UP',
+                      style: tt.labelSmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '☀️ $wakeTimeStr',
+                      style: tt.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.onSurface,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: FitoraSpacing.xl),
+
+          // Save Button
+          ElevatedButton(
+            onPressed: _onSave,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: FitoraColors.calmCyan,
+              foregroundColor: Colors.black,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+            child: Text(
+              'Save Sleep Log & Target Schedule',
+              style: tt.titleMedium?.copyWith(
+                fontWeight: FontWeight.w900,
+                color: Colors.black,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

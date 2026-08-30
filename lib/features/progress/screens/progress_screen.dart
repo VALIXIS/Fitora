@@ -13,6 +13,7 @@ import 'package:fitora/features/progress/widgets/weekly_summary_card.dart';
 import 'package:fitora/features/progress/widgets/health_trend_chart.dart';
 import 'package:fitora/shared/widgets/fitora_background.dart';
 import 'package:fitora/features/workouts/widgets/log_workout_modal.dart';
+import 'package:fitora/features/sleep/widgets/log_sleep_modal.dart';
 import 'package:go_router/go_router.dart';
 import 'package:fitora/features/settings/providers/settings_provider.dart';
 
@@ -818,7 +819,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     final goalStr = goalMins > 0 ? '${goalHours}h ${goalMins}m' : '$goalHours hrs';
 
     return GestureDetector(
-      onTap: () => context.push('/progress/sleep-detail'),
+      onTap: () => showSleepLogModal(context, ref),
       child: GlowContainer(
         glowColor: FitoraColors.calmCyan.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(24),
@@ -888,8 +889,25 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
               const SizedBox(height: FitoraSpacing.lg),
               if (totalMinutes == 0) ...[
                 Text(
-                  'Sleep information will appear after your first night of tracking.',
-                  style: tt.bodySmall?.copyWith(color: Colors.white38),
+                  'Log your last night\'s sleep or set your target sleep schedule dial.',
+                  style: tt.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                ),
+                const SizedBox(height: FitoraSpacing.md),
+                Row(
+                  children: [
+                    ElevatedButton.icon(
+                      onPressed: () => showSleepLogModal(context, ref),
+                      icon: const Icon(Icons.add, size: 16),
+                      label: const Text('Log Sleep'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: FitoraColors.calmCyan,
+                        foregroundColor: Colors.black,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(99),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ] else ...[
                 Row(
