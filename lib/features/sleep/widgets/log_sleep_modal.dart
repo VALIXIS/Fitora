@@ -5,6 +5,8 @@ import 'package:fitora/core/constants/spacing.dart';
 import 'package:fitora/core/theme/fitora_colors.dart';
 import 'package:fitora/features/wellness/providers/wellness_provider.dart';
 import 'package:fitora/features/settings/providers/settings_provider.dart';
+import 'package:fitora/features/sleep/widgets/circular_sleep_dial.dart';
+import 'package:fitora/core/health/domain/sleep_calculations.dart';
 
 Future<void> showSleepLogModal(BuildContext context, WidgetRef ref) async {
   await showModalBottomSheet(
@@ -23,26 +25,46 @@ class _LogSleepModal extends ConsumerStatefulWidget {
 }
 
 class _LogSleepModalState extends ConsumerState<_LogSleepModal> {
-  double _hoursSlept = 8.0;
-  int _qualityScore = 80;
+  late int _bedHour;
+  late int _bedMin;
+  late int _wakeHour;
+  late int _wakeMin;
 
   @override
   void initState() {
     super.initState();
-    final wellness = ref.read(wellnessProvider);
-    if (wellness.sleepMinutes > 0) {
-      _hoursSlept = (wellness.sleepMinutes / 60.0).clamp(1.0, 14.0);
-      _qualityScore = wellness.sleepQualityScore > 0 ? wellness.sleepQualityScore : 80;
-    }
+    final settings = ref.read(settingsProvider);
+    _bedHour = settings.sleepTargetBedtimeHour;
+    _bedMin = settings.sleepTargetBedtimeMinute;
+    _wakeHour = settings.sleepTargetWakeHour;
+    _wakeMin = settings.sleepTargetWakeMinute;
   }
 
-  void _onSave() {
-    final minutes = (_hoursSlept * 60).round();
-    ref.read(wellnessProvider.notifier).logSleep(
-          minutes: minutes,
-          qualityScore: _qualityScore,
+  void _onDialChanged(int bedHour, int bedMin, int wakeHour, int wakeMin) {
+    setState(() {
+      _bedHour = bedHour;
+      _bedMin = bedMin;
+      _wakeHour = wakeHour;
+      _wakeMin = wakeMin;
+    });
+  }
+
+  Future<void> _onSave() async {
+    final duration = SleepCalculations.calculateTargetDuration(
+      _bedHour,
+      _bedMin,
+      _wakeHour,
+      _wakeMin,
+    );
+
+    await ref.read(wellnessProvider.notifier).logSleep(
+          minutes: duration.inMinutes,
+          qualityScore: 80,
         );
-    context.pop();
+
+    if (mounted) {
+      context.pop();
+    }
   }
 
   @override
@@ -50,6 +72,19 @@ class _LogSleepModalState extends ConsumerState<_LogSleepModal> {
     final theme = Theme.of(context);
     final tt = theme.textTheme;
     final settings = ref.watch(settingsProvider);
+
+    final duration = SleepCalculations.calculateTargetDuration(
+      _bedHour,
+      _bedMin,
+      _wakeHour,
+      _wakeMin,
+    );
+    final hours = duration.inHours;
+    final mins = duration.inMinutes.remainder(60);
+    final durationStr = mins > 0 ? '${hours}h ${mins}m' : '${hours}h 0m';
+
+    final bedTimeStr = TimeOfDay(hour: _bedHour, minute: _bedMin).format(context);
+    final wakeTimeStr = TimeOfDay(hour: _wakeHour, minute: _wakeMin).format(context);
     final targetHours = (settings.sleepTargetDurationMinutes / 60.0).toStringAsFixed(1);
 
     return Container(
@@ -103,101 +138,128 @@ class _LogSleepModalState extends ConsumerState<_LogSleepModal> {
               ),
             ],
           ),
-          const SizedBox(height: FitoraSpacing.lg),
+          const SizedBox(height: FitoraSpacing.xs),
 
-          // Sleep Duration Selector Display
+          Text(
+            'Drag bedtime & wake-up handles on the circular meter to log your sleep.',
+            style: tt.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: FitoraSpacing.md),
+
+          // Circular Dial Meter for Logging
           Center(
-            child: Column(
-              children: [
-                Text(
-                  '${_hoursSlept.toStringAsFixed(1)} hrs',
-                  style: tt.displayLarge?.copyWith(
-                    fontWeight: FontWeight.w900,
-                    color: FitoraColors.calmCyan,
-                  ),
-                ),
-                Text(
-                  'Hours Slept Last Night',
-                  style: tt.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
+            child: SizedBox(
+              width: 250,
+              height: 250,
+              child: CircularSleepDial(
+                initialBedHour: _bedHour,
+                initialBedMinute: _bedMin,
+                initialWakeHour: _wakeHour,
+                initialWakeMinute: _wakeMin,
+                onChanged: _onDialChanged,
+              ),
             ),
           ),
           const SizedBox(height: FitoraSpacing.md),
 
-          // Slider
-          SliderTheme(
-            data: SliderThemeData(
-              activeTrackColor: FitoraColors.calmCyan,
-              inactiveTrackColor: theme.colorScheme.surfaceContainerHighest,
-              thumbColor: FitoraColors.calmCyan,
-              overlayColor: FitoraColors.calmCyan.withValues(alpha: 0.2),
-            ),
-            child: Slider(
-              value: _hoursSlept,
-              min: 1.0,
-              max: 14.0,
-              divisions: 26,
-              label: '${_hoursSlept.toStringAsFixed(1)}h',
-              onChanged: (val) => setState(() => _hoursSlept = val),
-            ),
-          ),
-
-          // Preset Chips
-          Wrap(
-            alignment: WrapAlignment.center,
-            spacing: 8,
-            children: [6.0, 6.5, 7.0, 7.5, 8.0, 8.5, 9.0].map((h) {
-              final isSelected = (_hoursSlept - h).abs() < 0.2;
-              return ChoiceChip(
-                label: Text('${h % 1 == 0 ? h.toInt() : h}h'),
-                selected: isSelected,
-                selectedColor: FitoraColors.calmCyan,
-                labelStyle: TextStyle(
-                  color: isSelected
-                      ? Colors.black
-                      : theme.colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 12,
-                ),
-                onSelected: (_) => setState(() => _hoursSlept = h),
-              );
-            }).toList(),
-          ),
-
-          const SizedBox(height: FitoraSpacing.lg),
-
-          // Target Goal Info Hint
+          // Readout Box
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: const EdgeInsets.all(FitoraSpacing.md),
             decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+              color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
               borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
+              ),
             ),
             child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                Icon(
-                  Icons.info_outline_rounded,
-                  size: 18,
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    'Daily Target: $targetHours hrs (Configure target in Progress ➜ Recovery)',
-                    style: tt.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                      fontSize: 11,
+                Column(
+                  children: [
+                    Text(
+                      'BEDTIME',
+                      style: tt.labelSmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '🌙 $bedTimeStr',
+                      style: tt.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.onSurface,
+                      ),
+                    ),
+                  ],
+                ),
+                Container(
+                  width: 1,
+                  height: 24,
+                  color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+                ),
+                Column(
+                  children: [
+                    Text(
+                      'SLEPT DURATION',
+                      style: tt.labelSmall?.copyWith(
+                        color: FitoraColors.calmCyan,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      durationStr,
+                      style: tt.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w900,
+                        color: FitoraColors.calmCyan,
+                      ),
+                    ),
+                  ],
+                ),
+                Container(
+                  width: 1,
+                  height: 24,
+                  color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+                ),
+                Column(
+                  children: [
+                    Text(
+                      'WAKE UP',
+                      style: tt.labelSmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '☀️ $wakeTimeStr',
+                      style: tt.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.onSurface,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
+          const SizedBox(height: FitoraSpacing.sm),
 
-          const SizedBox(height: FitoraSpacing.xl),
+          Center(
+            child: Text(
+              'Target Goal: $targetHours hrs (Configure target in Progress ➜ Recovery)',
+              style: tt.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+                fontSize: 11,
+              ),
+            ),
+          ),
+          const SizedBox(height: FitoraSpacing.lg),
 
           // Save Button
           ElevatedButton(
