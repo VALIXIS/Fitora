@@ -14,6 +14,7 @@ import 'package:fitora/shared/widgets/glow_container.dart';
 import 'package:fitora/features/wellness/providers/wellness_provider.dart';
 import 'package:fitora/shared/widgets/fitora_background.dart';
 import 'package:fitora/features/profile/widgets/achievements_grid.dart';
+import 'package:fitora/core/ads/ad_service.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -113,6 +114,8 @@ class ProfileScreen extends ConsumerWidget {
                         );
                       },
                     ),
+                    const SizedBox(height: FitoraSpacing.md),
+                    const Center(child: FitoraBannerAd()),
                     const SizedBox(height: 100),
                   ]),
                 ),

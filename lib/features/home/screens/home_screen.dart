@@ -21,6 +21,7 @@ import 'package:fitora/features/workouts/widgets/log_workout_modal.dart';
 import 'package:fitora/features/sleep/widgets/log_sleep_modal.dart';
 import 'package:permission_handler/permission_handler.dart' as ph;
 import 'package:fitora/features/settings/providers/settings_provider.dart';
+import 'package:fitora/core/ads/ad_service.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -36,6 +37,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         PermissionManager.requestFirstLaunchPermissions(context, ref);
+        AdService.showDailyVideoAdIfEligible(context);
       }
     });
   }

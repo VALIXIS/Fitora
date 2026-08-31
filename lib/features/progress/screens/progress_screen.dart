@@ -15,6 +15,7 @@ import 'package:fitora/shared/widgets/fitora_background.dart';
 import 'package:fitora/features/workouts/widgets/log_workout_modal.dart';
 import 'package:fitora/features/sleep/widgets/sleep_analysis_modal.dart';
 import 'package:fitora/features/settings/providers/settings_provider.dart';
+import 'package:fitora/core/ads/ad_service.dart';
 
 class ProgressScreen extends ConsumerStatefulWidget {
   const ProgressScreen({super.key});
@@ -143,7 +144,8 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                     const SizedBox(height: FitoraSpacing.lg),
                   ],
                   _buildStreakCard(textTheme),
-                  const SizedBox(height: 100), // Bottom scroll padding
+                  const SizedBox(height: FitoraSpacing.lg),
+                  const Center(child: FitoraBannerAd()),
                   const SizedBox(height: 100), // Bottom scroll padding
                 ]),
               ),
