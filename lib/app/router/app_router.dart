@@ -26,6 +26,7 @@ import 'package:fitora/features/profile/screens/edit_profile_screen.dart';
 import 'package:fitora/shared/screens/not_found_screen.dart';
 import 'package:fitora/features/sleep/screens/sleep_detail_screen.dart';
 import 'package:fitora/features/sleep/screens/sleep_schedule_screen.dart';
+import 'package:fitora/features/cycle/screens/cycle_dashboard_screen.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorKeys = [
@@ -252,6 +253,16 @@ final appRouterProvider = Provider<GoRouter>(
                           ),
                         ),
                       ],
+                    ),
+                    GoRoute(
+                      parentNavigatorKey: _rootNavigatorKey,
+                      path: AppRoutes.cycleDetail,
+                      name: AppRouteNames.cycleDetail,
+                      pageBuilder: (context, state) => slideUpTransitionPage(
+                        context: context,
+                        state: state,
+                        child: const CycleDashboardScreen(),
+                      ),
                     ),
                   ],
                 ),

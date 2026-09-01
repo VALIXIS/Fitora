@@ -3,12 +3,13 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fitora/features/personalization/data/personalization_local_data_source.dart';
 import 'package:fitora/features/personalization/domain/personalization_models.dart';
+import 'package:fitora/features/cycle/providers/cycle_provider.dart';
 
 final personalizationControllerProvider =
     StateNotifierProvider<PersonalizationController, PersonalizationViewState>(
   (ref) {
     final dataSource = ref.read(personalizationLocalDataSourceProvider);
-    return PersonalizationController(dataSource);
+    return PersonalizationController(ref, dataSource);
   },
 );
 
@@ -76,11 +77,12 @@ class PersonalizationViewState {
 }
 
 class PersonalizationController extends StateNotifier<PersonalizationViewState> {
+  final Ref _ref;
   final PersonalizationLocalDataSource _dataSource;
   late final Future<void> _loadFuture;
   Future<void> _saveQueue = Future<void>.value();
 
-  PersonalizationController(this._dataSource)
+  PersonalizationController(this._ref, this._dataSource)
       : super(PersonalizationViewState.initial()) {
     _loadFuture = _load();
   }
@@ -169,6 +171,11 @@ class PersonalizationController extends StateNotifier<PersonalizationViewState> 
     await _persistProfile(state.profile);
     await _dataSource.setCompleted(true);
     state = state.copyWith(isCompleted: true);
+
+    final hasCycleFocus = state.profile.interests.contains(WellnessInterest.cycleTracking);
+    final cycleNotifier = _ref.read(cycleProvider.notifier);
+    await cycleNotifier.toggleCycleTracking(hasCycleFocus);
+    await cycleNotifier.toggleReminders(hasCycleFocus);
   }
 
   void updateProfile(PersonalizationProfile profile) {

@@ -16,6 +16,9 @@ import 'package:fitora/features/workouts/widgets/log_workout_modal.dart';
 import 'package:fitora/features/sleep/widgets/sleep_analysis_modal.dart';
 import 'package:fitora/features/settings/providers/settings_provider.dart';
 import 'package:fitora/core/ads/ad_service.dart';
+import 'package:go_router/go_router.dart';
+import 'package:fitora/features/cycle/providers/cycle_provider.dart';
+import 'package:fitora/core/services/haptic_service.dart';
 
 class ProgressScreen extends ConsumerStatefulWidget {
   const ProgressScreen({super.key});
@@ -539,6 +542,10 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                 _buildSleepCard(context, tt, sleep),
                 const SizedBox(height: FitoraSpacing.md),
                 _buildHydrationCard(context, ref, tt, wellness),
+                if (ref.watch(cycleProvider).cycleTrackingEnabled) ...[
+                  const SizedBox(height: FitoraSpacing.md),
+                  _buildCycleCard(context, ref, tt),
+                ],
                 const SizedBox(height: FitoraSpacing.md),
                 Row(
                   children: [
@@ -1303,6 +1310,110 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildCycleCard(BuildContext context, WidgetRef ref, TextTheme tt) {
+    final state = ref.watch(cycleProvider);
+    if (!state.cycleTrackingEnabled) {
+      return const SizedBox.shrink();
+    }
+
+    final cycleNotifier = ref.read(cycleProvider.notifier);
+    final now = DateTime.now();
+    final localToday = DateTime(now.year, now.month, now.day);
+    final currentDay = cycleNotifier.getCycleDay(localToday);
+
+    final nextPeriod = cycleNotifier.getEstimatedNextPeriod();
+    final stats = cycleNotifier.getStatistics();
+    final hasPrediction = nextPeriod != null && stats.completedIntervalsCount >= 2;
+
+    String headline = 'Cycle Tracker';
+    String sub = 'Keep logging to build your history';
+    if (currentDay > 0) {
+      headline = 'Cycle Day $currentDay';
+    }
+    if (hasPrediction) {
+      final diff = nextPeriod.difference(localToday).inDays;
+      if (diff == 0) {
+        sub = 'Next period expected today (Estimated)';
+      } else if (diff > 0) {
+        sub = 'Next period estimated in $diff days';
+      } else {
+        sub = 'Next period was expected ${diff.abs()} days ago (Estimated)';
+      }
+    }
+
+    return GestureDetector(
+      onTap: () {
+        ref.read(hapticServiceProvider).lightImpact();
+        context.push('/progress/cycle');
+      },
+      child: GlowContainer(
+        glowColor: FitoraColors.softPink.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(24),
+        padding: EdgeInsets.zero,
+        child: Container(
+          padding: const EdgeInsets.all(FitoraSpacing.xl),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.02),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: FitoraColors.softPink.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.calendar_today_rounded,
+                  color: FitoraColors.softPink,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: FitoraSpacing.lg),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'CYCLE TRACKING',
+                      style: tt.labelSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.0,
+                        color: Colors.white54,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      headline,
+                      style: tt.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      sub,
+                      style: tt.bodySmall?.copyWith(
+                        color: Colors.white54,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(
+                Icons.arrow_forward_ios_rounded,
+                color: Colors.white24,
+                size: 16,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

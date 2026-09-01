@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -21,6 +22,7 @@ class NotificationService {
   static const int _testNotificationId = 9999;
 
   Future<void> initialize() async {
+    if (Platform.environment.containsKey('FLUTTER_TEST')) return;
     if (_isInitialized) return;
 
     tz.initializeTimeZones();
@@ -61,6 +63,16 @@ class NotificationService {
         enableVibration: true,
       );
       await androidImpl.createNotificationChannel(channel);
+
+      const cycleChannel = AndroidNotificationChannel(
+        'cycle_reminders',
+        'Cycle Reminders',
+        description: 'Notifications for cycle and period estimation reminders',
+        importance: Importance.high,
+        playSound: true,
+        enableVibration: true,
+      );
+      await androidImpl.createNotificationChannel(cycleChannel);
     }
 
     _isInitialized = true;
@@ -409,5 +421,53 @@ class NotificationService {
 
   Future<void> cancelAll() async {
     await _plugin.cancelAll();
+  }
+
+  Future<void> scheduleCycleReminder({
+    required int id,
+    required String title,
+    required String body,
+    required DateTime date,
+  }) async {
+    if (Platform.environment.containsKey('FLUTTER_TEST')) return;
+    final now = DateTime.now();
+    if (date.isBefore(now)) return;
+
+    await initialize();
+
+    final androidDetails = const AndroidNotificationDetails(
+      'cycle_reminders',
+      'Cycle Reminders',
+      channelDescription: 'Notifications for cycle and period estimation reminders',
+      importance: Importance.high,
+      priority: Priority.high,
+      icon: '@mipmap/ic_launcher',
+    );
+    final platformDetails = NotificationDetails(
+      android: androidDetails,
+      iOS: const DarwinNotificationDetails(),
+    );
+
+    final scheduledDate = tz.TZDateTime.from(date, tz.local);
+    final androidImpl = _plugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+    final bool canScheduleExactAlarm = (await androidImpl?.canScheduleExactNotifications()) ?? false;
+    final scheduleMode = canScheduleExactAlarm
+        ? AndroidScheduleMode.exactAllowWhileIdle
+        : AndroidScheduleMode.inexactAllowWhileIdle;
+
+    await _plugin.zonedSchedule(
+      id: id,
+      title: title,
+      body: body,
+      scheduledDate: scheduledDate,
+      notificationDetails: platformDetails,
+      androidScheduleMode: scheduleMode,
+    );
+  }
+
+  Future<void> cancelCycleReminder(int id) async {
+    if (Platform.environment.containsKey('FLUTTER_TEST')) return;
+    await initialize();
+    await _plugin.cancel(id: id);
   }
 }
