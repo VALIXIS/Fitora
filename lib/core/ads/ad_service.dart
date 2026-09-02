@@ -113,6 +113,7 @@ class FitoraBannerAd extends StatefulWidget {
 class _FitoraBannerAdState extends State<FitoraBannerAd> {
   BannerAd? _bannerAd;
   bool _isAdLoaded = false;
+  int _retryCount = 0;
 
   @override
   void initState() {
@@ -123,6 +124,7 @@ class _FitoraBannerAdState extends State<FitoraBannerAd> {
   void _loadBannerAd() async {
     await AdService.initialize();
 
+    _bannerAd?.dispose();
     _bannerAd = BannerAd(
       adUnitId: AdService.bannerAdUnitId,
       size: AdSize.banner,
@@ -132,12 +134,22 @@ class _FitoraBannerAdState extends State<FitoraBannerAd> {
           if (mounted) {
             setState(() {
               _isAdLoaded = true;
+              _retryCount = 0;
             });
           }
         },
         onAdFailedToLoad: (ad, error) {
           ad.dispose();
-          AppLogger.info('Banner ad failed to load: ${error.message}');
+          _bannerAd = null;
+          AppLogger.info('Banner ad failed to load: ${error.message} (code ${error.code})');
+          
+          // Retry with exponential backoff if initial fill fails during AdMob warm-up
+          if (_retryCount < 3 && mounted) {
+            _retryCount++;
+            Future.delayed(Duration(seconds: 3 * _retryCount), () {
+              if (mounted) _loadBannerAd();
+            });
+          }
         },
       ),
     );
