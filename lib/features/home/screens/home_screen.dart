@@ -939,7 +939,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                       : null,
                                   color: isToday
                                       ? null
-                                      : Colors.white.withValues(alpha: 0.1),
+                                      : theme.colorScheme.onSurface.withValues(alpha: 0.12),
                                 ),
                               ),
                             ),
@@ -950,7 +950,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             style: textTheme.labelSmall?.copyWith(
                               color: isToday
                                   ? FitoraColors.mintGreen
-                                  : Colors.white38,
+                                  : theme.colorScheme.onSurfaceVariant,
                               fontWeight: isToday
                                   ? FontWeight.bold
                                   : FontWeight.normal,

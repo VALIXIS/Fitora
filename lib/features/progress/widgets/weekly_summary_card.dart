@@ -11,7 +11,8 @@ class WeeklySummaryCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final tt = Theme.of(context).textTheme;
+    final theme = Theme.of(context);
+    final tt = theme.textTheme;
     final summary = ref.watch(weeklyHealthSummaryProvider);
 
     final sleepHours = summary.avgSleepMinutes / 60.0;
@@ -25,9 +26,9 @@ class WeeklySummaryCard extends ConsumerWidget {
       child: Container(
         padding: const EdgeInsets.all(FitoraSpacing.xl),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.02),
+          color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+          border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -55,18 +56,18 @@ class WeeklySummaryCard extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'WEEKLY HEALTH SUMMARY',
+                          'WEEKLY PERFORMANCE',
                           style: tt.labelSmall?.copyWith(
                             fontWeight: FontWeight.bold,
                             letterSpacing: 1.2,
-                            color: Colors.white54,
+                            color: theme.colorScheme.onSurface,
                           ),
                         ),
                         const SizedBox(height: 2),
                         Text(
                           'Last 7 Days vs Prior Week',
                           style: tt.bodySmall?.copyWith(
-                            color: Colors.white38,
+                            color: theme.colorScheme.onSurfaceVariant,
                             fontSize: 11,
                           ),
                         ),
@@ -80,9 +81,9 @@ class WeeklySummaryCard extends ConsumerWidget {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.05),
+                    color: FitoraColors.mintGreen.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.white10),
+                    border: Border.all(color: FitoraColors.mintGreen.withValues(alpha: 0.3)),
                   ),
                   child: Text(
                     '7-Day WoW',
@@ -102,6 +103,7 @@ class WeeklySummaryCard extends ConsumerWidget {
               children: [
                 Expanded(
                   child: _buildMetricTile(
+                    theme: theme,
                     tt: tt,
                     label: 'Total Steps',
                     value: _formatNumber(summary.totalSteps),
@@ -115,6 +117,7 @@ class WeeklySummaryCard extends ConsumerWidget {
                 const SizedBox(width: FitoraSpacing.md),
                 Expanded(
                   child: _buildMetricTile(
+                    theme: theme,
                     tt: tt,
                     label: 'Total Water',
                     value: summary.totalWaterLiters.toStringAsFixed(1),
@@ -134,6 +137,7 @@ class WeeklySummaryCard extends ConsumerWidget {
               children: [
                 Expanded(
                   child: _buildMetricTile(
+                    theme: theme,
                     tt: tt,
                     label: 'Avg Sleep',
                     value: '${sleepH}h ${sleepM}m',
@@ -147,6 +151,7 @@ class WeeklySummaryCard extends ConsumerWidget {
                 const SizedBox(width: FitoraSpacing.md),
                 Expanded(
                   child: _buildMetricTile(
+                    theme: theme,
                     tt: tt,
                     label: 'Active Calories',
                     value: summary.totalActiveCalories.toInt().toString(),
@@ -161,7 +166,7 @@ class WeeklySummaryCard extends ConsumerWidget {
             ),
 
             const SizedBox(height: FitoraSpacing.xl),
-            const Divider(color: Colors.white10, height: 1),
+            Divider(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3), height: 1),
             const SizedBox(height: FitoraSpacing.md),
 
             // Best Day Highlights Section
@@ -170,7 +175,7 @@ class WeeklySummaryCard extends ConsumerWidget {
               style: tt.labelSmall?.copyWith(
                 fontWeight: FontWeight.bold,
                 letterSpacing: 1.0,
-                color: Colors.white30,
+                color: theme.colorScheme.onSurfaceVariant,
                 fontSize: 10,
               ),
             ),
@@ -180,6 +185,7 @@ class WeeklySummaryCard extends ConsumerWidget {
               children: [
                 Expanded(
                   child: _buildBestDayBadge(
+                    theme: theme,
                     tt: tt,
                     title: 'Best Step Count',
                     day: summary.bestStepDay,
@@ -193,6 +199,7 @@ class WeeklySummaryCard extends ConsumerWidget {
                 const SizedBox(width: FitoraSpacing.sm),
                 Expanded(
                   child: _buildBestDayBadge(
+                    theme: theme,
                     tt: tt,
                     title: 'Best Hydration',
                     day: summary.bestHydrationDay,
@@ -212,6 +219,7 @@ class WeeklySummaryCard extends ConsumerWidget {
   }
 
   Widget _buildMetricTile({
+    required ThemeData theme,
     required TextTheme tt,
     required String label,
     required String value,
@@ -228,9 +236,9 @@ class WeeklySummaryCard extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(FitoraSpacing.md),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.02),
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+        border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -279,7 +287,7 @@ class WeeklySummaryCard extends ConsumerWidget {
                   value,
                   style: tt.titleMedium?.copyWith(
                     fontWeight: FontWeight.w900,
-                    color: Colors.white,
+                    color: theme.colorScheme.onSurface,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -289,7 +297,7 @@ class WeeklySummaryCard extends ConsumerWidget {
                 Text(
                   unit,
                   style: tt.labelSmall?.copyWith(
-                    color: Colors.white38,
+                    color: theme.colorScheme.onSurfaceVariant,
                     fontSize: 10,
                   ),
                 ),
@@ -299,7 +307,7 @@ class WeeklySummaryCard extends ConsumerWidget {
           const SizedBox(height: 2),
           Text(
             label,
-            style: tt.labelSmall?.copyWith(color: Colors.white30, fontSize: 10),
+            style: tt.labelSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant, fontSize: 10),
           ),
         ],
       ),
@@ -307,6 +315,7 @@ class WeeklySummaryCard extends ConsumerWidget {
   }
 
   Widget _buildBestDayBadge({
+    required ThemeData theme,
     required TextTheme tt,
     required String title,
     required String day,
@@ -320,9 +329,9 @@ class WeeklySummaryCard extends ConsumerWidget {
         vertical: FitoraSpacing.sm,
       ),
       decoration: BoxDecoration(
-        color: accentColor.withValues(alpha: 0.05),
+        color: accentColor.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: accentColor.withValues(alpha: 0.15)),
+        border: Border.all(color: accentColor.withValues(alpha: 0.2)),
       ),
       child: Row(
         children: [
@@ -335,7 +344,7 @@ class WeeklySummaryCard extends ConsumerWidget {
                 Text(
                   title.toUpperCase(),
                   style: tt.labelSmall?.copyWith(
-                    color: Colors.white30,
+                    color: theme.colorScheme.onSurfaceVariant,
                     fontSize: 8,
                     fontWeight: FontWeight.bold,
                   ),
@@ -343,7 +352,7 @@ class WeeklySummaryCard extends ConsumerWidget {
                 Text(
                   '$day — $value',
                   style: tt.labelSmall?.copyWith(
-                    color: Colors.white.withValues(alpha: 0.9),
+                    color: theme.colorScheme.onSurface,
                     fontWeight: FontWeight.bold,
                     fontSize: 10,
                   ),

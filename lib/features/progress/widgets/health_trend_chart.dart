@@ -80,7 +80,7 @@ class HealthTrendChart extends ConsumerWidget {
                 ),
 
                 // Time Horizon Toggle Pill (7-Day vs 30-Day)
-                _buildTimeframeToggle(ref, timeframe, tt),
+                _buildTimeframeToggle(ref, timeframe, tt, context),
               ],
             ),
 
@@ -110,7 +110,7 @@ class HealthTrendChart extends ConsumerWidget {
                       label: Text(
                         metric.displayName,
                         style: tt.labelSmall?.copyWith(
-                          color: isSelected ? Colors.black : Colors.white70,
+                          color: isSelected ? Colors.black : Theme.of(context).colorScheme.onSurfaceVariant,
                           fontWeight: isSelected
                               ? FontWeight.w900
                               : FontWeight.w600,
@@ -118,13 +118,13 @@ class HealthTrendChart extends ConsumerWidget {
                         ),
                       ),
                       selectedColor: metricColor,
-                      backgroundColor: Colors.white.withValues(alpha: 0.04),
+                      backgroundColor: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                         side: BorderSide(
                           color: isSelected
                               ? metricColor
-                              : Colors.white.withValues(alpha: 0.06),
+                              : Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.4),
                         ),
                       ),
                     ),
@@ -140,6 +140,7 @@ class HealthTrendChart extends ConsumerWidget {
               _buildEmptyState(context, tt, selectedMetric),
             ] else ...[
               _buildVisualChart(
+                context: context,
                 tt: tt,
                 chartData: chartData,
                 timeframe: timeframe,
@@ -156,13 +157,15 @@ class HealthTrendChart extends ConsumerWidget {
     WidgetRef ref,
     HealthTimeframe current,
     TextTheme tt,
+    BuildContext context,
   ) {
+    final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.04),
+        color: theme.colorScheme.onSurface.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white10),
+        border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -186,7 +189,7 @@ class HealthTrendChart extends ConsumerWidget {
               child: Text(
                 tf.label,
                 style: tt.labelSmall?.copyWith(
-                  color: isSelected ? Colors.black : Colors.white54,
+                  color: isSelected ? Colors.black : theme.colorScheme.onSurfaceVariant,
                   fontWeight: isSelected ? FontWeight.w900 : FontWeight.w600,
                   fontSize: 10,
                 ),
@@ -199,11 +202,13 @@ class HealthTrendChart extends ConsumerWidget {
   }
 
   Widget _buildVisualChart({
+    required BuildContext context,
     required TextTheme tt,
     required _ChartMetricSeries chartData,
     required HealthTimeframe timeframe,
     required HealthMetricType metric,
   }) {
+    final theme = Theme.of(context);
     final maxVal = chartData.values.fold<double>(
       0.0,
       (curr, next) => curr > next ? curr : next,
@@ -244,7 +249,7 @@ class HealthTrendChart extends ConsumerWidget {
                           child: Text(
                             _formatShortVal(metric, val),
                             style: tt.labelSmall?.copyWith(
-                              color: Colors.white54,
+                              color: theme.colorScheme.onSurfaceVariant,
                               fontSize: 8,
                             ),
                           ),
@@ -278,7 +283,7 @@ class HealthTrendChart extends ConsumerWidget {
                         Text(
                           _getDayLabel(date),
                           style: TextStyle(
-                            color: isToday ? Colors.white : Colors.white38,
+                            color: isToday ? theme.colorScheme.onSurface : theme.colorScheme.onSurfaceVariant,
                             fontSize: 10,
                             fontWeight: isToday
                                 ? FontWeight.bold
@@ -290,7 +295,7 @@ class HealthTrendChart extends ConsumerWidget {
                         Text(
                           '${date.month}/${date.day}',
                           style: TextStyle(
-                            color: isToday ? Colors.white : Colors.white38,
+                            color: isToday ? theme.colorScheme.onSurface : theme.colorScheme.onSurfaceVariant,
                             fontSize: 8,
                             fontWeight: isToday
                                 ? FontWeight.bold
@@ -316,28 +321,29 @@ class HealthTrendChart extends ConsumerWidget {
     TextTheme tt,
     HealthMetricType metric,
   ) {
+    final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.all(FitoraSpacing.lg),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.02),
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+        border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4)),
       ),
       child: Column(
         children: [
-          Icon(_getMetricIcon(metric), color: Colors.white24, size: 36),
+          Icon(_getMetricIcon(metric), color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6), size: 36),
           const SizedBox(height: FitoraSpacing.md),
           Text(
             'No ${metric.displayName} Data Available',
             style: tt.titleSmall?.copyWith(
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: theme.colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 4),
           Text(
             'Log daily activities to see trend analytics.',
-            style: tt.bodySmall?.copyWith(color: Colors.white54),
+            style: tt.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
             textAlign: TextAlign.center,
           ),
         ],

@@ -794,6 +794,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     TextTheme tt,
     SleepSummary sleep,
   ) {
+    final theme = Theme.of(context);
     final totalMinutes = sleep.totalSleep.inMinutes;
     final hours = sleep.totalSleep.inHours;
     final minutes = sleep.totalSleep.inMinutes.remainder(60);
@@ -837,9 +838,9 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
         child: Container(
           padding: const EdgeInsets.all(FitoraSpacing.xl),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.02),
+            color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+            border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -867,7 +868,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                         style: tt.labelSmall?.copyWith(
                           fontWeight: FontWeight.bold,
                           letterSpacing: 1.0,
-                          color: Colors.white54,
+                          color: theme.colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],
@@ -900,7 +901,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
               if (totalMinutes == 0) ...[
                 Text(
                   'Log your last night\'s sleep or set your target sleep schedule dial.',
-                  style: tt.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  style: tt.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                 ),
                 const SizedBox(height: FitoraSpacing.md),
                 Row(
@@ -931,7 +932,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                           child: CircularProgressIndicator(
                             value: progress,
                             strokeWidth: 7,
-                            backgroundColor: Colors.white.withValues(alpha: 0.05),
+                            backgroundColor: theme.colorScheme.onSurface.withValues(alpha: 0.08),
                             valueColor: const AlwaysStoppedAnimation<Color>(
                               FitoraColors.calmCyan,
                             ),
@@ -956,13 +957,13 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                             '${hours}h ${minutes}m',
                             style: tt.titleLarge?.copyWith(
                               fontWeight: FontWeight.w900,
-                              color: Colors.white,
+                              color: theme.colorScheme.onSurface,
                             ),
                           ),
                           const SizedBox(height: 2),
                           Text(
                             'Sleep Goal: $goalStr',
-                            style: tt.bodySmall?.copyWith(color: Colors.white54),
+                            style: tt.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                           ),
                         ],
                       ),
@@ -1319,6 +1320,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
   }
 
   Widget _buildCycleCard(BuildContext context, WidgetRef ref, TextTheme tt) {
+    final theme = Theme.of(context);
     final state = ref.watch(cycleProvider);
     if (!state.cycleTrackingEnabled) {
       return const SizedBox.shrink();
@@ -1361,9 +1363,9 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
         child: Container(
           padding: const EdgeInsets.all(FitoraSpacing.xl),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.02),
+            color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+            border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4)),
           ),
           child: Row(
             children: [
@@ -1389,7 +1391,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                       style: tt.labelSmall?.copyWith(
                         fontWeight: FontWeight.bold,
                         letterSpacing: 1.0,
-                        color: Colors.white54,
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -1397,22 +1399,22 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                       headline,
                       style: tt.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: theme.colorScheme.onSurface,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       sub,
                       style: tt.bodySmall?.copyWith(
-                        color: Colors.white54,
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],
                 ),
               ),
-              const Icon(
+              Icon(
                 Icons.arrow_forward_ios_rounded,
-                color: Colors.white24,
+                color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
                 size: 16,
               ),
             ],
