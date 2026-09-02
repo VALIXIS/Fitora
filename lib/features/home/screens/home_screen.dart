@@ -68,7 +68,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   height: 4,
                   margin: const EdgeInsets.only(bottom: 20),
                   decoration: BoxDecoration(
-                    color: Colors.white24,
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(99),
                   ),
                 ),
@@ -93,7 +93,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       'Notifications & Reminders',
                       style: tt.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: theme.colorScheme.onSurface,
                       ),
                     ),
                   ),
@@ -103,9 +103,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.03),
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.04),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+                  border: Border.all(color: theme.colorScheme.onSurface.withValues(alpha: 0.08)),
                 ),
                 child: Row(
                   children: [
@@ -119,12 +119,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             'Hydration Check-ins',
                             style: tt.bodyMedium?.copyWith(
                               fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                              color: theme.colorScheme.onSurface,
                             ),
                           ),
                           Text(
                             'Active every 2 hours (08:00 - 20:00)',
-                            style: tt.bodySmall?.copyWith(color: Colors.white54, fontSize: 11),
+                            style: tt.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant, fontSize: 11),
                           ),
                         ],
                       ),
@@ -137,9 +137,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.03),
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.04),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+                  border: Border.all(color: theme.colorScheme.onSurface.withValues(alpha: 0.08)),
                 ),
                 child: Row(
                   children: [
@@ -153,12 +153,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             'Daily Goal Summary',
                             style: tt.bodyMedium?.copyWith(
                               fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                              color: theme.colorScheme.onSurface,
                             ),
                           ),
                           Text(
                             'Scheduled daily at 20:00',
-                            style: tt.bodySmall?.copyWith(color: Colors.white54, fontSize: 11),
+                            style: tt.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant, fontSize: 11),
                           ),
                         ],
                       ),
@@ -199,7 +199,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
+    final theme = Theme.of(context);
+    final textTheme = theme.textTheme;
     final today = ref.watch(todayProvider);
     final activity = ref.watch(dailyActivityProvider(today));
     final profile = ref.watch(personalizationControllerProvider).profile;
@@ -248,7 +249,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             slivers: [
               // ── Premium SafeArea Header ─────────────────────────────────────────
               SliverToBoxAdapter(
-                child: _buildHeader(textTheme, activity, greeting),
+                child: _buildHeader(context, textTheme, activity, greeting),
               ),
 
               // ── Scrollable Dashboard Grid ──────────────────────────────────────
@@ -263,7 +264,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     const _BatteryWarningCard(),
 
                     // Hero Steps Card (Visual Centerpiece)
-                    _buildHeroStepsCard(textTheme, activity),
+                    _buildHeroStepsCard(context, textTheme, activity),
                     const SizedBox(height: FitoraSpacing.xl),
 
                     // Quick Stats Section Header
@@ -272,7 +273,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       style: textTheme.labelSmall?.copyWith(
                         fontWeight: FontWeight.bold,
                         letterSpacing: 1.5,
-                        color: Colors.white30,
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
                     const SizedBox(height: FitoraSpacing.md),
@@ -296,7 +297,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       style: textTheme.labelSmall?.copyWith(
                         fontWeight: FontWeight.bold,
                         letterSpacing: 1.5,
-                        color: Colors.white30,
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
                     const SizedBox(height: FitoraSpacing.md),
@@ -410,10 +411,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildHeader(
+    BuildContext context,
     TextTheme textTheme,
     DailyActivitySummary activity,
     String greeting,
   ) {
+    final theme = Theme.of(context);
     return SafeArea(
       bottom: false,
       child: Padding(
@@ -435,9 +438,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     padding: const EdgeInsets.all(3),
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: Colors.white.withValues(alpha: 0.05),
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.05),
                       border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.1),
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.1),
                       ),
                     ),
                     child: Image.asset(
@@ -451,7 +454,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       greeting,
                       style: textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w900,
-                        color: Colors.white,
+                        color: theme.colorScheme.onSurface,
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -510,9 +513,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   },
                 ),
                 IconButton(
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.notifications_outlined,
-                    color: FitoraColors.darkTextPrimary,
+                    color: theme.colorScheme.onSurface,
                   ),
                   onPressed: () => _showNotificationsModal(context),
                 ),
@@ -525,9 +528,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildHeroStepsCard(
+    BuildContext context,
     TextTheme textTheme,
     DailyActivitySummary activity,
   ) {
+    final theme = Theme.of(context);
     final stepsValue = activity.steps;
     final stepsGoal = activity.stepsGoal;
     final progress = activity.stepsProgress;
@@ -555,9 +560,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         child: Container(
           padding: const EdgeInsets.all(FitoraSpacing.xl),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.02),
+            color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+            border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4)),
           ),
           child: Row(
             children: [
@@ -591,7 +596,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     Text(
                       'Today\'s Steps',
                       style: textTheme.bodyMedium?.copyWith(
-                        color: Colors.white54,
+                        color: theme.colorScheme.onSurfaceVariant,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -600,7 +605,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       stepsValue == 0 ? '0' : formattedSteps,
                       style: textTheme.displaySmall?.copyWith(
                         fontWeight: FontWeight.w900,
-                        color: Colors.white,
+                        color: theme.colorScheme.onSurface,
                         letterSpacing: -1.0,
                       ),
                     ),
@@ -608,7 +613,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     Text(
                       stepsGoalText,
                       style: textTheme.bodySmall?.copyWith(
-                        color: Colors.white54,
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -624,7 +629,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     child: CircularProgressIndicator(
                       value: progress,
                       strokeWidth: 9,
-                      backgroundColor: Colors.white.withValues(alpha: 0.05),
+                      backgroundColor: theme.colorScheme.onSurface.withValues(alpha: 0.08),
                       valueColor: const AlwaysStoppedAnimation<Color>(
                         FitoraColors.mintGreen,
                       ),
@@ -665,6 +670,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               children: [
                 Expanded(
                   child: _buildStatCard(
+                    context,
                     label: 'Active',
                     value: activity.activeMinutes.toString(),
                     unit: ' min',
@@ -676,6 +682,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 const SizedBox(width: FitoraSpacing.sm),
                 Expanded(
                   child: _buildStatCard(
+                    context,
                     label: 'Calories',
                     value: activity.caloriesBurned.toInt().toString(),
                     unit: ' kcal',
@@ -691,6 +698,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               children: [
                 Expanded(
                   child: _buildStatCard(
+                    context,
                     label: 'Distance',
                     value: activity.distanceKm.toStringAsFixed(1),
                     unit: ' km',
@@ -702,6 +710,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 const SizedBox(width: FitoraSpacing.sm),
                 Expanded(
                   child: _buildStatCard(
+                    context,
                     label: 'Hydration',
                     value: wellness.hydrationLiters.toStringAsFixed(1),
                     unit: ' L',
@@ -772,7 +781,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         .slideY(begin: 0.05, end: 0);
   }
 
-  Widget _buildStatCard({
+  Widget _buildStatCard(
+    BuildContext context, {
     required String label,
     required String value,
     required String unit,
@@ -782,6 +792,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     VoidCallback? onTap,
     Widget? trailingAction,
   }) {
+    final theme = Theme.of(context);
     final card = GlowContainer(
       glowColor: color.withValues(alpha: 0.05),
       borderRadius: BorderRadius.circular(20),
@@ -789,9 +800,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       child: Container(
         padding: const EdgeInsets.all(FitoraSpacing.md),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.02),
+          color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+          border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -818,7 +829,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   value,
                   style: textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.w900,
-                    color: Colors.white,
+                    color: theme.colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(width: 2),
@@ -827,7 +838,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   child: Text(
                     unit,
                     style: textTheme.labelSmall?.copyWith(
-                      color: Colors.white54,
+                      color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ),
@@ -837,7 +848,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             Text(
               label.toUpperCase(),
               style: textTheme.labelSmall?.copyWith(
-                color: Colors.white30,
+                color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
                 fontWeight: FontWeight.bold,
                 letterSpacing: 0.5,
               ),
@@ -855,6 +866,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     List<DailyActivitySummary> summaries,
   ) {
     final days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+    final theme = Theme.of(context);
 
     return GlowContainer(
           glowColor: FitoraColors.calmCyan.withValues(alpha: 0.05),
@@ -863,9 +875,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           child: Container(
             padding: const EdgeInsets.all(FitoraSpacing.xl),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.02),
+              color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+              border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -878,13 +890,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       style: textTheme.labelSmall?.copyWith(
                         fontWeight: FontWeight.bold,
                         letterSpacing: 1.5,
-                        color: Colors.white30,
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
                     Text(
                       '7 Day Trend',
                       style: textTheme.bodySmall?.copyWith(
-                        color: Colors.white54,
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -960,6 +972,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Widget _buildDailyGoals(TextTheme textTheme, DateTime today) {
     final status = ref.watch(dailyGoalStatusProvider(today));
+    final theme = Theme.of(context);
 
     int completedGoalsCount = status.metrics.where((m) => m.isCompleted).length;
     int trackedGoalsCount = status.metrics
@@ -977,9 +990,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           child: Container(
             padding: const EdgeInsets.all(FitoraSpacing.md),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.02),
+              color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+              border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4)),
             ),
             child: Row(
               children: [
@@ -992,7 +1005,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       child: CircularProgressIndicator(
                         value: status.completionPercentage / 100,
                         strokeWidth: 4,
-                        backgroundColor: Colors.white.withValues(alpha: 0.05),
+                        backgroundColor: theme.colorScheme.onSurface.withValues(alpha: 0.08),
                         valueColor: AlwaysStoppedAnimation(
                           completedGoalsCount == trackedGoalsCount &&
                                   trackedGoalsCount > 0
@@ -1011,7 +1024,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           completedGoalsCount == trackedGoalsCount &&
                               trackedGoalsCount > 0
                           ? FitoraColors.mintGreen
-                          : Colors.white70,
+                          : theme.colorScheme.onSurfaceVariant,
                       size: 20,
                     ),
                   ],
@@ -1028,7 +1041,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             : 'Daily Progress',
                         style: textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          color: theme.colorScheme.onSurface,
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -1037,7 +1050,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             ? '$completedGoalsCount of $trackedGoalsCount ${trackedGoalsCount == 1 ? 'target' : 'targets'} completed today'
                             : 'No active goals tracked today',
                         style: textTheme.bodySmall?.copyWith(
-                          color: Colors.white54,
+                          color: theme.colorScheme.onSurfaceVariant,
                           fontSize: 11,
                         ),
                       ),
@@ -1069,6 +1082,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget _buildMetricGoalCard(TextTheme textTheme, GoalMetric metric) {
     final color = _getMetricColor(metric.key);
     final icon = _getMetricIcon(metric.key);
+    final theme = Theme.of(context);
 
     final card = GlowContainer(
       glowColor: metric.isCompleted
@@ -1079,12 +1093,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       child: Container(
         padding: const EdgeInsets.all(FitoraSpacing.md),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.02),
+          color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: metric.isCompleted
-                ? color.withValues(alpha: 0.25)
-                : Colors.white.withValues(alpha: 0.08),
+                ? color.withValues(alpha: 0.3)
+                : theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
           ),
         ),
         child: Column(
@@ -1111,7 +1125,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             metric.name,
                             style: textTheme.titleSmall?.copyWith(
                               fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                              color: theme.colorScheme.onSurface,
                             ),
                           ),
                           if (metric.isCompleted) ...[
@@ -1242,6 +1256,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildMetricSubtitle(TextTheme textTheme, GoalMetric metric) {
+    final theme = Theme.of(context);
     if (metric.availability == MetricAvailability.permissionRequired) {
       return Text(
         'Permission Required to track ${metric.name.toLowerCase()}',
@@ -1256,7 +1271,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       return Text(
         'Data Unavailable (Sensor / Integration missing)',
         style: textTheme.bodySmall?.copyWith(
-          color: Colors.white30,
+          color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
           fontSize: 11,
         ),
       );
@@ -1279,7 +1294,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ? "Start walking to begin tracking today's progress."
             : '$formattedCurrent / $formattedGoal steps',
         style: textTheme.bodySmall?.copyWith(
-          color: Colors.white54,
+          color: theme.colorScheme.onSurfaceVariant,
           fontSize: 11,
         ),
       );
@@ -1291,7 +1306,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ? 'Log your first glass of water today.'
             : '${metric.current.toStringAsFixed(1)} / ${metric.goal.toStringAsFixed(1)} L',
         style: textTheme.bodySmall?.copyWith(
-          color: Colors.white54,
+          color: theme.colorScheme.onSurfaceVariant,
           fontSize: 11,
         ),
       );
@@ -1305,7 +1320,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ? 'Log your sleep or sync via Health Connect.'
             : '${hours}h ${mins}m logged of 8h goal',
         style: textTheme.bodySmall?.copyWith(
-          color: Colors.white54,
+          color: theme.colorScheme.onSurfaceVariant,
           fontSize: 11,
         ),
       );
@@ -1317,7 +1332,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ? 'Active calories burned during workouts.'
             : '${metric.current.toInt()} / ${metric.goal.toInt()} kcal active burned',
         style: textTheme.bodySmall?.copyWith(
-          color: Colors.white54,
+          color: theme.colorScheme.onSurfaceVariant,
           fontSize: 11,
         ),
       );

@@ -108,7 +108,7 @@ class ProfileScreen extends ConsumerWidget {
                           child: Text(
                             versionText,
                             style: textTheme.labelSmall?.copyWith(
-                              color: Colors.white38,
+                              color: theme.colorScheme.onSurfaceVariant,
                             ),
                           ),
                         );
@@ -572,13 +572,14 @@ class ProfileScreen extends ConsumerWidget {
 }
 
 void showStepGoalPicker(BuildContext context, WidgetRef ref, int currentGoal) {
-  final textTheme = Theme.of(context).textTheme;
+  final theme = Theme.of(context);
+  final textTheme = theme.textTheme;
   final presets = [5000, 8000, 10000, 12000, 15000, 20000];
   int tempGoal = currentGoal;
 
   showModalBottomSheet(
     context: context,
-    backgroundColor: const Color(0xFF0D1117),
+    backgroundColor: theme.colorScheme.surface,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
     ),
@@ -606,7 +607,7 @@ void showStepGoalPicker(BuildContext context, WidgetRef ref, int currentGoal) {
                   'Daily Step Target',
                   style: textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: theme.colorScheme.onSurface,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -626,7 +627,7 @@ void showStepGoalPicker(BuildContext context, WidgetRef ref, int currentGoal) {
                   max: 30000,
                   divisions: 54,
                   activeColor: FitoraColors.mintGreen,
-                  inactiveColor: Colors.white10,
+                  inactiveColor: theme.colorScheme.onSurface.withValues(alpha: 0.12),
                   onChanged: (val) {
                     setState(() {
                       tempGoal = (val / 500).round() * 500;
@@ -644,9 +645,9 @@ void showStepGoalPicker(BuildContext context, WidgetRef ref, int currentGoal) {
                       label: Text('${p ~/ 1000}k'),
                       selected: isSelected,
                       selectedColor: FitoraColors.mintGreen,
-                      backgroundColor: Colors.white.withValues(alpha: 0.05),
+                      backgroundColor: theme.colorScheme.onSurface.withValues(alpha: 0.05),
                       labelStyle: TextStyle(
-                        color: isSelected ? Colors.black : Colors.white70,
+                        color: isSelected ? Colors.black : theme.colorScheme.onSurfaceVariant,
                         fontWeight: isSelected
                             ? FontWeight.bold
                             : FontWeight.normal,

@@ -64,7 +64,7 @@ class _LogWorkoutModalState extends ConsumerState<LogWorkoutModal> {
               height: 4,
               margin: const EdgeInsets.only(bottom: 20),
               decoration: BoxDecoration(
-                color: Colors.white24,
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(99),
               ),
             ),
@@ -89,7 +89,7 @@ class _LogWorkoutModalState extends ConsumerState<LogWorkoutModal> {
                   'Log Workout',
                   style: tt.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: theme.colorScheme.onSurface,
                   ),
                 ),
               ),
@@ -98,7 +98,7 @@ class _LogWorkoutModalState extends ConsumerState<LogWorkoutModal> {
           const SizedBox(height: 20),
           Text(
             'Activity Type',
-            style: tt.bodySmall?.copyWith(color: Colors.white70, fontWeight: FontWeight.bold),
+            style: tt.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           Wrap(
@@ -108,7 +108,7 @@ class _LogWorkoutModalState extends ConsumerState<LogWorkoutModal> {
               final isSelected = _selectedType == type;
               return ChoiceChip(
                 label: Text(type.label),
-                avatar: Icon(type.icon, size: 16, color: isSelected ? Colors.black : Colors.white70),
+                avatar: Icon(type.icon, size: 16, color: isSelected ? Colors.black : theme.colorScheme.onSurfaceVariant),
                 selected: isSelected,
                 onSelected: (val) {
                   if (val) {
@@ -118,9 +118,9 @@ class _LogWorkoutModalState extends ConsumerState<LogWorkoutModal> {
                   }
                 },
                 selectedColor: FitoraColors.mintGreen,
-                backgroundColor: Colors.white.withValues(alpha: 0.05),
+                backgroundColor: theme.colorScheme.onSurface.withValues(alpha: 0.05),
                 labelStyle: TextStyle(
-                  color: isSelected ? Colors.black : Colors.white,
+                  color: isSelected ? Colors.black : theme.colorScheme.onSurface,
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                 ),
               );
@@ -132,7 +132,7 @@ class _LogWorkoutModalState extends ConsumerState<LogWorkoutModal> {
             children: [
               Text(
                 'Duration',
-                style: tt.bodySmall?.copyWith(color: Colors.white70, fontWeight: FontWeight.bold),
+                style: tt.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant, fontWeight: FontWeight.bold),
               ),
               Text(
                 '${_duration.round()} mins',
@@ -147,7 +147,7 @@ class _LogWorkoutModalState extends ConsumerState<LogWorkoutModal> {
             divisions: 21,
             label: '${_duration.round()} mins',
             activeColor: FitoraColors.mintGreen,
-            inactiveColor: Colors.white24,
+            inactiveColor: theme.colorScheme.onSurface.withValues(alpha: 0.12),
             onChanged: (val) {
               setState(() {
                 _duration = val;
@@ -158,9 +158,9 @@ class _LogWorkoutModalState extends ConsumerState<LogWorkoutModal> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.03),
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.04),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+              border: Border.all(color: theme.colorScheme.onSurface.withValues(alpha: 0.08)),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -170,17 +170,17 @@ class _LogWorkoutModalState extends ConsumerState<LogWorkoutModal> {
                   children: [
                     Text(
                       'Estimated Burn',
-                      style: tt.bodySmall?.copyWith(color: Colors.white70),
+                      style: tt.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                     ),
                     Text(
                       '${estimatedCal.round()} kcal',
-                      style: tt.titleLarge?.copyWith(color: Colors.white, fontWeight: FontWeight.bold),
+                      style: tt.titleLarge?.copyWith(color: theme.colorScheme.onSurface, fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),
                 Text(
                   '${_selectedType.metMultiplier} METs',
-                  style: tt.bodySmall?.copyWith(color: Colors.white38),
+                  style: tt.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6)),
                 ),
               ],
             ),
@@ -189,19 +189,19 @@ class _LogWorkoutModalState extends ConsumerState<LogWorkoutModal> {
           TextField(
             controller: _notesController,
             maxLines: 2,
-            style: const TextStyle(color: Colors.white),
+            style: TextStyle(color: theme.colorScheme.onSurface),
             decoration: InputDecoration(
               hintText: 'Workout notes (optional)...',
-              hintStyle: const TextStyle(color: Colors.white30),
+              hintStyle: TextStyle(color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6)),
               filled: true,
-              fillColor: Colors.white.withValues(alpha: 0.03),
+              fillColor: theme.colorScheme.onSurface.withValues(alpha: 0.04),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(16),
-                borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.06)),
+                borderSide: BorderSide(color: theme.colorScheme.onSurface.withValues(alpha: 0.08)),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(16),
-                borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.06)),
+                borderSide: BorderSide(color: theme.colorScheme.onSurface.withValues(alpha: 0.08)),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(16),

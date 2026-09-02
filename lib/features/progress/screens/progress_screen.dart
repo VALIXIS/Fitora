@@ -214,13 +214,14 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
   }
 
   Widget _buildTimeFilter(TextTheme textTheme) {
+    final theme = Theme.of(context);
     final options = ['Day', 'Week', 'Month', 'Year'];
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.03),
+        color: theme.colorScheme.onSurface.withValues(alpha: 0.04),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+        border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4)),
       ),
       child: Row(
         children: options.map((opt) {
@@ -251,7 +252,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                   opt,
                   textAlign: TextAlign.center,
                   style: textTheme.labelLarge?.copyWith(
-                    color: isSelected ? Colors.black : Colors.white54,
+                    color: isSelected ? Colors.black : theme.colorScheme.onSurfaceVariant,
                     fontWeight: isSelected ? FontWeight.w900 : FontWeight.w500,
                   ),
                 ),
@@ -264,12 +265,13 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
   }
 
   Widget _buildSectionHeader(TextTheme tt, String title) {
+    final theme = Theme.of(context);
     return Text(
       title,
       style: tt.labelSmall?.copyWith(
         fontWeight: FontWeight.bold,
         letterSpacing: 1.5,
-        color: Colors.white30,
+        color: theme.colorScheme.onSurfaceVariant,
       ),
     );
   }
@@ -1069,6 +1071,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
   }
 
   Widget _buildWeightTrend(TextTheme tt, double currentWeight) {
+    final theme = Theme.of(context);
     return GlowContainer(
       glowColor: FitoraColors.lavender.withValues(alpha: 0.05),
       borderRadius: BorderRadius.circular(20),
@@ -1076,9 +1079,9 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
       child: Container(
         padding: const EdgeInsets.all(FitoraSpacing.lg),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.02),
+          color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+          border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1091,7 +1094,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                   style: tt.labelSmall?.copyWith(
                     fontWeight: FontWeight.bold,
                     letterSpacing: 1.0,
-                    color: Colors.white54,
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
                 const Icon(
@@ -1109,14 +1112,14 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                   currentWeight.toStringAsFixed(1),
                   style: tt.headlineMedium?.copyWith(
                     fontWeight: FontWeight.w900,
-                    color: Colors.white,
+                    color: theme.colorScheme.onSurface,
                   ),
                 ),
                 Padding(
                   padding: const EdgeInsets.only(bottom: 6, left: 4),
                   child: Text(
                     'kg',
-                    style: tt.bodySmall?.copyWith(color: Colors.white54),
+                    style: tt.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                   ),
                 ),
               ],
@@ -1130,6 +1133,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
   Widget _buildStreakCard(TextTheme tt) {
     final wellness = ref.watch(wellnessProvider);
     if (wellness.wellnessStreak == 0) return const SizedBox.shrink();
+    final theme = Theme.of(context);
 
     return GlowContainer(
       glowColor: FitoraColors.warningOrange.withValues(alpha: 0.08),
@@ -1138,9 +1142,9 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
       child: Container(
         padding: const EdgeInsets.all(FitoraSpacing.lg),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.02),
+          color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+          border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4)),
         ),
         child: Row(
           children: [
@@ -1174,12 +1178,12 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                     'You are unstoppable!',
                     style: tt.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: theme.colorScheme.onSurface,
                     ),
                   ),
                   Text(
                     'Keep the momentum going.',
-                    style: tt.bodySmall?.copyWith(color: Colors.white70),
+                    style: tt.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                   ),
                 ],
               ),
@@ -1191,6 +1195,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
   }
 
   Widget _buildEmptyActivityCard(BuildContext context, TextTheme tt) {
+    final theme = Theme.of(context);
     return GlowContainer(
       glowColor: FitoraColors.mintGreen.withValues(alpha: 0.05),
       borderRadius: BorderRadius.circular(20),
@@ -1198,15 +1203,15 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
       child: Container(
         padding: const EdgeInsets.all(FitoraSpacing.xl),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.02),
+          color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+          border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4)),
         ),
         child: Column(
           children: [
-            const Icon(
+            Icon(
               Icons.sync_disabled_rounded,
-              color: Colors.white30,
+              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
               size: 36,
             ),
             const SizedBox(height: FitoraSpacing.md),
@@ -1214,13 +1219,13 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
               'No activity recorded yet.',
               style: tt.titleSmall?.copyWith(
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: theme.colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: FitoraSpacing.xs),
             Text(
               'Start tracking today to unlock insights.',
-              style: tt.bodySmall?.copyWith(color: Colors.white70),
+              style: tt.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
               textAlign: TextAlign.center,
             ),
           ],

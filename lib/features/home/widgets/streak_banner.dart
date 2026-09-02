@@ -26,21 +26,18 @@ class StreakBanner extends ConsumerWidget {
       subtitle = 'You are building some great momentum. Keep it burning!';
     }
 
+    final isDark = theme.brightness == Brightness.dark;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [
-            Color(0xFF2E1A05),
-            Color(0xFF1E1103),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: isDark 
+            ? const Color(0xFF2E1A05) 
+            : Colors.orange.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: Colors.orange.withValues(alpha: 0.2),
+          color: Colors.orange.withValues(alpha: isDark ? 0.2 : 0.3),
           width: 1.5,
         ),
         boxShadow: [
@@ -73,14 +70,14 @@ class StreakBanner extends ConsumerWidget {
                   '$currentStreak Day Goal Streak',
                   style: tt.bodyLarge?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: Colors.orangeAccent,
+                    color: isDark ? Colors.orangeAccent : Colors.orange.shade800,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   subtitle,
                   style: tt.bodySmall?.copyWith(
-                    color: Colors.white54,
+                    color: theme.colorScheme.onSurfaceVariant,
                     fontSize: 11,
                   ),
                 ),

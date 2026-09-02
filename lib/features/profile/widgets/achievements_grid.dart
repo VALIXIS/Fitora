@@ -23,7 +23,7 @@ class AchievementsGrid extends ConsumerWidget {
             'Achievements',
             style: tt.titleMedium?.copyWith(
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: theme.colorScheme.onSurface,
             ),
           ),
         ),
@@ -67,13 +67,13 @@ class _BadgeItem extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: isUnlocked
-            ? Colors.white.withValues(alpha: 0.04)
-            : Colors.white.withValues(alpha: 0.01),
+            ? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5)
+            : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: isUnlocked
               ? FitoraColors.mintGreen.withValues(alpha: 0.3)
-              : Colors.white.withValues(alpha: 0.05),
+              : theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
           width: 1.5,
         ),
       ),
@@ -91,12 +91,12 @@ class _BadgeItem extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: isUnlocked
                           ? FitoraColors.mintGreen.withValues(alpha: 0.15)
-                          : Colors.white10,
+                          : theme.colorScheme.onSurface.withValues(alpha: 0.08),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
                       badge.iconData,
-                      color: isUnlocked ? FitoraColors.mintGreen : Colors.white24,
+                      color: isUnlocked ? FitoraColors.mintGreen : theme.colorScheme.onSurfaceVariant,
                       size: 26,
                     ),
                   ),
@@ -110,7 +110,9 @@ class _BadgeItem extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: tt.bodyMedium?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: isUnlocked ? Colors.white : Colors.white38,
+                  color: isUnlocked 
+                      ? theme.colorScheme.onSurface 
+                      : theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
                 ),
               ),
               const SizedBox(height: 2),
@@ -120,7 +122,9 @@ class _BadgeItem extends StatelessWidget {
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: tt.bodySmall?.copyWith(
-                  color: isUnlocked ? Colors.white60 : Colors.white24,
+                  color: isUnlocked 
+                      ? theme.colorScheme.onSurfaceVariant 
+                      : theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
                   fontSize: 10,
                 ),
               ),
@@ -139,12 +143,12 @@ class _BadgeItem extends StatelessWidget {
             ],
           ),
           if (!isUnlocked)
-            const Positioned(
+            Positioned(
               top: 0,
               right: 0,
               child: Icon(
                 Icons.lock_outline_rounded,
-                color: Colors.white24,
+                color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
                 size: 16,
               ),
             ),

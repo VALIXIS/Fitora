@@ -146,6 +146,7 @@ class _CircularSleepDialState extends State<CircularSleepDial> {
                   wakeAngle: _timeToAngle(_wakeHour, _wakeMinute),
                   radius: radius,
                   activeHandleColor: FitoraColors.calmCyan,
+                  baseColor: theme.colorScheme.onSurface,
                 ),
               ),
               Column(
@@ -154,7 +155,7 @@ class _CircularSleepDialState extends State<CircularSleepDial> {
                   Text(
                     'SLEEP DURATION',
                     style: tt.labelSmall?.copyWith(
-                      color: Colors.white30,
+                      color: theme.colorScheme.onSurfaceVariant,
                       fontWeight: FontWeight.bold,
                       letterSpacing: 1.0,
                     ),
@@ -163,7 +164,7 @@ class _CircularSleepDialState extends State<CircularSleepDial> {
                   Text(
                     '${duration.inHours}h ${duration.inMinutes.remainder(60)}m',
                     style: tt.headlineMedium?.copyWith(
-                      color: Colors.white,
+                      color: theme.colorScheme.onSurface,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
@@ -179,21 +180,21 @@ class _CircularSleepDialState extends State<CircularSleepDial> {
                               const SizedBox(width: 4),
                               Text(
                                 'Bedtime',
-                                style: tt.labelSmall?.copyWith(color: Colors.white30),
+                                style: tt.labelSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                               ),
                             ],
                           ),
                           const SizedBox(height: 2),
                           Text(
                             SleepCalculations.formatTimeOfDay(_bedHour, _bedMinute),
-                            style: tt.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: Colors.white),
+                            style: tt.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface),
                           ),
                         ],
                       ),
                       Container(
                         height: 24,
                         width: 1,
-                        color: Colors.white10,
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.12),
                         margin: const EdgeInsets.symmetric(horizontal: 16),
                       ),
                       Column(
@@ -204,14 +205,14 @@ class _CircularSleepDialState extends State<CircularSleepDial> {
                               const SizedBox(width: 4),
                               Text(
                                 'Wake up',
-                                style: tt.labelSmall?.copyWith(color: Colors.white30),
+                                style: tt.labelSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                               ),
                             ],
                           ),
                           const SizedBox(height: 2),
                           Text(
                             SleepCalculations.formatTimeOfDay(_wakeHour, _wakeMinute),
-                            style: tt.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: Colors.white),
+                            style: tt.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface),
                           ),
                         ],
                       ),
@@ -232,12 +233,14 @@ class _SleepDialPainter extends CustomPainter {
   final double wakeAngle;
   final double radius;
   final Color activeHandleColor;
+  final Color baseColor;
 
   _SleepDialPainter({
     required this.bedAngle,
     required this.wakeAngle,
     required this.radius,
     required this.activeHandleColor,
+    required this.baseColor,
   });
 
   @override
@@ -246,7 +249,7 @@ class _SleepDialPainter extends CustomPainter {
 
     // 1. Draw outer circle track
     final trackPaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.04)
+      ..color = baseColor.withValues(alpha: 0.1)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 24
       ..strokeCap = StrokeCap.round;
@@ -272,7 +275,7 @@ class _SleepDialPainter extends CustomPainter {
 
     // 3. Draw clock ticks (optional visual guide for 12, 6, 18 hours)
     final tickPaint = Paint()
-      ..color = Colors.white24
+      ..color = baseColor.withValues(alpha: 0.2)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2;
     for (int i = 0; i < 24; i++) {
@@ -294,7 +297,7 @@ class _SleepDialPainter extends CustomPainter {
     final bedX = center.dx + cos(bedAngle) * radius;
     final bedY = center.dy + sin(bedAngle) * radius;
     final handlePaint = Paint()
-      ..color = Colors.white
+      ..color = baseColor
       ..style = PaintingStyle.fill;
     canvas.drawCircle(Offset(bedX, bedY), 16, handlePaint);
 
