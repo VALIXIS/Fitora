@@ -63,16 +63,15 @@ class _SleepDetailScreenState extends ConsumerState<SleepDetailScreen> {
 
     final sleep = ref.watch(sleepSummaryProvider(_selectedDay));
     final history = ref.watch(sleepHistoryProvider(_selectedDay));
-    final settings = ref.watch(settingsProvider);
     final status = ref.watch(healthConnectStatusProvider);
 
     final hasSleepData = sleep.totalSleep.inMinutes > 0;
 
-    final targetBedHour = settings.sleepTargetBedtimeHour;
-    final targetBedMinute = settings.sleepTargetBedtimeMinute;
-    final targetWakeHour = settings.sleepTargetWakeHour;
-    final targetWakeMinute = settings.sleepTargetWakeMinute;
-    final targetDuration = settings.sleepTargetDurationMinutes;
+    final targetBedHour = ref.watch(settingsProvider.select((s) => s.sleepTargetBedtimeHour));
+    final targetBedMinute = ref.watch(settingsProvider.select((s) => s.sleepTargetBedtimeMinute));
+    final targetWakeHour = ref.watch(settingsProvider.select((s) => s.sleepTargetWakeHour));
+    final targetWakeMinute = ref.watch(settingsProvider.select((s) => s.sleepTargetWakeMinute));
+    final targetDuration = ref.watch(settingsProvider.select((s) => s.sleepTargetDurationMinutes));
 
     final averageDuration = SleepCalculations.calculate7DayAverage(history);
     final validDaysCount = history.where((s) => s.totalSleep.inMinutes > 0).length;

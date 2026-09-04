@@ -80,8 +80,8 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
         ? allSummaries.sublist(0, periodDays)
         : <DailyActivitySummary>[];
 
-    final profile = ref.watch(personalizationControllerProvider).profile;
-    final hasWeight = profile.weightKg != null && profile.weightKg! > 0;
+    final weightKg = ref.watch(personalizationControllerProvider.select((s) => s.profile.weightKg));
+    final hasWeight = weightKg != null && weightKg > 0;
 
     return FitoraBackground(
       child: Scaffold(
@@ -142,8 +142,8 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                   _buildRecoverySection(context, textTheme),
                   const SizedBox(height: FitoraSpacing.xl),
 
-                  if (hasWeight && profile.weightKg != null) ...[
-                    _buildWeightTrend(textTheme, profile.weightKg!),
+                  if (hasWeight) ...[
+                    _buildWeightTrend(textTheme, weightKg),
                     const SizedBox(height: FitoraSpacing.lg),
                   ],
                   _buildStreakCard(textTheme),

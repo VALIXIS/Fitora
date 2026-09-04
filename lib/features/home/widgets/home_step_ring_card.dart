@@ -24,7 +24,8 @@ class HomeStepRingCard extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            TweenAnimationBuilder<double>(
+            RepaintBoundary(
+              child: TweenAnimationBuilder<double>(
               tween: Tween(begin: 0.0, end: percent),
               duration: const Duration(milliseconds: 1000),
               curve: Curves.easeOutCubic,
@@ -98,6 +99,7 @@ class HomeStepRingCard extends StatelessWidget {
                 );
               },
             ),
+          ),
             const SizedBox(height: FitoraSpacing.sm),
             Text(
               'Daily goal: ${_formatNumber(progress.goal)} steps',
