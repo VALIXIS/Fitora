@@ -203,7 +203,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final textTheme = theme.textTheme;
     final today = ref.watch(todayProvider);
     final activity = ref.watch(dailyActivityProvider(today));
-    final profile = ref.watch(personalizationControllerProvider).profile;
+    final profile = ref.watch(personalizationControllerProvider.select((s) => s.profile));
     final authSession = ref.watch(authStateProvider);
     final now = DateTime.now();
     final String greetingPrefix = getDynamicGreeting(now);

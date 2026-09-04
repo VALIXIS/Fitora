@@ -5,11 +5,11 @@ import 'package:fitora/features/progress/domain/progress_models.dart';
 import 'package:fitora/features/wellness/domain/wellness_models.dart';
 import 'package:fitora/features/wellness/providers/wellness_provider.dart';
 
-final healthTimeframeProvider = StateProvider<HealthTimeframe>((ref) {
+final healthTimeframeProvider = StateProvider.autoDispose<HealthTimeframe>((ref) {
   return HealthTimeframe.sevenDays;
 });
 
-final healthSelectedMetricProvider = StateProvider<HealthMetricType>((ref) {
+final healthSelectedMetricProvider = StateProvider.autoDispose<HealthMetricType>((ref) {
   return HealthMetricType.steps;
 });
 
@@ -194,7 +194,7 @@ class HealthAnalyticsCalculator {
   }
 }
 
-final weeklyHealthSummaryProvider = Provider<WeeklyHealthSummaryData>((ref) {
+final weeklyHealthSummaryProvider = Provider.autoDispose<WeeklyHealthSummaryData>((ref) {
   final last14Days = ref.watch(healthActivityRangeProvider(14));
   final wellness = ref.watch(wellnessProvider);
 

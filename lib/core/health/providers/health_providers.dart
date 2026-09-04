@@ -234,7 +234,7 @@ final dailyActivityProvider = Provider.family<DailyActivitySummary, DateTime>((
   ref.watch(healthSyncProvider);
   ref.watch(healthSyncServiceProvider);
 
-  final profile = ref.watch(personalizationControllerProvider).profile;
+  final profile = ref.watch(personalizationControllerProvider.select((s) => s.profile));
   final customStepGoal = ref.watch(customStepGoalProvider);
 
   final computedGoals = HealthGoalCalculator.calculateGoals(
@@ -317,7 +317,7 @@ final dailyActivityProvider = Provider.family<DailyActivitySummary, DateTime>((
 });
 
 final weeklyActivityProvider =
-    Provider.family<List<DailyActivitySummary>, DateTime>((ref, startDate) {
+    Provider.family.autoDispose<List<DailyActivitySummary>, DateTime>((ref, startDate) {
       ref.watch(healthSyncProvider);
       ref.watch(healthSyncServiceProvider);
       final cache = ref.watch(healthCacheServiceProvider);
@@ -355,7 +355,7 @@ final weeklyActivityProvider =
     });
 
 final healthActivityRangeProvider =
-    Provider.family<List<DailyActivitySummary>, int>((ref, daysCount) {
+    Provider.family.autoDispose<List<DailyActivitySummary>, int>((ref, daysCount) {
       ref.watch(healthSyncServiceProvider);
       final now = DateTime.now();
       final today = DateTime(now.year, now.month, now.day);
@@ -367,7 +367,7 @@ final healthActivityRangeProvider =
       });
     });
 
-final sleepSummaryProvider = Provider.family<SleepSummary, DateTime>((
+final sleepSummaryProvider = Provider.family.autoDispose<SleepSummary, DateTime>((
   ref,
   date,
 ) {
@@ -427,7 +427,7 @@ final sleepSummaryProvider = Provider.family<SleepSummary, DateTime>((
   );
 });
 
-final recoverySummaryProvider = Provider.family<RecoverySummary, DateTime>((
+final recoverySummaryProvider = Provider.family.autoDispose<RecoverySummary, DateTime>((
   ref,
   date,
 ) {
@@ -439,11 +439,11 @@ final recoverySummaryProvider = Provider.family<RecoverySummary, DateTime>((
   );
 });
 
-final hydrationSummaryProvider = Provider.family<HydrationSummary, DateTime>((
+final hydrationSummaryProvider = Provider.family.autoDispose<HydrationSummary, DateTime>((
   ref,
   date,
 ) {
-  final profile = ref.watch(personalizationControllerProvider).profile;
+  final profile = ref.watch(personalizationControllerProvider.select((s) => s.profile));
   final computedGoals = HealthGoalCalculator.calculateGoals(profile: profile);
   return HydrationSummary(
     waterConsumedLiters: 0.0,

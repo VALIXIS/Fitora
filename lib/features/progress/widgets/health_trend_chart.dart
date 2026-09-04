@@ -34,123 +34,124 @@ class HealthTrendChart extends ConsumerWidget {
         ? (chartData.values.reduce((a, b) => a + b) / chartData.values.length)
         : 0.0;
 
-    return GlowContainer(
-      glowColor: _getMetricColor(selectedMetric).withValues(alpha: 0.06),
-      borderRadius: BorderRadius.circular(24),
-      padding: EdgeInsets.zero,
-      child: Container(
-        padding: const EdgeInsets.all(FitoraSpacing.xl),
-        decoration: BoxDecoration(
-          color: Theme.of(context).cardTheme.color ?? Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Time Horizon & Header
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'HEALTH TRENDS',
-                      style: tt.labelSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.2,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      hasData
-                          ? 'Daily Avg: ${_formatMetricValue(selectedMetric, avgValue)} ${selectedMetric.unit}'
-                          : 'No entries for selected timeframe',
-                      style: tt.bodySmall?.copyWith(
-                        color: hasData
-                            ? FitoraColors.mintGreen
-                            : Theme.of(context).colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 11,
-                      ),
-                    ),
-                  ],
-                ),
-
-                // Time Horizon Toggle Pill (7-Day vs 30-Day)
-                _buildTimeframeToggle(ref, timeframe, tt, context),
-              ],
-            ),
-
-            const SizedBox(height: FitoraSpacing.lg),
-
-            // Supported Metric Tabs Row (Steps, Distance, Calories, Sleep, Water)
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              physics: const BouncingScrollPhysics(),
-              child: Row(
-                children: HealthMetricType.values.map((metric) {
-                  final isSelected = metric == selectedMetric;
-                  final metricColor = _getMetricColor(metric);
-                  return Padding(
-                    padding: const EdgeInsets.only(right: FitoraSpacing.xs),
-                    child: ChoiceChip(
-                      selected: isSelected,
-                      onSelected: (_) {
-                        ref.read(healthSelectedMetricProvider.notifier).state =
-                            metric;
-                      },
-                      avatar: Icon(
-                        _getMetricIcon(metric),
-                        size: 14,
-                        color: isSelected ? Colors.black : metricColor,
-                      ),
-                      label: Text(
-                        metric.displayName,
+    return RepaintBoundary(
+      child: GlowContainer(
+        glowColor: _getMetricColor(selectedMetric).withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(24),
+        padding: EdgeInsets.zero,
+        child: Container(
+          padding: const EdgeInsets.all(FitoraSpacing.xl),
+          decoration: BoxDecoration(
+            color: Theme.of(context).cardTheme.color ?? Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Time Horizon & Header
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'HEALTH TRENDS',
                         style: tt.labelSmall?.copyWith(
-                          color: isSelected ? Colors.black : Theme.of(context).colorScheme.onSurfaceVariant,
-                          fontWeight: isSelected
-                              ? FontWeight.w900
-                              : FontWeight.w600,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.2,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        hasData
+                            ? 'Daily Avg: ${_formatMetricValue(selectedMetric, avgValue)} ${selectedMetric.unit}'
+                            : 'No entries for selected timeframe',
+                        style: tt.bodySmall?.copyWith(
+                          color: hasData
+                              ? FitoraColors.mintGreen
+                              : Theme.of(context).colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.bold,
                           fontSize: 11,
                         ),
                       ),
-                      selectedColor: metricColor,
-                      backgroundColor: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        side: BorderSide(
-                          color: isSelected
-                              ? metricColor
-                              : Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.4),
+                    ],
+                  ),
+
+                  // Time Horizon Toggle Pill (7-Day vs 30-Day)
+                  _buildTimeframeToggle(ref, timeframe, tt, context),
+                ],
+              ),
+
+              const SizedBox(height: FitoraSpacing.lg),
+
+              // Supported Metric Tabs Row (Steps, Distance, Calories, Sleep, Water)
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                physics: const BouncingScrollPhysics(),
+                child: Row(
+                  children: HealthMetricType.values.map((metric) {
+                    final isSelected = metric == selectedMetric;
+                    final metricColor = _getMetricColor(metric);
+                    return Padding(
+                      padding: const EdgeInsets.only(right: FitoraSpacing.xs),
+                      child: ChoiceChip(
+                        selected: isSelected,
+                        onSelected: (_) {
+                          ref.read(healthSelectedMetricProvider.notifier).state =
+                              metric;
+                        },
+                        avatar: Icon(
+                          _getMetricIcon(metric),
+                          size: 14,
+                          color: isSelected ? Colors.black : metricColor,
+                        ),
+                        label: Text(
+                          metric.displayName,
+                          style: tt.labelSmall?.copyWith(
+                            color: isSelected ? Colors.black : Theme.of(context).colorScheme.onSurfaceVariant,
+                            fontWeight: isSelected
+                                ? FontWeight.w900
+                                : FontWeight.w600,
+                            fontSize: 11,
+                          ),
+                        ),
+                        selectedColor: metricColor,
+                        backgroundColor: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          side: BorderSide(
+                            color: isSelected
+                                ? metricColor
+                                : Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.4),
+                          ),
                         ),
                       ),
-                    ),
-                  );
-                }).toList(),
+                    );
+                  }).toList(),
+                ),
               ),
-            ),
 
-            const SizedBox(height: FitoraSpacing.xl),
+              const SizedBox(height: FitoraSpacing.xl),
 
-            // Chart Render or Empty State
-            if (!hasData) ...[
-              _buildEmptyState(context, tt, selectedMetric),
-            ] else ...[
-              _buildVisualChart(
-                context: context,
-                tt: tt,
-                chartData: chartData,
-                timeframe: timeframe,
-                metric: selectedMetric,
-              ),
+              // Chart Render or Empty State
+              if (!hasData)
+                _buildEmptyState(context, tt, selectedMetric)
+              else
+                _buildVisualChart(
+                  context: context,
+                  tt: tt,
+                  chartData: chartData,
+                  timeframe: timeframe,
+                  metric: selectedMetric,
+                ),
             ],
-          ],
+          ),
         ),
-      ),
-    ).animate().fadeIn(delay: 150.ms, duration: 400.ms).slideY(begin: 0.05, end: 0);
+      ).animate().fadeIn(delay: 150.ms, duration: 400.ms).slideY(begin: 0.05, end: 0),
+    );
   }
 
   Widget _buildTimeframeToggle(
