@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:fitora/core/utils/app_logger.dart';
-
 import 'package:flutter/foundation.dart';
+
+export 'fitora_native_ad.dart';
 
 class AdService {
   static const String _lastAdDateKey = 'fitora_last_daily_video_ad_date';
@@ -11,16 +12,25 @@ class AdService {
   // Production AdMob Ad Unit IDs
   static const String productionBannerAdUnitId = 'ca-app-pub-6059224677913709/5926741912';
   static const String productionInterstitialAdUnitId = 'ca-app-pub-6059224677913709/2861972172';
+  static const String productionNativeAdUnitId = 'ca-app-pub-6059224677913709/5926741912';
 
   // Google Test Ad Unit IDs (Used in Debug mode to protect AdMob account)
   static const String testInterstitialAdUnitId = 'ca-app-pub-3940256099942544/1033173712';
   static const String testBannerAdUnitId = 'ca-app-pub-3940256099942544/6300978111';
+  static const String testNativeAdUnitIdAndroid = 'ca-app-pub-3940256099942544/2247696110';
+  static const String testNativeAdUnitIdIos = 'ca-app-pub-3940256099942544/3986624511';
 
   static String get bannerAdUnitId =>
       kDebugMode ? testBannerAdUnitId : productionBannerAdUnitId;
 
   static String get interstitialAdUnitId =>
       kDebugMode ? testInterstitialAdUnitId : productionInterstitialAdUnitId;
+
+  static String get nativeAdUnitId => kDebugMode
+      ? (defaultTargetPlatform == TargetPlatform.iOS
+          ? testNativeAdUnitIdIos
+          : testNativeAdUnitIdAndroid)
+      : productionNativeAdUnitId;
 
   static bool _initialized = false;
   static InterstitialAd? _interstitialAd;
