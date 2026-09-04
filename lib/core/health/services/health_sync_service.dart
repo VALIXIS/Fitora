@@ -8,10 +8,6 @@ import 'package:fitora/core/health/data/sensor_health_repository.dart';
 import 'package:fitora/core/health/services/health_cache_service.dart';
 import 'package:fitora/core/utils/app_logger.dart';
 
-/// Minimum background polling interval (15 minutes) — respects Android battery
-/// optimization guidelines and WorkManager minimum interval.
-const _kMinPollInterval = Duration(minutes: 15);
-
 /// Maximum number of exponential backoff retry attempts before giving up.
 const _kMaxRetries = 4;
 
@@ -150,7 +146,7 @@ class HealthSyncService extends StateNotifier<SyncStatus>
         mergedDistance = incomingDistance == 0.0 ? existingDistance : incomingDistance;
         mergedActiveMinutes = incomingActiveMinutes == 0 ? existingActiveMinutes : incomingActiveMinutes;
 
-        mergedSummary = hcSummary!.copyWith(
+        mergedSummary = hcSummary.copyWith(
           steps: mergedSteps,
           caloriesBurned: mergedCalories,
           distanceKm: mergedDistance,
@@ -159,7 +155,7 @@ class HealthSyncService extends StateNotifier<SyncStatus>
           lastSyncTime: now,
         );
       } else if (hcActive) {
-        mergedSteps = hcSummary!.steps == 0 ? existingSteps : hcSummary.steps;
+        mergedSteps = hcSummary.steps == 0 ? existingSteps : hcSummary.steps;
         mergedCalories = hcSummary.caloriesBurned == 0.0 ? existingCalories : hcSummary.caloriesBurned;
         mergedDistance = hcSummary.distanceKm == 0.0 ? existingDistance : hcSummary.distanceKm;
         mergedActiveMinutes = hcSummary.activeMinutes == 0 ? existingActiveMinutes : hcSummary.activeMinutes;

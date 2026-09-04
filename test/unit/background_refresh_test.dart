@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:fitora/core/storage/app_preferences.dart';
@@ -85,6 +86,8 @@ class DummyHealthSyncService extends HealthSyncService {
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  sqfliteFfiInit();
+  databaseFactory = databaseFactoryFfi;
 
   setUp(() async {
     AppPreferences.resetForTests();
@@ -96,16 +99,11 @@ void main() {
     const channel = MethodChannel('dev.fluttercommunity.plus/device_info');
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(channel, (methodCall) async {
-      return {
+      return <String, dynamic>{
         'sdkInt': 33,
         'release': '13',
         'model': 'Mock Model',
         'manufacturer': 'Mock Manufacturer',
-        'systemName': 'iOS',
-        'systemVersion': '16.0',
-        'name': 'iPhone',
-        'localizedModel': 'iPhone',
-        'identifierForVendor': 'mock-vendor-id',
         'isPhysicalDevice': false,
       };
     });
@@ -214,15 +212,17 @@ void main() {
     test('BackgroundSyncManager initialization and background task execution', () async {
       // Test initialization in test mode
       await BackgroundSyncManager.initialize(isTesting: true);
+
+      final cacheService = HealthCacheService(AppPreferences.prefs);
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      await cacheService.saveDailyActivity(DailyActivitySummary.empty(date: today));
       
       // Execute task cleanly
       final result = await executeBackgroundHealthSyncTask(taskName: kFitoraBackgroundSyncTask);
       expect(result, isTrue);
 
       // Verify cached daily activity persisted
-      final cacheService = HealthCacheService(AppPreferences.prefs);
-      final now = DateTime.now();
-      final today = DateTime(now.year, now.month, now.day);
       final cachedActivity = cacheService.getDailyActivity(today);
       expect(cachedActivity, isNotNull);
       expect(cachedActivity!.date, equals(today));

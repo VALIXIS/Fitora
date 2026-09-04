@@ -111,12 +111,12 @@ void main() {
       await notifier.loadFuture;
 
       // Period 1
-      final r1 = await notifier.startPeriod(DateTime(2026, 6, 1));
-      final r2 = await notifier.endPeriod(DateTime(2026, 6, 5));
+      await notifier.startPeriod(DateTime(2026, 6, 1));
+      await notifier.endPeriod(DateTime(2026, 6, 5));
 
       // Period 2 (Interval 1: 28 days)
-      final r3 = await notifier.startPeriod(DateTime(2026, 6, 29));
-      final r4 = await notifier.endPeriod(DateTime(2026, 7, 3));
+      await notifier.startPeriod(DateTime(2026, 6, 29));
+      await notifier.endPeriod(DateTime(2026, 7, 3));
 
       // Period 3 (Interval 2: 29 days)
       await notifier.startPeriod(DateTime(2026, 7, 28));
@@ -137,17 +137,17 @@ void main() {
       await notifier.loadFuture;
 
       // Log 5 periods -> 4 completed cycle intervals: 28d, 29d, 30d, 31d
-      final r1 = await notifier.startPeriod(DateTime(2026, 1, 1));
-      final r2 = await notifier.endPeriod(DateTime(2026, 1, 5));
+      await notifier.startPeriod(DateTime(2026, 1, 1));
+      await notifier.endPeriod(DateTime(2026, 1, 5));
 
-      final r3 = await notifier.startPeriod(DateTime(2026, 1, 29)); // diff = 28d
-      final r4 = await notifier.endPeriod(DateTime(2026, 2, 2));
+      await notifier.startPeriod(DateTime(2026, 1, 29)); // diff = 28d
+      await notifier.endPeriod(DateTime(2026, 2, 2));
 
-      final r5 = await notifier.startPeriod(DateTime(2026, 2, 27)); // diff = 29d
-      final r6 = await notifier.endPeriod(DateTime(2026, 3, 3));
+      await notifier.startPeriod(DateTime(2026, 2, 27)); // diff = 29d
+      await notifier.endPeriod(DateTime(2026, 3, 3));
 
-      final r7 = await notifier.startPeriod(DateTime(2026, 3, 29)); // diff = 30d
-      final r8 = await notifier.endPeriod(DateTime(2026, 4, 2));
+      await notifier.startPeriod(DateTime(2026, 3, 29)); // diff = 30d
+      await notifier.endPeriod(DateTime(2026, 4, 2));
 
       await notifier.startPeriod(DateTime(2026, 4, 29)); // diff = 31d
       

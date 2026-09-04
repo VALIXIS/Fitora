@@ -21,7 +21,9 @@ class HealthConnectService {
   final _sleepTypes = [HealthDataType.SLEEP_SESSION];
 
   HealthConnectService(this._prefs) {
-    _health.configure();
+    try {
+      _health.configure().catchError((_) {});
+    } catch (_) {}
   }
 
   // ---------------------------------------------------------------------------

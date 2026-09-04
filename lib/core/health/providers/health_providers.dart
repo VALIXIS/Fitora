@@ -95,12 +95,14 @@ class SensorStatusNotifier extends StateNotifier<SensorStatus> {
   Future<void> checkPermission() async {
     final svc = _ref.read(healthPermissionsServiceProvider);
     final status = await svc.checkStatus();
+    if (!mounted) return;
     state = status;
   }
 
   Future<void> requestPermission() async {
     final svc = _ref.read(healthPermissionsServiceProvider);
     final status = await svc.requestPermission();
+    if (!mounted) return;
     state = status;
   }
 }
@@ -143,8 +145,10 @@ class HealthConnectStatusNotifier extends StateNotifier<HealthConnectStatus>
   Future<void> checkStatus() async {
     try {
       final status = await _service.getStatus();
+      if (!mounted) return;
       state = status;
     } catch (_) {
+      if (!mounted) return;
       state = HealthConnectStatus.error;
     }
   }
