@@ -86,12 +86,16 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     return FitoraBackground(
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        floatingActionButton: FloatingActionButton.extended(
-          onPressed: () => LogWorkoutModal.show(context),
-          label: const Text('Log Workout', style: TextStyle(fontWeight: FontWeight.bold)),
-          icon: const Icon(Icons.add_rounded),
-          backgroundColor: FitoraColors.mintGreen,
-          foregroundColor: Colors.black,
+        floatingActionButton: Semantics(
+          button: true,
+          label: 'Log Workout',
+          child: FloatingActionButton.extended(
+            onPressed: () => LogWorkoutModal.show(context),
+            label: const Text('Log Workout', style: TextStyle(fontWeight: FontWeight.bold)),
+            icon: const Icon(Icons.add_rounded),
+            backgroundColor: FitoraColors.mintGreen,
+            foregroundColor: Colors.black,
+          ),
         ),
         body: CustomScrollView(
           physics: const BouncingScrollPhysics(),
@@ -227,33 +231,43 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
         children: options.map((opt) {
           final isSelected = _selectedFilter == opt;
           return Expanded(
-            child: GestureDetector(
-              onTap: () {
-                setState(() {
-                  _selectedFilter = opt;
-                });
-              },
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                curve: Curves.easeOutCubic,
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  gradient: isSelected
-                      ? const LinearGradient(
-                          colors: [
-                            FitoraColors.mintGreen,
-                            FitoraColors.calmCyan,
-                          ],
-                        )
-                      : null,
-                ),
-                child: Text(
-                  opt,
-                  textAlign: TextAlign.center,
-                  style: textTheme.labelLarge?.copyWith(
-                    color: isSelected ? Colors.black : theme.colorScheme.onSurfaceVariant,
-                    fontWeight: isSelected ? FontWeight.w900 : FontWeight.w500,
+            child: Semantics(
+              button: true,
+              selected: isSelected,
+              label: '$opt filter',
+              hint: isSelected ? 'Selected' : 'Double tap to select',
+              child: GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _selectedFilter = opt;
+                  });
+                },
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(minHeight: 48),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeOutCubic,
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      gradient: isSelected
+                          ? const LinearGradient(
+                              colors: [
+                                FitoraColors.mintGreen,
+                                FitoraColors.calmCyan,
+                              ],
+                            )
+                          : null,
+                    ),
+                    child: Text(
+                      opt,
+                      textAlign: TextAlign.center,
+                      style: textTheme.labelLarge?.copyWith(
+                        color: isSelected ? Colors.black : theme.colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                 ),
               ),

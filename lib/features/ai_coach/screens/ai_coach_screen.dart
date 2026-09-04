@@ -65,10 +65,15 @@ class _AICoachScreenState extends ConsumerState<AICoachScreen> with SingleTicker
       title: 'AI Wellness Coach',
       applyPadding: false,
       actions: [
-        IconButton(
-          icon: const Icon(Icons.refresh_rounded),
-          tooltip: 'Reset Conversation',
-          onPressed: () => ref.read(aiCoachProvider.notifier).clearConversation(),
+        Semantics(
+          button: true,
+          label: 'Reset Conversation',
+          child: IconButton(
+            constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+            icon: const Icon(Icons.refresh_rounded),
+            tooltip: 'Reset Conversation',
+            onPressed: () => ref.read(aiCoachProvider.notifier).clearConversation(),
+          ),
         ),
       ],
       body: Column(
@@ -527,9 +532,14 @@ class _ChatInputBar extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8.0),
-            IconButton.filled(
-              icon: const Icon(Icons.send_rounded, size: 20),
-              onPressed: isEnabled ? () => onSubmit(controller.text) : null,
+            Semantics(
+              button: true,
+              label: 'Send Message',
+              child: IconButton.filled(
+                constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+                icon: const Icon(Icons.send_rounded, size: 20),
+                onPressed: isEnabled ? () => onSubmit(controller.text) : null,
+              ),
             ),
           ],
         ),

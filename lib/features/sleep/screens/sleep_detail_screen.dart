@@ -98,9 +98,14 @@ class _SleepDetailScreenState extends ConsumerState<SleepDetailScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => context.pop(),
+        leading: Semantics(
+          button: true,
+          label: 'Back',
+          child: IconButton(
+            constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            onPressed: () => context.pop(),
+          ),
         ),
         title: Text(
           'Sleep Tracker',
@@ -116,9 +121,14 @@ class _SleepDetailScreenState extends ConsumerState<SleepDetailScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                IconButton(
-                  icon: const Icon(Icons.chevron_left, color: Colors.white),
-                  onPressed: () => _navigateDay(-1),
+                Semantics(
+                  button: true,
+                  label: 'Previous day',
+                  child: IconButton(
+                    constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+                    icon: const Icon(Icons.chevron_left, color: Colors.white),
+                    onPressed: () => _navigateDay(-1),
+                  ),
                 ),
                 Text(
                   _getDateHeaderString(_selectedDay),
@@ -127,12 +137,17 @@ class _SleepDetailScreenState extends ConsumerState<SleepDetailScreen> {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                IconButton(
-                  icon: Icon(
-                    Icons.chevron_right,
-                    color: _selectedDay == today ? Colors.white24 : Colors.white,
+                Semantics(
+                  button: true,
+                  label: 'Next day',
+                  child: IconButton(
+                    constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+                    icon: Icon(
+                      Icons.chevron_right,
+                      color: _selectedDay == today ? Colors.white24 : Colors.white,
+                    ),
+                    onPressed: _selectedDay == today ? null : () => _navigateDay(1),
                   ),
-                  onPressed: _selectedDay == today ? null : () => _navigateDay(1),
                 ),
               ],
             ),

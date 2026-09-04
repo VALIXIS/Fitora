@@ -237,9 +237,14 @@ class ProfileScreen extends ConsumerWidget {
                 ],
               ),
             ),
-            IconButton(
-              icon: const Icon(Icons.edit_rounded, color: Colors.white54),
-              onPressed: () => context.pushNamed(AppRouteNames.editProfile),
+            Semantics(
+              button: true,
+              label: 'Edit Profile',
+              child: IconButton(
+                constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+                icon: const Icon(Icons.edit_rounded, color: Colors.white54),
+                onPressed: () => context.pushNamed(AppRouteNames.editProfile),
+              ),
             ),
           ],
         ),
@@ -524,10 +529,18 @@ class ProfileScreen extends ConsumerWidget {
     );
 
     if (onTap != null) {
-      return InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: tile,
+      return Semantics(
+        button: true,
+        label: '$title, current target $value',
+        hint: 'Double tap to change target',
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 48),
+            child: tile,
+          ),
+        ),
       );
     }
     return tile;
@@ -541,30 +554,37 @@ class ProfileScreen extends ConsumerWidget {
     required VoidCallback onTap,
   }) {
     final theme = Theme.of(context);
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        child: Row(
-          children: [
-            Icon(icon, color: theme.colorScheme.onSurfaceVariant, size: 24),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Text(
-                title,
-                style: tt.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurface,
-                  fontWeight: FontWeight.w600,
+    return Semantics(
+      button: true,
+      label: title,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 48),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            child: Row(
+              children: [
+                Icon(icon, color: theme.colorScheme.onSurfaceVariant, size: 24),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: tt.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurface,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
-              ),
+                Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  color: theme.colorScheme.onSurfaceVariant,
+                  size: 14,
+                ),
+              ],
             ),
-            Icon(
-              Icons.arrow_forward_ios_rounded,
-              color: theme.colorScheme.onSurfaceVariant,
-              size: 14,
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -586,100 +606,119 @@ void showStepGoalPicker(BuildContext context, WidgetRef ref, int currentGoal) {
     builder: (ctx) {
       return StatefulBuilder(
         builder: (context, setState) {
-          return Padding(
-            padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.white24,
-                      borderRadius: BorderRadius.circular(99),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Text(
-                  'Daily Step Target',
-                  style: textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.onSurface,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '${tempGoal.toString().replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (m) => "${m[1]},")} steps / day',
-                  style: textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w900,
-                    color: FitoraColors.mintGreen,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 20),
-                Slider(
-                  value: tempGoal.toDouble().clamp(3000.0, 30000.0),
-                  min: 3000,
-                  max: 30000,
-                  divisions: 54,
-                  activeColor: FitoraColors.mintGreen,
-                  inactiveColor: theme.colorScheme.onSurface.withValues(alpha: 0.12),
-                  onChanged: (val) {
-                    setState(() {
-                      tempGoal = (val / 500).round() * 500;
-                    });
-                  },
-                ),
-                const SizedBox(height: 12),
-                Wrap(
-                  alignment: WrapAlignment.center,
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: presets.map((p) {
-                    final isSelected = tempGoal == p;
-                    return ChoiceChip(
-                      label: Text('${p ~/ 1000}k'),
-                      selected: isSelected,
-                      selectedColor: FitoraColors.mintGreen,
-                      backgroundColor: theme.colorScheme.onSurface.withValues(alpha: 0.05),
-                      labelStyle: TextStyle(
-                        color: isSelected ? Colors.black : theme.colorScheme.onSurfaceVariant,
-                        fontWeight: isSelected
-                            ? FontWeight.bold
-                            : FontWeight.normal,
+          return Semantics(
+            scopesRoute: true,
+            namesRoute: true,
+            label: 'Daily Step Target Picker',
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.white24,
+                        borderRadius: BorderRadius.circular(99),
                       ),
-                      onSelected: (_) {
-                        setState(() {
-                          tempGoal = p;
-                        });
-                      },
-                    );
-                  }).toList(),
-                ),
-                const SizedBox(height: 24),
-                ElevatedButton(
-                  onPressed: () {
-                    ref.read(customStepGoalProvider.notifier).setGoal(tempGoal);
-                    Navigator.pop(ctx);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: FitoraColors.mintGreen,
-                    foregroundColor: Colors.black,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
                     ),
                   ),
-                  child: const Text(
-                    'Save Step Target',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  const SizedBox(height: 20),
+                  Text(
+                    'Daily Step Target',
+                    style: textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
-                ),
-              ],
+                  const SizedBox(height: 8),
+                  Text(
+                    '${tempGoal.toString().replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (m) => "${m[1]},")} steps / day',
+                    style: textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w900,
+                      color: FitoraColors.mintGreen,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 20),
+                  Slider(
+                    value: tempGoal.toDouble().clamp(3000.0, 30000.0),
+                    min: 3000,
+                    max: 30000,
+                    divisions: 54,
+                    activeColor: FitoraColors.mintGreen,
+                    inactiveColor: theme.colorScheme.onSurface.withValues(alpha: 0.12),
+                    onChanged: (val) {
+                      setState(() {
+                        tempGoal = (val / 500).round() * 500;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: presets.map((p) {
+                      final isSelected = tempGoal == p;
+                      final kStr = '${p ~/ 1000}k steps target';
+                      return Semantics(
+                        button: true,
+                        selected: isSelected,
+                        label: kStr,
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(minHeight: 48, minWidth: 48),
+                          child: ChoiceChip(
+                            label: Text('${p ~/ 1000}k'),
+                            selected: isSelected,
+                            selectedColor: FitoraColors.mintGreen,
+                            backgroundColor: theme.colorScheme.onSurface.withValues(alpha: 0.05),
+                            labelStyle: TextStyle(
+                              color: isSelected ? Colors.black : theme.colorScheme.onSurfaceVariant,
+                              fontWeight: isSelected
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                            ),
+                            onSelected: (_) {
+                              setState(() {
+                                tempGoal = p;
+                              });
+                            },
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 24),
+                  Semantics(
+                    button: true,
+                    label: 'Save Step Target',
+                    child: ElevatedButton(
+                      onPressed: () {
+                        ref.read(customStepGoalProvider.notifier).setGoal(tempGoal);
+                        Navigator.pop(ctx);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: FitoraColors.mintGreen,
+                        foregroundColor: Colors.black,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        minimumSize: const Size.fromHeight(48),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      child: const Text(
+                        'Save Step Target',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           );
         },

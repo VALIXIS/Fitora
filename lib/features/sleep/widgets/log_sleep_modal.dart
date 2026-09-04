@@ -87,200 +87,215 @@ class _LogSleepModalState extends ConsumerState<_LogSleepModal> {
     final wakeTimeStr = TimeOfDay(hour: _wakeHour, minute: _wakeMin).format(context);
     final targetHours = (settings.sleepTargetDurationMinutes / 60.0).toStringAsFixed(1);
 
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-      padding: const EdgeInsets.all(FitoraSpacing.xl),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(
-          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+    return Semantics(
+      scopesRoute: true,
+      namesRoute: true,
+      label: 'Log Last Night\'s Sleep Dialog',
+      child: Container(
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+        padding: const EdgeInsets.all(FitoraSpacing.xl),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(28),
+          border: Border.all(
+            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+          ),
         ),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Header
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: FitoraColors.calmCyan.withValues(alpha: 0.15),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.bedtime_rounded,
-                      color: FitoraColors.calmCyan,
-                      size: 24,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    'Log Last Night\'s Sleep',
-                    style: tt.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      color: theme.colorScheme.onSurface,
-                    ),
-                  ),
-                ],
-              ),
-              IconButton(
-                icon: Icon(
-                  Icons.close_rounded,
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-                onPressed: () => context.pop(),
-              ),
-            ],
-          ),
-          const SizedBox(height: FitoraSpacing.xs),
-
-          Text(
-            'Drag bedtime & wake-up handles on the circular meter to log your sleep.',
-            style: tt.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: FitoraSpacing.md),
-
-          // Circular Dial Meter for Logging
-          Center(
-            child: SizedBox(
-              width: 250,
-              height: 250,
-              child: CircularSleepDial(
-                initialBedHour: _bedHour,
-                initialBedMinute: _bedMin,
-                initialWakeHour: _wakeHour,
-                initialWakeMinute: _wakeMin,
-                onChanged: _onDialChanged,
-              ),
-            ),
-          ),
-          const SizedBox(height: FitoraSpacing.md),
-
-          // Readout Box
-          Container(
-            padding: const EdgeInsets.all(FitoraSpacing.md),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
-              ),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Header
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Column(
+                Row(
                   children: [
-                    Text(
-                      'BEDTIME',
-                      style: tt.labelSmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.bold,
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: FitoraColors.calmCyan.withValues(alpha: 0.15),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.bedtime_rounded,
+                        color: FitoraColors.calmCyan,
+                        size: 24,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(width: 12),
                     Text(
-                      '🌙 $bedTimeStr',
-                      style: tt.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
+                      'Log Last Night\'s Sleep',
+                      style: tt.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
                         color: theme.colorScheme.onSurface,
                       ),
                     ),
                   ],
                 ),
-                Container(
-                  width: 1,
-                  height: 24,
-                  color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
-                ),
-                Column(
-                  children: [
-                    Text(
-                      'SLEPT DURATION',
-                      style: tt.labelSmall?.copyWith(
-                        color: FitoraColors.calmCyan,
-                        fontWeight: FontWeight.bold,
-                      ),
+                Semantics(
+                  button: true,
+                  label: 'Close sleep log modal',
+                  child: IconButton(
+                    constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+                    tooltip: 'Close sleep log modal',
+                    icon: Icon(
+                      Icons.close_rounded,
+                      color: theme.colorScheme.onSurfaceVariant,
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      durationStr,
-                      style: tt.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w900,
-                        color: FitoraColors.calmCyan,
-                      ),
-                    ),
-                  ],
-                ),
-                Container(
-                  width: 1,
-                  height: 24,
-                  color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
-                ),
-                Column(
-                  children: [
-                    Text(
-                      'WAKE UP',
-                      style: tt.labelSmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '☀️ $wakeTimeStr',
-                      style: tt.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.onSurface,
-                      ),
-                    ),
-                  ],
+                    onPressed: () => context.pop(),
+                  ),
                 ),
               ],
             ),
-          ),
-          const SizedBox(height: FitoraSpacing.sm),
+            const SizedBox(height: FitoraSpacing.xs),
 
-          Center(
-            child: Text(
-              'Target Goal: $targetHours hrs (Configure target in Progress ➜ Recovery)',
+            Text(
+              'Drag bedtime & wake-up handles on the circular meter to log your sleep.',
               style: tt.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
-                fontSize: 11,
               ),
+              textAlign: TextAlign.center,
             ),
-          ),
-          const SizedBox(height: FitoraSpacing.lg),
+            const SizedBox(height: FitoraSpacing.md),
 
-          // Save Button
-          ElevatedButton(
-            onPressed: _onSave,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: FitoraColors.calmCyan,
-              foregroundColor: Colors.black,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
+            // Circular Dial Meter for Logging
+            Center(
+              child: SizedBox(
+                width: 250,
+                height: 250,
+                child: CircularSleepDial(
+                  initialBedHour: _bedHour,
+                  initialBedMinute: _bedMin,
+                  initialWakeHour: _wakeHour,
+                  initialWakeMinute: _wakeMin,
+                  onChanged: _onDialChanged,
+                ),
+              ),
+            ),
+            const SizedBox(height: FitoraSpacing.md),
+
+            // Readout Box
+            Container(
+              padding: const EdgeInsets.all(FitoraSpacing.md),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  Column(
+                    children: [
+                      Text(
+                        'BEDTIME',
+                        style: tt.labelSmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '🌙 $bedTimeStr',
+                        style: tt.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.onSurface,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Container(
+                    width: 1,
+                    height: 24,
+                    color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+                  ),
+                  Column(
+                    children: [
+                      Text(
+                        'SLEPT DURATION',
+                        style: tt.labelSmall?.copyWith(
+                          color: FitoraColors.calmCyan,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        durationStr,
+                        style: tt.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w900,
+                          color: FitoraColors.calmCyan,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Container(
+                    width: 1,
+                    height: 24,
+                    color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+                  ),
+                  Column(
+                    children: [
+                      Text(
+                        'WAKE UP',
+                        style: tt.labelSmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '☀️ $wakeTimeStr',
+                        style: tt.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.onSurface,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
-            child: Text(
-              'Save Sleep Log',
-              style: tt.titleMedium?.copyWith(
-                fontWeight: FontWeight.w900,
-                color: Colors.black,
+            const SizedBox(height: FitoraSpacing.sm),
+
+            Center(
+              child: Text(
+                'Target Goal: $targetHours hrs (Configure target in Progress ➜ Recovery)',
+                style: tt.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  fontSize: 11,
+                ),
               ),
             ),
-          ),
-        ],
+            const SizedBox(height: FitoraSpacing.lg),
+
+            // Save Button
+            Semantics(
+              button: true,
+              label: 'Save Sleep Log',
+              child: ElevatedButton(
+                onPressed: _onSave,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: FitoraColors.calmCyan,
+                  foregroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                child: Text(
+                  'Save Sleep Log',
+                  style: tt.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w900,
+                    color: Colors.black,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

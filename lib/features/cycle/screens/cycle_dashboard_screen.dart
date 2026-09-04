@@ -250,23 +250,31 @@ class CycleDashboardScreen extends ConsumerWidget {
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
-          leading: IconButton(
-            onPressed: () {
-              ref.read(hapticServiceProvider).lightImpact();
-              Navigator.of(context).pop();
-            },
-            icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
-            constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+          leading: Semantics(
+            button: true,
+            label: 'Back',
+            child: IconButton(
+              onPressed: () {
+                ref.read(hapticServiceProvider).lightImpact();
+                Navigator.of(context).pop();
+              },
+              icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
+              constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+            ),
           ),
           title: Text(
             'Cycle Tracker',
             style: tt.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: Colors.white),
           ),
           actions: [
-            IconButton(
-              onPressed: () => _showSettingsBottomSheet(context, ref),
-              icon: const Icon(Icons.settings_rounded, color: Colors.white, size: 24),
-              constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+            Semantics(
+              button: true,
+              label: 'Cycle settings',
+              child: IconButton(
+                onPressed: () => _showSettingsBottomSheet(context, ref),
+                icon: const Icon(Icons.settings_rounded, color: Colors.white, size: 24),
+                constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+              ),
             ),
           ],
         ),
