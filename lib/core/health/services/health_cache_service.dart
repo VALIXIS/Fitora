@@ -1,11 +1,14 @@
 import 'dart:convert';
 import 'package:fitora/core/health/domain/health_models.dart';
+import 'package:fitora/core/storage/local_database_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class HealthCacheService {
   final SharedPreferences _prefs;
+  final LocalDatabaseService _dbService;
 
-  HealthCacheService(this._prefs);
+  HealthCacheService(this._prefs, [LocalDatabaseService? dbService])
+      : _dbService = dbService ?? LocalDatabaseService();
 
   static const _dailyActivityPrefix = 'cache_daily_activity_';
   static const _sleepSummaryPrefix = 'cache_sleep_summary_';
@@ -13,9 +16,25 @@ class HealthCacheService {
 
   String _getDateKey(DateTime date) => '${date.year}_${date.month}_${date.day}';
 
+  String _formatDate(DateTime date) {
+    return "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
+  }
+
   Future<void> saveDailyActivity(DailyActivitySummary summary) async {
     final key = '$_dailyActivityPrefix${_getDateKey(summary.date)}';
     await _prefs.setString(key, jsonEncode(summary.toJson()));
+
+    // Persist into SQLite daily_logs database
+    final dateStr = _formatDate(summary.date);
+    await _dbService.upsertDailyLog(
+      DailyLogRecord(
+        date: dateStr,
+        steps: summary.steps,
+        caloriesBurned: summary.caloriesBurned,
+        distanceKm: summary.distanceKm,
+        activeMinutes: summary.activeMinutes,
+      ),
+    );
   }
 
   DailyActivitySummary? getDailyActivity(DateTime date) {
@@ -25,7 +44,6 @@ class HealthCacheService {
       try {
         return DailyActivitySummary.fromJson(jsonDecode(jsonStr));
       } catch (e) {
-        // Corrupted cache
         _prefs.remove(key);
       }
     }
@@ -35,6 +53,20 @@ class HealthCacheService {
   Future<void> saveWeeklyActivity(List<DailyActivitySummary> summaries) async {
     final jsonList = summaries.map((s) => s.toJson()).toList();
     await _prefs.setString(_weeklyActivityKey, jsonEncode(jsonList));
+
+    // Persist all summaries to SQLite
+    for (final summary in summaries) {
+      final dateStr = _formatDate(summary.date);
+      await _dbService.upsertDailyLog(
+        DailyLogRecord(
+          date: dateStr,
+          steps: summary.steps,
+          caloriesBurned: summary.caloriesBurned,
+          distanceKm: summary.distanceKm,
+          activeMinutes: summary.activeMinutes,
+        ),
+      );
+    }
   }
 
   List<DailyActivitySummary>? getWeeklyActivity() {
@@ -46,7 +78,6 @@ class HealthCacheService {
             .map((json) => DailyActivitySummary.fromJson(json))
             .toList();
       } catch (e) {
-        // Corrupted cache
         _prefs.remove(_weeklyActivityKey);
       }
     }
@@ -56,6 +87,15 @@ class HealthCacheService {
   Future<void> saveSleepSummary(SleepSummary summary) async {
     final key = '$_sleepSummaryPrefix${_getDateKey(summary.date)}';
     await _prefs.setString(key, jsonEncode(summary.toJson()));
+
+    // Update sleep_minutes in SQLite
+    final dateStr = _formatDate(summary.date);
+    await _dbService.upsertDailyLog(
+      DailyLogRecord(
+        date: dateStr,
+        sleepMinutes: summary.totalSleep.inMinutes,
+      ),
+    );
   }
 
   SleepSummary? getSleepSummary(DateTime date) {
