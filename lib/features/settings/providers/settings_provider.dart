@@ -319,16 +319,19 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
         final v = value as int;
         await prefs.setInt(key, v);
         state = state.copyWith(sleepTargetDurationMinutes: v);
+        _rescheduleAllNotifications();
 
       case 'sleepTargetBedtimeHour':
         final v = value as int;
         await prefs.setInt(key, v);
         state = state.copyWith(sleepTargetBedtimeHour: v);
+        _rescheduleAllNotifications();
 
       case 'sleepTargetBedtimeMinute':
         final v = value as int;
         await prefs.setInt(key, v);
         state = state.copyWith(sleepTargetBedtimeMinute: v);
+        _rescheduleAllNotifications();
 
       case 'sleepTargetWakeHour':
         final v = value as int;
@@ -381,6 +384,8 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
       quietHoursEnd: state.quietHoursEndHour,
       waterGoalMetToday: waterGoalMet,
       stepGoalMetToday: stepGoalMet,
+      sleepTargetBedtimeHour: state.sleepTargetBedtimeHour,
+      sleepTargetBedtimeMinute: state.sleepTargetBedtimeMinute,
     );
   }
 

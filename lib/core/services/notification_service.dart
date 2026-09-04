@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,6 +11,11 @@ final notificationServiceProvider = Provider<NotificationService>(
   (ref) => NotificationService(),
 );
 
+@pragma('vm:entry-point')
+void notificationTapBackground(NotificationResponse notificationResponse) {
+  // Background notification tap entry point
+}
+
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
   factory NotificationService() => _instance;
@@ -20,6 +26,14 @@ class NotificationService {
   bool _isInitialized = false;
 
   static const int _testNotificationId = 9999;
+
+  // Notification Action Constants
+  static const String actionAddWater250 = 'ADD_WATER_250';
+  static const String actionLogSleep = 'LOG_SLEEP';
+
+  final StreamController<String> _actionController =
+      StreamController<String>.broadcast();
+  Stream<String> get onNotificationAction => _actionController.stream;
 
   Future<void> initialize() async {
     if (Platform.environment.containsKey('FLUTTER_TEST')) return;
@@ -40,15 +54,34 @@ class NotificationService {
       }
     }
 
+    final darwinCategories = [
+      DarwinNotificationCategory(
+        'health_reminders',
+        actions: [
+          DarwinNotificationAction.plain(
+            actionAddWater250,
+            '+250ml Water',
+          ),
+          DarwinNotificationAction.plain(
+            actionLogSleep,
+            'Log Sleep',
+          ),
+        ],
+      ),
+    ];
+
     await _plugin.initialize(
-      settings: const InitializationSettings(
-        android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+      settings: InitializationSettings(
+        android: const AndroidInitializationSettings('@mipmap/ic_launcher'),
         iOS: DarwinInitializationSettings(
           requestAlertPermission: false,
           requestBadgePermission: false,
           requestSoundPermission: false,
+          notificationCategories: darwinCategories,
         ),
       ),
+      onDidReceiveNotificationResponse: _handleNotificationResponse,
+      onDidReceiveBackgroundNotificationResponse: notificationTapBackground,
     );
 
     final androidImpl = _plugin.resolvePlatformSpecificImplementation<
@@ -76,6 +109,26 @@ class NotificationService {
     }
 
     _isInitialized = true;
+  }
+
+  void _handleNotificationResponse(NotificationResponse response) {
+    final actionId = response.actionId;
+    if (actionId != null && actionId.isNotEmpty) {
+      _actionController.add(actionId);
+    }
+  }
+
+  /// Check if application was launched from a notification action when terminated
+  Future<void> checkAppLaunchNotification() async {
+    if (Platform.environment.containsKey('FLUTTER_TEST')) return;
+    await initialize();
+    final details = await _plugin.getNotificationAppLaunchDetails();
+    if (details != null && details.didNotificationLaunchApp) {
+      final response = details.notificationResponse;
+      if (response != null) {
+        _handleNotificationResponse(response);
+      }
+    }
   }
 
   Future<bool> canScheduleExact() async {
@@ -152,6 +205,8 @@ class NotificationService {
     required int quietHoursEnd,
     required bool waterGoalMetToday,
     required bool stepGoalMetToday,
+    int sleepTargetBedtimeHour = 23,
+    int sleepTargetBedtimeMinute = 0,
   }) async {
     await initialize();
 
@@ -183,8 +238,8 @@ class NotificationService {
     ];
 
     const sleepMessages = [
-      'Time to wind down and prepare for a restful sleep.',
-      'Sleep is key for recovery. Rest well tonight.',
+      'Bedtime in 30 mins! Wind down and prepare for a restful sleep.',
+      'Sleep prep check! Your target bedtime is approaching in 30 minutes.',
     ];
 
     const summaryMessages = [
@@ -192,7 +247,39 @@ class NotificationService {
       'Another step towards your health goals. Keep it up tomorrow!',
     ];
 
-    const androidDetails = AndroidNotificationDetails(
+    const androidHydrationDetails = AndroidNotificationDetails(
+      'health_reminders',
+      'Health Reminders',
+      channelDescription: 'Notifications for health and wellness tracking',
+      importance: Importance.high,
+      priority: Priority.high,
+      icon: '@mipmap/ic_launcher',
+      actions: <AndroidNotificationAction>[
+        AndroidNotificationAction(
+          actionAddWater250,
+          '+250ml Water',
+          showsUserInterface: true,
+        ),
+      ],
+    );
+
+    const androidSleepDetails = AndroidNotificationDetails(
+      'health_reminders',
+      'Health Reminders',
+      channelDescription: 'Notifications for health and wellness tracking',
+      importance: Importance.high,
+      priority: Priority.high,
+      icon: '@mipmap/ic_launcher',
+      actions: <AndroidNotificationAction>[
+        AndroidNotificationAction(
+          actionLogSleep,
+          'Log Sleep',
+          showsUserInterface: true,
+        ),
+      ],
+    );
+
+    const androidStandardDetails = AndroidNotificationDetails(
       'health_reminders',
       'Health Reminders',
       channelDescription: 'Notifications for health and wellness tracking',
@@ -200,21 +287,17 @@ class NotificationService {
       priority: Priority.high,
       icon: '@mipmap/ic_launcher',
     );
-    const platformDetails = NotificationDetails(
-      android: androidDetails,
-      iOS: DarwinNotificationDetails(),
-    );
 
     // Schedule for Today (0), Tomorrow (1), Day After (2)
     for (int dayOffset = 0; dayOffset <= 2; dayOffset++) {
       final targetDate = now.add(Duration(days: dayOffset));
       final isToday = dayOffset == 0;
 
-      // Hydration Reminders
+      // Hydration Reminders with +250ml Water action
       if (hydrationEnabled && !(isToday && waterGoalMetToday)) {
         final startHour = quietHoursEnabled
             ? quietHoursEnd
-            : 8; // If quiet ends at 8, start active at 8
+            : 8;
         final limitHour = quietHoursEnabled ? quietHoursStart : 22;
 
         tz.TZDateTime currentSchedule = tz.TZDateTime(
@@ -235,7 +318,6 @@ class NotificationService {
         );
 
         if (startHour > limitHour) {
-          // Crosses midnight, so endLimit should be next day if we started today
           endLimit = endLimit.add(const Duration(days: 1));
         }
 
@@ -254,7 +336,12 @@ class NotificationService {
                 title: 'Hydration Reminder 💧',
                 body: hydrationMessages[slot % hydrationMessages.length],
                 scheduledDate: currentSchedule,
-                notificationDetails: platformDetails,
+                notificationDetails: const NotificationDetails(
+                  android: androidHydrationDetails,
+                  iOS: DarwinNotificationDetails(
+                    categoryIdentifier: 'health_reminders',
+                  ),
+                ),
                 androidScheduleMode: scheduleMode,
               );
             }
@@ -289,22 +376,26 @@ class NotificationService {
             title: 'Step Goal check-in 👟',
             body: stepMessages[dayOffset % stepMessages.length],
             scheduledDate: schedule,
-            notificationDetails: platformDetails,
+            notificationDetails: const NotificationDetails(
+              android: androidStandardDetails,
+              iOS: DarwinNotificationDetails(),
+            ),
             androidScheduleMode: scheduleMode,
           );
         }
       }
 
-      // Sleep Reminder (10:00 PM / 22:00)
+      // Bedtime Prep Reminder (30 minutes BEFORE target bedtime)
       if (sleepEnabled) {
-        final schedule = tz.TZDateTime(
+        final bedtime = tz.TZDateTime(
           tz.local,
           targetDate.year,
           targetDate.month,
           targetDate.day,
-          22,
-          0,
+          sleepTargetBedtimeHour,
+          sleepTargetBedtimeMinute,
         );
+        final schedule = bedtime.subtract(const Duration(minutes: 30));
         if (schedule.isAfter(now)) {
           final id = 400 + dayOffset;
           await _plugin.zonedSchedule(
@@ -312,7 +403,12 @@ class NotificationService {
             title: 'Time to wind down 😴',
             body: sleepMessages[dayOffset % sleepMessages.length],
             scheduledDate: schedule,
-            notificationDetails: platformDetails,
+            notificationDetails: const NotificationDetails(
+              android: androidSleepDetails,
+              iOS: DarwinNotificationDetails(
+                categoryIdentifier: 'health_reminders',
+              ),
+            ),
             androidScheduleMode: scheduleMode,
           );
         }
@@ -335,7 +431,10 @@ class NotificationService {
             title: 'Daily Accomplishment Recap 🌟',
             body: summaryMessages[dayOffset % summaryMessages.length],
             scheduledDate: schedule,
-            notificationDetails: platformDetails,
+            notificationDetails: const NotificationDetails(
+              android: androidStandardDetails,
+              iOS: DarwinNotificationDetails(),
+            ),
             androidScheduleMode: scheduleMode,
           );
         }
@@ -365,7 +464,6 @@ class NotificationService {
   /// Cancel remaining hydration reminders for today only.
   Future<void> cancelRemainingHydrationRemindersForToday() async {
     await initialize();
-    // Today's hydration IDs are 100 to 149
     for (int i = 100; i <= 149; i++) {
       await _plugin.cancel(id: i);
     }
@@ -374,7 +472,6 @@ class NotificationService {
   /// Cancel today's step reminder.
   Future<void> cancelStepReminderForToday() async {
     await initialize();
-    // Today's step ID is 300
     await _plugin.cancel(id: 300);
   }
 

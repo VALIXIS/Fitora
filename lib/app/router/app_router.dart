@@ -28,7 +28,7 @@ import 'package:fitora/features/sleep/screens/sleep_detail_screen.dart';
 import 'package:fitora/features/sleep/screens/sleep_schedule_screen.dart';
 import 'package:fitora/features/cycle/screens/cycle_dashboard_screen.dart';
 
-final _rootNavigatorKey = GlobalKey<NavigatorState>();
+final rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorKeys = [
   GlobalKey<NavigatorState>(debugLabel: 'home'),
   GlobalKey<NavigatorState>(debugLabel: 'progress'),
@@ -109,7 +109,7 @@ final appRouterProvider = Provider<GoRouter>(
     ref.onDispose(routerRefreshNotifier.dispose);
 
     return GoRouter(
-      navigatorKey: _rootNavigatorKey,
+      navigatorKey: rootNavigatorKey,
       initialLocation: AppRoutes.splash,
       debugLogDiagnostics: kDebugMode,
       refreshListenable: routerRefreshNotifier,
@@ -233,7 +233,7 @@ final appRouterProvider = Provider<GoRouter>(
                   ),
                   routes: [
                     GoRoute(
-                      parentNavigatorKey: _rootNavigatorKey,
+                      parentNavigatorKey: rootNavigatorKey,
                       path: AppRoutes.sleepDetail,
                       name: AppRouteNames.sleepDetail,
                       pageBuilder: (context, state) => slideUpTransitionPage(
@@ -243,7 +243,7 @@ final appRouterProvider = Provider<GoRouter>(
                       ),
                       routes: [
                         GoRoute(
-                          parentNavigatorKey: _rootNavigatorKey,
+                          parentNavigatorKey: rootNavigatorKey,
                           path: AppRoutes.sleepSchedule,
                           name: AppRouteNames.sleepSchedule,
                           pageBuilder: (context, state) => slideUpTransitionPage(
@@ -255,7 +255,7 @@ final appRouterProvider = Provider<GoRouter>(
                       ],
                     ),
                     GoRoute(
-                      parentNavigatorKey: _rootNavigatorKey,
+                      parentNavigatorKey: rootNavigatorKey,
                       path: AppRoutes.cycleDetail,
                       name: AppRouteNames.cycleDetail,
                       pageBuilder: (context, state) => slideUpTransitionPage(
@@ -277,7 +277,7 @@ final appRouterProvider = Provider<GoRouter>(
                   builder: (context, state) => const ProfileScreen(),
                   routes: [
                     GoRoute(
-                      parentNavigatorKey: _rootNavigatorKey,
+                      parentNavigatorKey: rootNavigatorKey,
                       path: AppRoutes.healthSync,
                       name: AppRouteNames.healthSync,
                       pageBuilder: (context, state) => slideUpTransitionPage(
