@@ -41,11 +41,23 @@ class FitoraButton extends StatelessWidget {
         ? ScaleOnPress(scaleDownTo: 0.96, child: button)
         : button;
 
+    final constrained = ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: 48),
+      child: wrappedButton,
+    );
+
+    final semanticButton = Semantics(
+      button: true,
+      enabled: onPressed != null,
+      label: label,
+      child: constrained,
+    );
+
     if (isFullWidth) {
-      return SizedBox(width: double.infinity, child: wrappedButton);
+      return SizedBox(width: double.infinity, child: semanticButton);
     }
 
-    return wrappedButton;
+    return semanticButton;
   }
 
   Widget _buildChild(BuildContext context) {

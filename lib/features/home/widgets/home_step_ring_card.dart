@@ -14,11 +14,20 @@ class HomeStepRingCard extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
     final percent = progress.progress.clamp(0.0, 1.0);
 
-    return FitoraCard(
-      padding: const EdgeInsets.symmetric(
-        vertical: FitoraSpacing.md,
-        horizontal: FitoraSpacing.md,
-      ),
+    final pctInt = (percent * 100).round();
+    final isGoalAchieved = progress.current >= progress.goal;
+    final statusText = isGoalAchieved ? "Goal achieved" : "$pctInt% completed";
+
+    return Semantics(
+      label: 'Daily Step Progress',
+      value:
+          '${_formatNumber(progress.current)} of ${_formatNumber(progress.goal)} steps, $statusText',
+      excludeSemantics: true,
+      child: FitoraCard(
+        padding: const EdgeInsets.symmetric(
+          vertical: FitoraSpacing.md,
+          horizontal: FitoraSpacing.md,
+        ),
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -111,8 +120,9 @@ class HomeStepRingCard extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 String _formatNumber(int value) {

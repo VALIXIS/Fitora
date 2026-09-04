@@ -233,12 +233,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return FitoraBackground(
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        floatingActionButton: FloatingActionButton.extended(
-          onPressed: () => LogWorkoutModal.show(context),
-          label: const Text('Quick Log', style: TextStyle(fontWeight: FontWeight.bold)),
-          icon: const Icon(Icons.add_rounded),
-          backgroundColor: FitoraColors.mintGreen,
-          foregroundColor: Colors.black,
+        floatingActionButton: Semantics(
+          button: true,
+          label: 'Quick Log Workout',
+          hint: 'Opens workout logging modal',
+          child: FloatingActionButton.extended(
+            onPressed: () => LogWorkoutModal.show(context),
+            tooltip: 'Quick Log Workout',
+            label: const Text('Quick Log', style: TextStyle(fontWeight: FontWeight.bold)),
+            icon: const Icon(Icons.add_rounded),
+            backgroundColor: FitoraColors.mintGreen,
+            foregroundColor: Colors.black,
+          ),
         ),
         body: RefreshIndicator(
           onRefresh: () => Future.value(),
@@ -470,54 +476,70 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     final streakState = ref.watch(goalsStreakProvider);
                     if (streakState.currentStreak == 0)
                       return const SizedBox.shrink();
-                    return GestureDetector(
-                      onTap: () =>
-                          _showStreakHistoryDialog(context, streakState),
-                      child: Container(
-                        margin: const EdgeInsets.only(right: 8),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: FitoraColors.warningOrange.withValues(
-                            alpha: 0.15,
-                          ),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: FitoraColors.warningOrange.withValues(
-                              alpha: 0.3,
+                    return Semantics(
+                      button: true,
+                      label: 'Streak History, ${streakState.currentStreak} days streak',
+                      hint: 'Double tap to view streak details',
+                      child: GestureDetector(
+                        onTap: () =>
+                            _showStreakHistoryDialog(context, streakState),
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+                          child: Container(
+                            margin: const EdgeInsets.only(right: 8),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
                             ),
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.local_fire_department_rounded,
-                              color: FitoraColors.warningOrange,
-                              size: 16,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              '${streakState.currentStreak}',
-                              style: textTheme.labelLarge?.copyWith(
-                                color: FitoraColors.warningOrange,
-                                fontWeight: FontWeight.bold,
+                            decoration: BoxDecoration(
+                              color: FitoraColors.warningOrange.withValues(
+                                alpha: 0.15,
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: FitoraColors.warningOrange.withValues(
+                                  alpha: 0.3,
+                                ),
                               ),
                             ),
-                          ],
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(
+                                  Icons.local_fire_department_rounded,
+                                  color: FitoraColors.warningOrange,
+                                  size: 16,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '${streakState.currentStreak}',
+                                  style: textTheme.labelLarge?.copyWith(
+                                    color: FitoraColors.warningOrange,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
                       ),
                     );
                   },
                 ),
-                IconButton(
-                  icon: Icon(
-                    Icons.notifications_outlined,
-                    color: theme.colorScheme.onSurface,
+                Semantics(
+                  button: true,
+                  label: 'Notifications and Reminders',
+                  hint: 'Opens notifications modal',
+                  child: IconButton(
+                    constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+                    tooltip: 'Notifications and Reminders',
+                    icon: Icon(
+                      Icons.notifications_outlined,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                    onPressed: () => _showNotificationsModal(context),
                   ),
-                  onPressed: () => _showNotificationsModal(context),
                 ),
               ],
             ),
@@ -551,9 +573,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ? "Start walking to begin tracking today's progress."
         : 'Goal: $goalFormatted';
 
-    return GestureDetector(
-      onTap: () => showStepGoalPicker(context, ref, activity.stepsGoal),
-      child: GlowContainer(
+    final pctInt = (progress * 100).toInt();
+    return Semantics(
+      button: true,
+      label: "Today's Steps Progress",
+      value: "$formattedSteps of $goalFormatted steps, $pctInt% of daily goal",
+      hint: "Double tap to change daily step target",
+      excludeSemantics: true,
+      child: GestureDetector(
+        onTap: () => showStepGoalPicker(context, ref, activity.stepsGoal),
+        child: GlowContainer(
         glowColor: FitoraColors.mintGreen.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(24),
         padding: EdgeInsets.zero,
@@ -654,8 +683,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
         ),
       ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.05, end: 0),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildQuickStats(
     TextTheme textTheme,
@@ -721,50 +751,75 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     trailingAction: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        InkWell(
-                          onTap: () {
-                            ref
-                                .read(wellnessProvider.notifier)
-                                .removeHydration(0.25);
-                          },
-                          borderRadius: BorderRadius.circular(12),
-                          child: Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: BoxDecoration(
-                              color: Colors.blueAccent.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color: Colors.blueAccent.withValues(alpha: 0.3),
+                        Semantics(
+                          button: true,
+                          enabled: wellness.hydrationLiters > 0,
+                          label: 'Decrease hydration by 250 milliliters',
+                          child: InkWell(
+                            onTap: () {
+                              ref
+                                  .read(wellnessProvider.notifier)
+                                  .removeHydration(0.25);
+                            },
+                            borderRadius: BorderRadius.circular(12),
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(
+                                minWidth: 48,
+                                minHeight: 48,
                               ),
-                            ),
-                            child: const Icon(
-                              Icons.remove_rounded,
-                              color: Colors.blueAccent,
-                              size: 18,
+                              child: Center(
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.blueAccent.withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: Colors.blueAccent.withValues(alpha: 0.3),
+                                    ),
+                                  ),
+                                  child: const Icon(
+                                    Icons.remove_rounded,
+                                    color: Colors.blueAccent,
+                                    size: 18,
+                                  ),
+                                ),
+                              ),
                             ),
                           ),
                         ),
                         const SizedBox(width: 6),
-                        InkWell(
-                          onTap: () {
-                            ref
-                                .read(wellnessProvider.notifier)
-                                .addHydration(0.25);
-                          },
-                          borderRadius: BorderRadius.circular(12),
-                          child: Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: BoxDecoration(
-                              color: Colors.blueAccent.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color: Colors.blueAccent.withValues(alpha: 0.3),
+                        Semantics(
+                          button: true,
+                          label: 'Add 250 milliliters of water',
+                          child: InkWell(
+                            onTap: () {
+                              ref
+                                  .read(wellnessProvider.notifier)
+                                  .addHydration(0.25);
+                            },
+                            borderRadius: BorderRadius.circular(12),
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(
+                                minWidth: 48,
+                                minHeight: 48,
                               ),
-                            ),
-                            child: const Icon(
-                              Icons.add_rounded,
-                              color: Colors.blueAccent,
-                              size: 18,
+                              child: Center(
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.blueAccent.withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: Colors.blueAccent.withValues(alpha: 0.3),
+                                    ),
+                                  ),
+                                  child: const Icon(
+                                    Icons.add_rounded,
+                                    color: Colors.blueAccent,
+                                    size: 18,
+                                  ),
+                                ),
+                              ),
                             ),
                           ),
                         ),

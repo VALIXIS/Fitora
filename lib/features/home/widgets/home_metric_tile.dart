@@ -20,8 +20,12 @@ class HomeMetricTile extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
 
-    return FitoraCard(
-      padding: const EdgeInsets.all(FitoraSpacing.md),
+    return Semantics(
+      label: '${data.label} metric',
+      value: '${data.value}, ${data.caption}',
+      excludeSemantics: true,
+      child: FitoraCard(
+        padding: const EdgeInsets.all(FitoraSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -78,6 +82,7 @@ class HomeMetricTile extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 }
