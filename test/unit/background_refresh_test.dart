@@ -11,6 +11,8 @@ import 'package:health/health.dart';
 
 import 'package:fitora/features/health_sync/providers/health_sync_provider.dart';
 import 'package:fitora/core/health/services/health_sync_service.dart';
+import 'package:fitora/core/health/services/health_cache_service.dart';
+import 'package:fitora/core/health/services/background_sync_service.dart';
 import 'package:fitora/core/health/data/sensor_health_repository.dart';
 
 // A mock HealthConnectService for test purposes
@@ -207,6 +209,23 @@ void main() {
 
       final newSummary = container.read(dailyActivityProvider(tomorrow));
       expect(newSummary.date, equals(tomorrow));
+    });
+
+    test('BackgroundSyncManager initialization and background task execution', () async {
+      // Test initialization in test mode
+      await BackgroundSyncManager.initialize(isTesting: true);
+      
+      // Execute task cleanly
+      final result = await executeBackgroundHealthSyncTask(taskName: kFitoraBackgroundSyncTask);
+      expect(result, isTrue);
+
+      // Verify cached daily activity persisted
+      final cacheService = HealthCacheService(AppPreferences.prefs);
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      final cachedActivity = cacheService.getDailyActivity(today);
+      expect(cachedActivity, isNotNull);
+      expect(cachedActivity!.date, equals(today));
     });
   });
 }
