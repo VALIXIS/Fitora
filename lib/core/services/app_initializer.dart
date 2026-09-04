@@ -1,6 +1,7 @@
 import 'package:fitora/core/services/firebase_initializer.dart';
 import 'package:fitora/core/services/notification_service.dart';
 import 'package:fitora/core/storage/app_preferences.dart';
+import 'package:fitora/core/health/services/background_sync_service.dart';
 import 'package:fitora/core/utils/app_logger.dart';
 
 class AppInitializer {
@@ -14,5 +15,8 @@ class AppInitializer {
     // permission request or scheduling call is made.
     await NotificationService().initialize();
     AppLogger.info('AppInitializer: NotificationService initialized at ${s.elapsedMilliseconds}ms');
+    // Initialize WorkManager background sync for 1-hour periodic health data updates
+    await BackgroundSyncManager.initialize();
+    AppLogger.info('AppInitializer: BackgroundSyncManager initialized at ${s.elapsedMilliseconds}ms');
   }
 }
