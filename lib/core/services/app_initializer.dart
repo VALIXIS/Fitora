@@ -2,6 +2,7 @@ import 'package:fitora/core/services/firebase_initializer.dart';
 import 'package:fitora/core/services/notification_service.dart';
 import 'package:fitora/core/storage/app_preferences.dart';
 import 'package:fitora/core/health/services/background_sync_service.dart';
+import 'package:fitora/core/storage/local_database_service.dart';
 import 'package:fitora/core/utils/app_logger.dart';
 
 class AppInitializer {
@@ -11,6 +12,9 @@ class AppInitializer {
     AppLogger.info('AppInitializer: Firebase initialized at ${s.elapsedMilliseconds}ms');
     await AppPreferences.initialize();
     AppLogger.info('AppInitializer: AppPreferences initialized at ${s.elapsedMilliseconds}ms');
+    // Run automatic migration from legacy SharedPreferences into SQLite database
+    await LocalDatabaseService().migrateFromSharedPreferences(AppPreferences.prefs);
+    AppLogger.info('AppInitializer: LocalDatabaseService migration checked at ${s.elapsedMilliseconds}ms');
     // Initialize notification service early so channels are registered before any
     // permission request or scheduling call is made.
     await NotificationService().initialize();
