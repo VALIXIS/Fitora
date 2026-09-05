@@ -1,9 +1,11 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fitora/core/theme/fitora_colors.dart';
 import 'package:fitora/core/health/domain/sleep_calculations.dart';
+import 'package:fitora/core/services/haptic_service.dart';
 
-class CircularSleepDial extends StatefulWidget {
+class CircularSleepDial extends ConsumerStatefulWidget {
   final int initialBedHour;
   final int initialBedMinute;
   final int initialWakeHour;
@@ -20,10 +22,10 @@ class CircularSleepDial extends StatefulWidget {
   });
 
   @override
-  State<CircularSleepDial> createState() => _CircularSleepDialState();
+  ConsumerState<CircularSleepDial> createState() => _CircularSleepDialState();
 }
 
-class _CircularSleepDialState extends State<CircularSleepDial> {
+class _CircularSleepDialState extends ConsumerState<CircularSleepDial> {
   late int _bedHour;
   late int _bedMinute;
   late int _wakeHour;
@@ -96,6 +98,13 @@ class _CircularSleepDialState extends State<CircularSleepDial> {
     final snappedMinutes = _angleToMinutes(touchAngle);
     final newHour = snappedMinutes ~/ 60;
     final newMin = snappedMinutes % 60;
+
+    final valueChanged = (_draggingBedtime && (_bedHour != newHour || _bedMinute != newMin)) ||
+        (_draggingWakeTime && (_wakeHour != newHour || _wakeMinute != newMin));
+
+    if (valueChanged) {
+      ref.read(hapticServiceProvider).sliderChange();
+    }
 
     setState(() {
       if (_draggingBedtime) {

@@ -19,6 +19,7 @@ import 'package:fitora/core/ads/ad_service.dart';
 import 'package:go_router/go_router.dart';
 import 'package:fitora/features/cycle/providers/cycle_provider.dart';
 import 'package:fitora/core/services/haptic_service.dart';
+import 'package:fitora/shared/widgets/scale_on_press.dart';
 
 class ProgressScreen extends ConsumerStatefulWidget {
   const ProgressScreen({super.key});
@@ -89,12 +90,17 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
         floatingActionButton: Semantics(
           button: true,
           label: 'Log Workout',
-          child: FloatingActionButton.extended(
-            onPressed: () => LogWorkoutModal.show(context),
-            label: const Text('Log Workout', style: TextStyle(fontWeight: FontWeight.bold)),
-            icon: const Icon(Icons.add_rounded),
-            backgroundColor: FitoraColors.mintGreen,
-            foregroundColor: Colors.black,
+          child: ScaleOnPress(
+            child: FloatingActionButton.extended(
+              onPressed: () {
+                ref.read(hapticServiceProvider).buttonPress();
+                LogWorkoutModal.show(context);
+              },
+              label: const Text('Log Workout', style: TextStyle(fontWeight: FontWeight.bold)),
+              icon: const Icon(Icons.add_rounded),
+              backgroundColor: FitoraColors.mintGreen,
+              foregroundColor: Colors.black,
+            ),
           ),
         ),
         body: CustomScrollView(

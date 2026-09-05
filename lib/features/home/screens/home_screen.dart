@@ -22,6 +22,8 @@ import 'package:fitora/features/sleep/widgets/log_sleep_modal.dart';
 import 'package:permission_handler/permission_handler.dart' as ph;
 import 'package:fitora/features/settings/providers/settings_provider.dart';
 import 'package:fitora/core/ads/ad_service.dart';
+import 'package:fitora/shared/widgets/scale_on_press.dart';
+import 'package:fitora/core/services/haptic_service.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -230,6 +232,30 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final lastWeek = today.subtract(const Duration(days: 6));
     final weeklySummaries = ref.watch(weeklyActivityProvider(lastWeek));
 
+    // Goal completion transition listener (incomplete -> complete)
+    ref.listen<DailyGoalStatus>(dailyGoalStatusProvider(today), (previous, next) {
+      if (previous != null) {
+        for (final nextMetric in next.metrics) {
+          final prevMetric = previous.metrics.firstWhere(
+            (m) => m.key == nextMetric.key,
+            orElse: () => GoalMetric(
+              key: nextMetric.key,
+              name: '',
+              current: 0,
+              goal: 0,
+              unit: '',
+              isCompleted: false,
+              availability: MetricAvailability.available,
+            ),
+          );
+          if (!prevMetric.isCompleted && nextMetric.isCompleted) {
+            ref.read(hapticServiceProvider).goalCompleted();
+            break;
+          }
+        }
+      }
+    });
+
     return FitoraBackground(
       child: Scaffold(
         backgroundColor: Colors.transparent,
@@ -237,13 +263,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           button: true,
           label: 'Quick Log Workout',
           hint: 'Opens workout logging modal',
-          child: FloatingActionButton.extended(
-            onPressed: () => LogWorkoutModal.show(context),
-            tooltip: 'Quick Log Workout',
-            label: const Text('Quick Log', style: TextStyle(fontWeight: FontWeight.bold)),
-            icon: const Icon(Icons.add_rounded),
-            backgroundColor: FitoraColors.mintGreen,
-            foregroundColor: Colors.black,
+          child: ScaleOnPress(
+            child: FloatingActionButton.extended(
+              onPressed: () {
+                ref.read(hapticServiceProvider).buttonPress();
+                LogWorkoutModal.show(context);
+              },
+              tooltip: 'Quick Log Workout',
+              label: const Text('Quick Log', style: TextStyle(fontWeight: FontWeight.bold)),
+              icon: const Icon(Icons.add_rounded),
+              backgroundColor: FitoraColors.mintGreen,
+              foregroundColor: Colors.black,
+            ),
           ),
         ),
         body: RefreshIndicator(
@@ -755,32 +786,35 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           button: true,
                           enabled: wellness.hydrationLiters > 0,
                           label: 'Decrease hydration by 250 milliliters',
-                          child: InkWell(
-                            onTap: () {
-                              ref
-                                  .read(wellnessProvider.notifier)
-                                  .removeHydration(0.25);
-                            },
-                            borderRadius: BorderRadius.circular(12),
-                            child: ConstrainedBox(
-                              constraints: const BoxConstraints(
-                                minWidth: 48,
-                                minHeight: 48,
-                              ),
-                              child: Center(
-                                child: Container(
-                                  padding: const EdgeInsets.all(4),
-                                  decoration: BoxDecoration(
-                                    color: Colors.blueAccent.withValues(alpha: 0.15),
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(
-                                      color: Colors.blueAccent.withValues(alpha: 0.3),
+                          child: ScaleOnPress(
+                            child: InkWell(
+                              onTap: () {
+                                ref.read(hapticServiceProvider).buttonPress();
+                                ref
+                                    .read(wellnessProvider.notifier)
+                                    .removeHydration(0.25);
+                              },
+                              borderRadius: BorderRadius.circular(12),
+                              child: ConstrainedBox(
+                                constraints: const BoxConstraints(
+                                  minWidth: 48,
+                                  minHeight: 48,
+                                ),
+                                child: Center(
+                                  child: Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: BoxDecoration(
+                                      color: Colors.blueAccent.withValues(alpha: 0.15),
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(
+                                        color: Colors.blueAccent.withValues(alpha: 0.3),
+                                      ),
                                     ),
-                                  ),
-                                  child: const Icon(
-                                    Icons.remove_rounded,
-                                    color: Colors.blueAccent,
-                                    size: 18,
+                                    child: const Icon(
+                                      Icons.remove_rounded,
+                                      color: Colors.blueAccent,
+                                      size: 18,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -791,32 +825,35 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         Semantics(
                           button: true,
                           label: 'Add 250 milliliters of water',
-                          child: InkWell(
-                            onTap: () {
-                              ref
-                                  .read(wellnessProvider.notifier)
-                                  .addHydration(0.25);
-                            },
-                            borderRadius: BorderRadius.circular(12),
-                            child: ConstrainedBox(
-                              constraints: const BoxConstraints(
-                                minWidth: 48,
-                                minHeight: 48,
-                              ),
-                              child: Center(
-                                child: Container(
-                                  padding: const EdgeInsets.all(4),
-                                  decoration: BoxDecoration(
-                                    color: Colors.blueAccent.withValues(alpha: 0.15),
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(
-                                      color: Colors.blueAccent.withValues(alpha: 0.3),
+                          child: ScaleOnPress(
+                            child: InkWell(
+                              onTap: () {
+                                ref.read(hapticServiceProvider).buttonPress();
+                                ref
+                                    .read(wellnessProvider.notifier)
+                                    .addHydration(0.25);
+                              },
+                              borderRadius: BorderRadius.circular(12),
+                              child: ConstrainedBox(
+                                constraints: const BoxConstraints(
+                                  minWidth: 48,
+                                  minHeight: 48,
+                                ),
+                                child: Center(
+                                  child: Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: BoxDecoration(
+                                      color: Colors.blueAccent.withValues(alpha: 0.15),
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(
+                                        color: Colors.blueAccent.withValues(alpha: 0.3),
+                                      ),
                                     ),
-                                  ),
-                                  child: const Icon(
-                                    Icons.add_rounded,
-                                    color: Colors.blueAccent,
-                                    size: 18,
+                                    child: const Icon(
+                                      Icons.add_rounded,
+                                      color: Colors.blueAccent,
+                                      size: 18,
+                                    ),
                                   ),
                                 ),
                               ),
