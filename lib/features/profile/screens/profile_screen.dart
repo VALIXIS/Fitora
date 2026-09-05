@@ -448,6 +448,14 @@ class ProfileScreen extends ConsumerWidget {
       _buildActionTile(
         context,
         tt,
+        Icons.cloud_sync_rounded,
+        'Cloud Backup & Restore',
+        onTap: () => context.pushNamed(AppRouteNames.settings),
+      ),
+      _buildDivider(context),
+      _buildActionTile(
+        context,
+        tt,
         Icons.settings_rounded,
         'Settings',
         onTap: () => context.pushNamed(AppRouteNames.settings),

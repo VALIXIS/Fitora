@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:fitora/app/providers/theme_mode_provider.dart';
 import 'package:fitora/core/theme/fitora_colors.dart';
+import 'package:fitora/features/cloud_backup/domain/cloud_backup_models.dart';
+import 'package:fitora/features/cloud_backup/providers/cloud_backup_providers.dart';
 import 'package:fitora/features/settings/providers/settings_provider.dart';
 
 class SettingsSheet extends ConsumerWidget {
@@ -11,13 +13,15 @@ class SettingsSheet extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(settingsProvider);
+    final cloudBackupState = ref.watch(cloudBackupSyncProvider);
+    final cloudBackupNotifier = ref.read(cloudBackupSyncProvider.notifier);
 
     return Semantics(
       scopesRoute: true,
       namesRoute: true,
       label: 'Settings Sheet',
       child: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(16.0),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -41,6 +45,87 @@ class SettingsSheet extends ConsumerWidget {
                 ],
               ),
               const SizedBox(height: 8),
+
+              // ── Cloud Backup & Sync Section ────────────────────────────
+              const Divider(),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(
+                  Icons.cloud_sync_rounded,
+                  color: FitoraColors.mintGreen,
+                ),
+                title: const Text(
+                  'Cloud Backup & Restore',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                subtitle: Text(
+                  cloudBackupState.status.displayName,
+                  style: TextStyle(
+                    color: cloudBackupState.status == CloudBackupSyncStatus.failed
+                        ? Colors.redAccent
+                        : null,
+                  ),
+                ),
+                trailing: Switch(
+                  value: cloudBackupState.enabled,
+                  onChanged: (v) => cloudBackupNotifier.toggleBackup(v),
+                ),
+              ),
+              if (cloudBackupState.enabled) ...[
+                Padding(
+                  padding: const EdgeInsets.only(left: 12.0, bottom: 8.0),
+                  child: Row(
+                    children: [
+                      if (cloudBackupState.lastSyncTime != null)
+                        Text(
+                          'Last backup: ${_formatTime(cloudBackupState.lastSyncTime!)}',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              ),
+                        )
+                      else
+                        Text(
+                          'No cloud backup yet',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              ),
+                        ),
+                      const Spacer(),
+                      ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          minimumSize: const Size(88, 48),
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                        ),
+                        onPressed: cloudBackupState.status == CloudBackupSyncStatus.syncing
+                            ? null
+                            : () => cloudBackupNotifier.syncNow(),
+                        icon: cloudBackupState.status == CloudBackupSyncStatus.syncing
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Icon(Icons.sync_rounded, size: 16),
+                        label: const Text('Sync Now'),
+                      ),
+                      const SizedBox(width: 8),
+                      OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: const Size(88, 48),
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                        ),
+                        onPressed: cloudBackupState.status == CloudBackupSyncStatus.syncing
+                            ? null
+                            : () => cloudBackupNotifier.restoreData(),
+                        icon: const Icon(Icons.download_rounded, size: 16),
+                        label: const Text('Restore'),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              const Divider(),
+
               SwitchListTile(
                 title: const Text('Enable notifications'),
                 value: settings.notificationsEnabled,
@@ -130,5 +215,11 @@ class SettingsSheet extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  String _formatTime(DateTime dt) {
+    final h = dt.hour.toString().padLeft(2, '0');
+    final m = dt.minute.toString().padLeft(2, '0');
+    return '$h:$m';
   }
 }
