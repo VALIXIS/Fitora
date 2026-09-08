@@ -1,3 +1,4 @@
+import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -33,15 +34,24 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
+  late ConfettiController _confettiController;
+
   @override
   void initState() {
     super.initState();
+    _confettiController = ConfettiController(duration: const Duration(seconds: 2));
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         PermissionManager.requestFirstLaunchPermissions(context, ref);
         AdService.showDailyVideoAdIfEligible(context);
       }
     });
+  }
+
+  @override
+  void dispose() {
+    _confettiController.dispose();
+    super.dispose();
   }
 
   void _showNotificationsModal(BuildContext context) {
@@ -250,14 +260,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           );
           if (!prevMetric.isCompleted && nextMetric.isCompleted) {
             ref.read(hapticServiceProvider).goalCompleted();
+            if (nextMetric.key == 'steps') {
+              _confettiController.play();
+            }
             break;
           }
         }
       }
     });
 
-    return FitoraBackground(
-      child: Scaffold(
+    return Stack(
+      children: [
+        FitoraBackground(
+          child: Scaffold(
         backgroundColor: Colors.transparent,
         floatingActionButton: Semantics(
           button: true,
@@ -278,9 +293,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
         ),
         body: RefreshIndicator(
-          onRefresh: () => Future.value(),
-          color: const Color(0xFF06B6D4),
-          backgroundColor: const Color(0xFF0D1117),
+          onRefresh: () async {
+            ref.invalidate(dailyActivityProvider);
+            ref.invalidate(wellnessProvider);
+            ref.invalidate(weeklyActivityProvider);
+            await Future.delayed(const Duration(milliseconds: 500));
+          },
+          color: FitoraColors.mintGreen,
+          backgroundColor: FitoraColors.darkSurface,
           child: CustomScrollView(
             physics: const BouncingScrollPhysics(),
             slivers: [
@@ -350,7 +370,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ],
           ),
         ),
-      ),
+        Align(
+          alignment: Alignment.topCenter,
+          child: ConfettiWidget(
+            confettiController: _confettiController,
+            blastDirectionality: BlastDirectionality.explosive,
+            colors: const [
+              FitoraColors.mintGreen,
+              FitoraColors.calmCyan,
+              FitoraColors.softPink,
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -541,7 +573,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   Icons.local_fire_department_rounded,
                                   color: FitoraColors.warningOrange,
                                   size: 16,
-                                ),
+                                ).animate(onPlay: (c) => c.repeat(reverse: true))
+                                  .scale(begin: const Offset(0.95, 0.95), end: const Offset(1.15, 1.15), duration: 800.ms),
                                 const SizedBox(width: 4),
                                 Text(
                                   '${streakState.currentStreak}',
@@ -661,13 +694,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    Text(
-                      stepsValue == 0 ? '0' : formattedSteps,
-                      style: textTheme.displaySmall?.copyWith(
-                        fontWeight: FontWeight.w900,
-                        color: theme.colorScheme.onSurface,
-                        letterSpacing: -1.0,
-                      ),
+                    TweenAnimationBuilder<double>(
+                      tween: Tween<double>(begin: 0, end: stepsValue.toDouble()),
+                      duration: const Duration(milliseconds: 1200),
+                      curve: Curves.easeOutCubic,
+                      builder: (context, val, child) {
+                        final formattedVal = val.toInt().toString().replaceAllMapped(
+                          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+                          (m) => '${m[1]},',
+                        );
+                        return Text(
+                          val == 0 ? '0' : formattedVal,
+                          style: textTheme.displaySmall?.copyWith(
+                            fontWeight: FontWeight.w900,
+                            color: theme.colorScheme.onSurface,
+                            letterSpacing: -1.0,
+                          ),
+                        );
+                      },
                     ),
                     const SizedBox(height: 6),
                     Text(
@@ -709,7 +753,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ),
                   ),
                 ],
-              ),
+              ).animate(target: (stepsValue >= stepsGoal && stepsGoal > 0) ? 1 : 0)
+                .scale(begin: const Offset(1,1), end: const Offset(1.05, 1.05), duration: 800.ms, curve: Curves.easeInOut)
+                .then(delay: 0.ms).scale(begin: const Offset(1.05, 1.05), end: const Offset(1, 1), duration: 800.ms, curve: Curves.easeInOut),
             ],
           ),
         ),

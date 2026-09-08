@@ -475,8 +475,26 @@ class SettingsScreen extends ConsumerWidget {
         tt,
         statusIcon,
         'Step Sensor Status',
-        statusText,
-        trailingIconColor: statusColor,
+        null,
+        trailingWidget: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                color: statusColor,
+                shape: BoxShape.circle,
+              ),
+            ).animate(onPlay: (c) => c.repeat(reverse: true))
+             .scale(begin: const Offset(0.7,0.7), end: const Offset(1.3,1.3), duration: 800.ms),
+            const SizedBox(width: 6),
+            Text(
+              statusText,
+              style: tt.bodySmall?.copyWith(color: statusColor, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
       ),
       _buildDivider(context),
       _buildTile(
@@ -844,13 +862,27 @@ class SettingsScreen extends ConsumerWidget {
   Widget _buildSectionTitle(BuildContext context, String title) {
     return Padding(
       padding: const EdgeInsets.only(left: 4, bottom: 8),
-      child: Text(
-        title,
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-          fontWeight: FontWeight.bold,
-          letterSpacing: 1.5,
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
-        ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.5,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Container(
+            height: 2,
+            width: 24,
+            decoration: BoxDecoration(
+              color: FitoraColors.mintGreen,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ).animate().fadeIn(duration: 400.ms).slideX(begin: -0.5, end: 0, curve: Curves.easeOut),
+        ],
       ),
     );
   }

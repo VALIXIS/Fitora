@@ -251,7 +251,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(minHeight: 48),
                   child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
+                    duration: const Duration(milliseconds: 250),
                     curve: Curves.easeOutCubic,
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     alignment: Alignment.center,
@@ -276,11 +276,10 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                     ),
                   ),
                 ),
-              ),
             ),
           );
         }).toList(),
-      ),
+      ).animate().fadeIn(duration: 400.ms).slideX(begin: 0.1, end: 0, curve: Curves.easeOutCubic),
     );
   }
 

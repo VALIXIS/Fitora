@@ -25,6 +25,7 @@ class AppShell extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
+      extendBody: true,
       body: navigationShell,
       bottomNavigationBar: FitoraBottomNavBar(
         currentIndex: navigationShell.currentIndex,

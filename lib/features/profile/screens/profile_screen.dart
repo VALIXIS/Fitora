@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -294,42 +295,7 @@ class ProfileScreen extends ConsumerWidget {
           _buildCard(context, [
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.monitor_weight_outlined,
-                    color: FitoraColors.mintGreen,
-                    size: 28,
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'BMI (Body Mass Index)',
-                          style: tt.bodyMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurface,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          _getBmiCategory(bmi),
-                          style: tt.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Text(
-                    bmi.toStringAsFixed(1),
-                    style: tt.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: FitoraColors.mintGreen,
-                    ),
-                  ),
-                ],
-              ),
+              child: AnimatedBMIGauge(bmi: bmi),
             ),
           ]),
         ],
@@ -738,4 +704,91 @@ void showStepGoalPicker(BuildContext context, WidgetRef ref, int currentGoal) {
       );
     },
   );
+}
+
+class AnimatedBMIGauge extends StatelessWidget {
+  final double bmi;
+  const AnimatedBMIGauge({super.key, required this.bmi});
+
+  @override
+  Widget build(BuildContext context) {
+    String category = 'Normal';
+    if (bmi < 18.5) category = 'Underweight';
+    else if (bmi < 25) category = 'Normal';
+    else if (bmi < 30) category = 'Overweight';
+    else category = 'Obese';
+
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: 0, end: bmi),
+      duration: const Duration(milliseconds: 1500),
+      curve: Curves.elasticOut,
+      builder: (context, value, child) {
+        return SizedBox(
+          height: 120,
+          child: CustomPaint(
+            painter: BMIGaugePainter(value),
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  const SizedBox(height: 30),
+                  Text(
+                    bmi.toStringAsFixed(1),
+                    style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
+                  ),
+                  Text(
+                    category,
+                    style: const TextStyle(fontSize: 12, color: Colors.white70),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class BMIGaugePainter extends CustomPainter {
+  final double bmi;
+  BMIGaugePainter(this.bmi);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Rect.fromLTWH(0, 0, size.width, size.height * 2);
+    final paint = Paint()
+      ..shader = const LinearGradient(
+        colors: [Colors.blue, Colors.green, Colors.orange, Colors.red],
+        stops: [0.0, 0.3, 0.6, 1.0],
+      ).createShader(rect)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 15
+      ..strokeCap = StrokeCap.round;
+
+    canvas.drawArc(rect, math.pi, math.pi, false, paint);
+
+    // Needle
+    final needlePaint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.fill;
+    
+    // clamp bmi to 15-40 for the gauge display
+    final displayBmi = bmi.clamp(15.0, 40.0);
+    final percent = (displayBmi - 15) / (40 - 15);
+    final angle = math.pi + (percent * math.pi);
+    
+    final cx = size.width / 2;
+    final cy = size.height;
+    final r = size.width / 2 - 15;
+    
+    final nx = cx + r * math.cos(angle);
+    final ny = cy + r * math.sin(angle);
+    
+    canvas.drawCircle(Offset(nx, ny), 8, needlePaint);
+  }
+
+  @override
+  bool shouldRepaint(BMIGaugePainter oldDelegate) => oldDelegate.bmi != bmi;
 }
