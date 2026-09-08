@@ -1,6 +1,8 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:fitora/core/services/shareable_image_service.dart';
+import 'package:fitora/features/progress/domain/shareable_milestone_models.dart';
 import 'package:fitora/features/gamification/providers/gamification_provider.dart';
 
 class StreakBanner extends ConsumerWidget {
@@ -84,6 +86,17 @@ class StreakBanner extends ConsumerWidget {
                   ),
                 ],
               ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.share_rounded, color: Colors.orangeAccent, size: 20),
+              tooltip: 'Share Streak Milestone',
+              onPressed: () {
+                final milestoneData = ShareableMilestoneData.streak7Day(
+                  streakDays: currentStreak,
+                  totalSteps: streak.currentStepStreak * 8500, // Estimated steps across streak
+                );
+                ShareableImageService.showMilestoneShareModal(context, milestoneData);
+              },
             ),
           ],
         ),
