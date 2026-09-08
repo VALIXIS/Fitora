@@ -276,6 +276,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                     ),
                   ),
                 ),
+              ),
             ),
           );
         }).toList(),

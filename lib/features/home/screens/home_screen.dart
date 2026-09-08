@@ -370,6 +370,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ],
           ),
         ),
+          ),
+        ),
         Align(
           alignment: Alignment.topCenter,
           child: ConfettiWidget(
