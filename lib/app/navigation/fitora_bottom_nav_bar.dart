@@ -1,6 +1,5 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:fitora/app/navigation/nav_items.dart';
 import 'package:fitora/shared/widgets/scale_on_press.dart';
 import 'package:fitora/core/theme/fitora_colors.dart';

@@ -303,13 +303,6 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  String _getBmiCategory(double bmi) {
-    if (bmi < 18.5) return 'Underweight';
-    if (bmi < 25) return 'Normal Weight';
-    if (bmi < 30) return 'Overweight';
-    return 'Obese';
-  }
-
   Widget _buildHealthMetric(BuildContext context, TextTheme tt, String label, String value) {
     final theme = Theme.of(context);
     return GlowContainer(
