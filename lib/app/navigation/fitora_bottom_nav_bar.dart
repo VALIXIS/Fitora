@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fitora/app/navigation/nav_items.dart';
+import 'package:fitora/shared/widgets/scale_on_press.dart';
 
 class FitoraBottomNavBar extends StatelessWidget {
   final int currentIndex;
@@ -19,8 +20,14 @@ class FitoraBottomNavBar extends StatelessWidget {
       destinations: [
         for (final item in FitoraNavItems.items)
           NavigationDestination(
-            icon: Icon(item.icon),
-            selectedIcon: Icon(item.selectedIcon),
+            icon: ScaleOnPress(
+              scaleDownTo: 0.92,
+              child: Icon(item.icon),
+            ),
+            selectedIcon: ScaleOnPress(
+              scaleDownTo: 0.92,
+              child: Icon(item.selectedIcon),
+            ),
             label: item.label,
           ),
       ],

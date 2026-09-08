@@ -15,6 +15,7 @@ import 'package:fitora/features/wellness/providers/wellness_provider.dart';
 import 'package:fitora/shared/widgets/fitora_background.dart';
 import 'package:fitora/features/profile/widgets/achievements_grid.dart';
 import 'package:fitora/core/ads/ad_service.dart';
+import 'package:fitora/core/services/haptic_service.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -661,8 +662,12 @@ void showStepGoalPicker(BuildContext context, WidgetRef ref, int currentGoal) {
                     activeColor: FitoraColors.mintGreen,
                     inactiveColor: theme.colorScheme.onSurface.withValues(alpha: 0.12),
                     onChanged: (val) {
+                      final newGoal = (val / 500).round() * 500;
+                      if (newGoal != tempGoal) {
+                        ref.read(hapticServiceProvider).sliderChange();
+                      }
                       setState(() {
-                        tempGoal = (val / 500).round() * 500;
+                        tempGoal = newGoal;
                       });
                     },
                   ),

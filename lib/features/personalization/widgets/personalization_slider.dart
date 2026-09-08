@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fitora/core/constants/spacing.dart';
+import 'package:fitora/core/services/haptic_service.dart';
 
-class PersonalizationSlider extends StatefulWidget {
+class PersonalizationSlider extends ConsumerStatefulWidget {
   final double? value;
   final ValueChanged<double> onChanged;
   final String label;
@@ -21,10 +23,10 @@ class PersonalizationSlider extends StatefulWidget {
   });
 
   @override
-  State<PersonalizationSlider> createState() => _PersonalizationSliderState();
+  ConsumerState<PersonalizationSlider> createState() => _PersonalizationSliderState();
 }
 
-class _PersonalizationSliderState extends State<PersonalizationSlider> {
+class _PersonalizationSliderState extends ConsumerState<PersonalizationSlider> {
   late double _currentValue;
 
   @override
@@ -78,6 +80,11 @@ class _PersonalizationSliderState extends State<PersonalizationSlider> {
             min: 0.0,
             max: 1.0,
             onChanged: (val) {
+              final oldStep = (_currentValue * 20).round();
+              final newStep = (val * 20).round();
+              if (oldStep != newStep) {
+                ref.read(hapticServiceProvider).sliderChange();
+              }
               setState(() => _currentValue = val);
               widget.onChanged(val);
             },
