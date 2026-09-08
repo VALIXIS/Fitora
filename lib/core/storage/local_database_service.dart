@@ -340,6 +340,18 @@ class LocalDatabaseService {
     return null;
   }
 
+  /// Fetches all daily log records for cloud backup synchronization.
+  Future<List<DailyLogRecord>> getAllDailyLogs() async {
+    try {
+      final db = await database;
+      final results = await db.query(_tableName, orderBy: 'date ASC');
+      return results.map((row) => DailyLogRecord.fromMap(row)).toList();
+    } catch (e, st) {
+      AppLogger.error('getAllDailyLogs error: $e', st);
+      return [];
+    }
+  }
+
   // ---------------------------------------------------------------------------
   // High-Performance Historical SQL Queries (30-day, 90-day, 1-year analytics)
   // ---------------------------------------------------------------------------

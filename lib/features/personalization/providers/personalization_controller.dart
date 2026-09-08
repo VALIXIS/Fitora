@@ -97,6 +97,8 @@ class PersonalizationController extends StateNotifier<PersonalizationViewState> 
     );
   }
 
+  Future<void> reloadProfile() => _load();
+
   Future<void> ensureLoaded() => _loadFuture;
 
   void setStep(int index) {
