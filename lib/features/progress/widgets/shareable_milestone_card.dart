@@ -68,196 +68,200 @@ class ShareableMilestoneCardWidget extends StatelessWidget {
 
               // Main Card Content
               Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: FitoraSpacing.xl,
-                  vertical: FitoraSpacing.xxl,
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    // Header: Brand Title & Logo
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                padding: const EdgeInsets.all(FitoraSpacing.md),
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: SizedBox(
+                    width: width - (FitoraSpacing.md * 2),
+                    height: height - (FitoraSpacing.md * 2),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: FitoraColors.mintGreen.withValues(alpha: 0.15),
-                            border: Border.all(
-                              color: FitoraColors.mintGreen.withValues(alpha: 0.4),
-                            ),
-                          ),
-                          child: const Icon(
-                            Icons.bolt_rounded,
-                            color: FitoraColors.mintGreen,
-                            size: 20,
-                          ),
-                        ),
-                        const SizedBox(width: FitoraSpacing.sm),
-                        Text(
-                          'FITORA',
-                          style: TextStyle(
-                            fontFamily: 'Roboto',
-                            fontSize: 22,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 4.0,
-                            color: Colors.white,
-                            shadows: [
-                              Shadow(
-                                color: FitoraColors.mintGreen.withValues(alpha: 0.5),
-                                blurRadius: 10,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    // Center Hero Section: Badge Icon & Highlight Ring
-                    Column(
-                      children: [
-                        Stack(
-                          alignment: Alignment.center,
+                        // Header: Brand Title & Logo
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            // Outer Glow Ring
                             Container(
-                              width: 140,
-                              height: 140,
+                              padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: data.accentColor.withValues(alpha: 0.08),
+                                color: FitoraColors.mintGreen.withValues(alpha: 0.15),
                                 border: Border.all(
-                                  color: data.accentColor.withValues(alpha: 0.25),
-                                  width: 2,
+                                  color: FitoraColors.mintGreen.withValues(alpha: 0.4),
                                 ),
                               ),
+                              child: const Icon(
+                                Icons.bolt_rounded,
+                                color: FitoraColors.mintGreen,
+                                size: 20,
+                              ),
                             ),
-                            // Inner Badge Container
-                            Container(
-                              width: 110,
-                              height: 110,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                gradient: RadialGradient(
-                                  colors: [
-                                    data.accentColor.withValues(alpha: 0.3),
-                                    data.accentColor.withValues(alpha: 0.05),
-                                  ],
-                                ),
-                                border: Border.all(
-                                  color: data.accentColor,
-                                  width: 2.5,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: data.accentColor.withValues(alpha: 0.4),
-                                    blurRadius: 20,
-                                    spreadRadius: 2,
+                            const SizedBox(width: FitoraSpacing.sm),
+                            Text(
+                              'FITORA',
+                              style: TextStyle(
+                                fontFamily: 'Roboto',
+                                fontSize: 22,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 4.0,
+                                color: Colors.white,
+                                shadows: [
+                                  Shadow(
+                                    color: FitoraColors.mintGreen.withValues(alpha: 0.5),
+                                    blurRadius: 10,
                                   ),
                                 ],
-                              ),
-                              child: Icon(
-                                data.icon,
-                                color: data.accentColor,
-                                size: 54,
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: FitoraSpacing.xl),
 
-                        // Milestone Title & Subtitle
-                        Text(
-                          data.title,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 1.5,
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(height: FitoraSpacing.xs),
-                        Text(
-                          data.subtitle,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.white.withValues(alpha: 0.7),
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        const SizedBox(height: FitoraSpacing.xl),
-
-                        // Metric Box
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: FitoraSpacing.xl,
-                            vertical: FitoraSpacing.md,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.04),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.08),
+                        // Center Hero Section: Badge Icon & Highlight Ring
+                        Column(
+                          children: [
+                            Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                // Outer Glow Ring
+                                Container(
+                                  width: 120,
+                                  height: 120,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: data.accentColor.withValues(alpha: 0.08),
+                                    border: Border.all(
+                                      color: data.accentColor.withValues(alpha: 0.25),
+                                      width: 2,
+                                    ),
+                                  ),
+                                ),
+                                // Inner Badge Container
+                                Container(
+                                  width: 96,
+                                  height: 96,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    gradient: RadialGradient(
+                                      colors: [
+                                        data.accentColor.withValues(alpha: 0.3),
+                                        data.accentColor.withValues(alpha: 0.05),
+                                      ],
+                                    ),
+                                    border: Border.all(
+                                      color: data.accentColor,
+                                      width: 2.5,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: data.accentColor.withValues(alpha: 0.4),
+                                        blurRadius: 20,
+                                        spreadRadius: 2,
+                                      ),
+                                    ],
+                                  ),
+                                  child: Icon(
+                                    data.icon,
+                                    color: data.accentColor,
+                                    size: 48,
+                                  ),
+                                ),
+                              ],
                             ),
-                          ),
-                          child: Column(
-                            children: [
-                              Text(
-                                data.metricValue,
-                                style: TextStyle(
-                                  fontSize: 34,
-                                  fontWeight: FontWeight.w900,
-                                  color: data.accentColor,
-                                  letterSpacing: 1.0,
+                            const SizedBox(height: FitoraSpacing.md),
+
+                            // Milestone Title & Subtitle
+                            Text(
+                              data.title,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 1.5,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(height: FitoraSpacing.xs),
+                            Text(
+                              data.subtitle,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Colors.white.withValues(alpha: 0.7),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(height: FitoraSpacing.md),
+
+                            // Metric Box
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: FitoraSpacing.xl,
+                                vertical: FitoraSpacing.sm,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.04),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.08),
                                 ),
                               ),
-                              const SizedBox(height: 2),
+                              child: Column(
+                                children: [
+                                  Text(
+                                    data.metricValue,
+                                    style: TextStyle(
+                                      fontSize: 32,
+                                      fontWeight: FontWeight.w900,
+                                      color: data.accentColor,
+                                      letterSpacing: 1.0,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    data.metricUnit,
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 1.5,
+                                      color: Colors.white.withValues(alpha: 0.5),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        // Footer: Watermark & Date Stamp
+                        Column(
+                          children: [
+                            if (data.userName != null && data.userName!.isNotEmpty) ...[
                               Text(
-                                data.metricUnit,
+                                'ATHLETE: ${data.userName!.toUpperCase()}',
                                 style: TextStyle(
-                                  fontSize: 10,
+                                  fontSize: 11,
                                   fontWeight: FontWeight.bold,
-                                  letterSpacing: 1.5,
-                                  color: Colors.white.withValues(alpha: 0.5),
+                                  letterSpacing: 1.2,
+                                  color: FitoraColors.mintGreen.withValues(alpha: 0.9),
                                 ),
                               ),
+                              const SizedBox(height: 4),
                             ],
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    // Footer: Watermark & Date Stamp
-                    Column(
-                      children: [
-                        if (data.userName != null && data.userName!.isNotEmpty) ...[
-                          Text(
-                            'ATHLETE: ${data.userName!.toUpperCase()}',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 1.2,
-                              color: FitoraColors.mintGreen.withValues(alpha: 0.9),
+                            Text(
+                              'POWERED BY FITORA AI  •  ${_formatDate(data.date ?? DateTime.now())}',
+                              style: TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 1.5,
+                                color: Colors.white.withValues(alpha: 0.4),
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 4),
-                        ],
-                        Text(
-                          'POWERED BY FITORA AI  •  ${_formatDate(data.date ?? DateTime.now())}',
-                          style: TextStyle(
-                            fontSize: 9,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 1.5,
-                            color: Colors.white.withValues(alpha: 0.4),
-                          ),
+                          ],
                         ),
                       ],
                     ),
-                  ],
+                  ),
                 ),
               ),
             ],

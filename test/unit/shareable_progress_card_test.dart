@@ -42,6 +42,10 @@ void main() {
 
   group('ShareableMilestoneCardWidget Widget Tests', () {
     testWidgets('renders 9:16 aspect ratio milestone card', (tester) async {
+      tester.view.physicalSize = const Size(1080, 1920);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
       final milestoneData = ShareableMilestoneData.streak7Day(
         streakDays: 7,
         totalSteps: 60000,
@@ -74,6 +78,10 @@ void main() {
     });
 
     testWidgets('RepaintBoundary wraps milestone card in share modal', (tester) async {
+      tester.view.physicalSize = const Size(1080, 1920);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
       final milestoneData = ShareableMilestoneData.achievement(
         title: 'Hydration Hero',
         description: 'Met hydration goal for 7 consecutive days',
