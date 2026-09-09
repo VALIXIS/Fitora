@@ -15,6 +15,7 @@ import 'package:fitora/shared/widgets/glow_container.dart';
 import 'package:fitora/features/wellness/providers/wellness_provider.dart';
 import 'package:fitora/shared/widgets/fitora_background.dart';
 import 'package:fitora/features/profile/widgets/achievements_grid.dart';
+import 'package:fitora/features/cloud_backup/widgets/cloud_backup_modal.dart';
 import 'package:fitora/core/ads/ad_service.dart';
 import 'package:fitora/core/services/haptic_service.dart';
 
@@ -91,7 +92,7 @@ class ProfileScreen extends ConsumerWidget {
                     const SizedBox(height: FitoraSpacing.xl),
 
                     _buildSectionTitle(context, textTheme, 'QUICK ACTIONS'),
-                    _buildQuickActions(context, textTheme),
+                    _buildQuickActions(context, textTheme, ref),
                     const SizedBox(height: FitoraSpacing.xl),
 
                     const AchievementsGrid(),
@@ -118,7 +119,7 @@ class ProfileScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: FitoraSpacing.md),
                     const FitoraNativeAdCard(),
-                    const SizedBox(height: 100),
+                    const SizedBox(height: 130),
                   ]),
                 ),
               ),
@@ -403,14 +404,14 @@ class ProfileScreen extends ConsumerWidget {
     ]);
   }
 
-  Widget _buildQuickActions(BuildContext context, TextTheme tt) {
+  Widget _buildQuickActions(BuildContext context, TextTheme tt, WidgetRef ref) {
     return _buildCard(context, [
       _buildActionTile(
         context,
         tt,
         Icons.cloud_sync_rounded,
         'Cloud Backup & Restore',
-        onTap: () => context.pushNamed(AppRouteNames.settings),
+        onTap: () => showCloudBackupModal(context, ref),
       ),
       _buildDivider(context),
       _buildActionTile(

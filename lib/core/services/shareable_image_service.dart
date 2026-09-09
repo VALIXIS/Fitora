@@ -71,6 +71,7 @@ class ShareableImageService {
 
     await showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       backgroundColor: const Color(0xFF0E1312),
       shape: const RoundedRectangleBorder(

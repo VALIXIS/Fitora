@@ -57,6 +57,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   void _showNotificationsModal(BuildContext context) {
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) {
@@ -274,21 +275,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         FitoraBackground(
           child: Scaffold(
         backgroundColor: Colors.transparent,
-        floatingActionButton: Semantics(
-          button: true,
-          label: 'Quick Log Workout',
-          hint: 'Opens workout logging modal',
-          child: ScaleOnPress(
-            child: FloatingActionButton.extended(
-              onPressed: () {
-                ref.read(hapticServiceProvider).buttonPress();
-                LogWorkoutModal.show(context);
-              },
-              tooltip: 'Quick Log Workout',
-              label: const Text('Quick Log', style: TextStyle(fontWeight: FontWeight.bold)),
-              icon: const Icon(Icons.add_rounded),
-              backgroundColor: FitoraColors.mintGreen,
-              foregroundColor: Colors.black,
+        floatingActionButton: Padding(
+          padding: const EdgeInsets.only(bottom: 80),
+          child: Semantics(
+            button: true,
+            label: 'Quick Log Workout',
+            hint: 'Opens workout logging modal',
+            child: ScaleOnPress(
+              child: FloatingActionButton.extended(
+                onPressed: () {
+                  ref.read(hapticServiceProvider).buttonPress();
+                  LogWorkoutModal.show(context);
+                },
+                tooltip: 'Quick Log Workout',
+                label: const Text('Quick Log', style: TextStyle(fontWeight: FontWeight.bold)),
+                icon: const Icon(Icons.add_rounded),
+                backgroundColor: FitoraColors.mintGreen,
+                foregroundColor: Colors.black,
+              ),
             ),
           ),
         ),
@@ -363,7 +367,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     _buildDailyGoals(textTheme, today),
                     const SizedBox(height: FitoraSpacing.xl),
 
-                    const SizedBox(height: 100), // Bottom scroll padding
+                    // ── Bottom Banner Ad Placement ──────────────────────────────
+                    const Center(child: FitoraBannerAd()),
+                    const SizedBox(height: FitoraSpacing.lg),
+
+                    const SizedBox(height: 130), // Bottom scroll padding
                   ]),
                 ),
               ),

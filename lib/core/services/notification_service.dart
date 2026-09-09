@@ -439,6 +439,34 @@ class NotificationService {
           );
         }
       }
+
+      // Daily Morning Sleep Log Reminder (8:00 AM / 08:00)
+      if (sleepEnabled) {
+        final morningSleepSchedule = tz.TZDateTime(
+          tz.local,
+          targetDate.year,
+          targetDate.month,
+          targetDate.day,
+          8,
+          0,
+        );
+        if (morningSleepSchedule.isAfter(now)) {
+          final id = 600 + dayOffset;
+          await _plugin.zonedSchedule(
+            id: id,
+            title: 'How did you sleep last night? 🌙',
+            body: 'Tap to log your sleep, check your recovery score & start your daily streak!',
+            scheduledDate: morningSleepSchedule,
+            notificationDetails: const NotificationDetails(
+              android: androidSleepDetails,
+              iOS: DarwinNotificationDetails(
+                categoryIdentifier: 'health_reminders',
+              ),
+            ),
+            androidScheduleMode: scheduleMode,
+          );
+        }
+      }
     }
   }
 

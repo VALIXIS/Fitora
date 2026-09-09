@@ -68,6 +68,7 @@ class PermissionManager {
     AppLogger.info('[PM] showing Step Tracking custom sheet');
     final userTappedAllow = await showModalBottomSheet<bool>(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       isDismissible: false,
@@ -122,6 +123,7 @@ class PermissionManager {
     AppLogger.info('[PM] showing Stay on Track custom sheet');
     final userTappedAllow = await showModalBottomSheet<bool>(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       // Allow drag/dismiss so the user is NEVER stuck if something goes wrong

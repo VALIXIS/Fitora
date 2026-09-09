@@ -159,7 +159,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                   _buildStreakCard(textTheme),
                   const SizedBox(height: FitoraSpacing.lg),
                   const FitoraNativeAdCard(),
-                  const SizedBox(height: 100), // Bottom scroll padding
+                  const SizedBox(height: 130), // Bottom scroll padding
                 ]),
               ),
             ),

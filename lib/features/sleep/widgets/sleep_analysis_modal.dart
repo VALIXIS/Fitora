@@ -10,6 +10,7 @@ import 'package:fitora/core/services/haptic_service.dart';
 Future<void> showSleepAnalysisModal(BuildContext context, WidgetRef ref) async {
   await showModalBottomSheet(
     context: context,
+    useRootNavigator: true,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     builder: (context) => const _SleepAnalysisModal(),

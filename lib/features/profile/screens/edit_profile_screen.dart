@@ -6,6 +6,7 @@ import 'package:fitora/core/theme/fitora_colors.dart';
 import 'package:fitora/features/personalization/domain/personalization_models.dart';
 import 'package:fitora/features/personalization/providers/personalization_controller.dart';
 import 'package:fitora/features/auth/providers/auth_providers.dart';
+import 'package:fitora/core/services/haptic_service.dart';
 
 class EditProfileScreen extends ConsumerStatefulWidget {
   const EditProfileScreen({super.key});
@@ -77,8 +78,23 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       );
 
       ref.read(personalizationControllerProvider.notifier).updateProfile(updatedProfile);
+      ref.read(hapticServiceProvider).buttonPress();
       
       if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Row(
+              children: [
+                Icon(Icons.check_circle_rounded, color: FitoraColors.mintGreen),
+                SizedBox(width: 12),
+                Text('Profile updated successfully!', style: TextStyle(fontWeight: FontWeight.bold)),
+              ],
+            ),
+            backgroundColor: const Color(0xFF161E1C),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
         context.pop(); // Return to Profile
       }
     }
