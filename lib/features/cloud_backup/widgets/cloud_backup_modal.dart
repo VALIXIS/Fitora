@@ -149,8 +149,8 @@ class _CloudBackupModalContent extends ConsumerWidget {
                     Text(
                       backupState.status == CloudBackupSyncStatus.syncing
                           ? 'Syncing...'
-                          : backupState.lastSyncedAt != null
-                              ? 'Last synced ${_formatTimeAgo(backupState.lastSyncedAt!)}'
+                          : backupState.lastSyncTime != null
+                              ? 'Last synced ${_formatTimeAgo(backupState.lastSyncTime!)}'
                               : 'Not synced yet',
                       style: tt.bodySmall?.copyWith(
                         color: FitoraColors.mintGreen,
@@ -159,10 +159,10 @@ class _CloudBackupModalContent extends ConsumerWidget {
                     ),
                   ],
                 ),
-                if (backupState.errorMessage != null) ...[
+                if (backupState.lastError != null) ...[
                   const SizedBox(height: 10),
                   Text(
-                    backupState.errorMessage!,
+                    backupState.lastError!,
                     style: tt.bodySmall?.copyWith(color: FitoraColors.errorRed),
                   ),
                 ],
@@ -188,11 +188,11 @@ class _CloudBackupModalContent extends ConsumerWidget {
                         ? null
                         : () async {
                             ref.read(hapticServiceProvider).buttonPress();
-                            await backupNotifier.syncCloudToLocal();
+                            await backupNotifier.syncNow();
                           },
-                    icon: const Icon(Icons.download_rounded, color: FitoraColors.mintGreen, size: 20),
+                    icon: const Icon(Icons.refresh_rounded, color: FitoraColors.mintGreen, size: 20),
                     label: const Text(
-                      'Restore',
+                      'Sync',
                       style: TextStyle(color: FitoraColors.mintGreen, fontWeight: FontWeight.bold),
                     ),
                   ),
@@ -215,7 +215,7 @@ class _CloudBackupModalContent extends ConsumerWidget {
                         ? null
                         : () async {
                             ref.read(hapticServiceProvider).buttonPress();
-                            await backupNotifier.syncLocalToCloud();
+                            await backupNotifier.syncNow();
                           },
                     icon: backupState.status == CloudBackupSyncStatus.syncing
                         ? const SizedBox(
