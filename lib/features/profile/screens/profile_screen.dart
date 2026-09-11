@@ -707,82 +707,126 @@ class AnimatedBMIGauge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     String category = 'Normal';
-    if (bmi < 18.5) category = 'Underweight';
-    else if (bmi < 25) category = 'Normal';
-    else if (bmi < 30) category = 'Overweight';
-    else category = 'Obese';
+    Color categoryColor = FitoraColors.mintGreen;
+    
+    if (bmi < 18.5) {
+      category = 'Underweight';
+      categoryColor = Colors.blueAccent;
+    } else if (bmi < 25) {
+      category = 'Normal';
+      categoryColor = FitoraColors.mintGreen;
+    } else if (bmi < 30) {
+      category = 'Overweight';
+      categoryColor = FitoraColors.warningOrange;
+    } else {
+      category = 'Obese';
+      categoryColor = FitoraColors.errorRed;
+    }
 
+    final theme = Theme.of(context);
+    
     return TweenAnimationBuilder<double>(
-      tween: Tween<double>(begin: 0, end: bmi),
-      duration: const Duration(milliseconds: 1500),
-      curve: Curves.elasticOut,
+      tween: Tween<double>(begin: 15.0, end: bmi),
+      duration: const Duration(milliseconds: 1400),
+      curve: Curves.easeOutCubic,
       builder: (context, value, child) {
-        return SizedBox(
-          height: 120,
-          child: CustomPaint(
-            painter: BMIGaugePainter(value),
-            child: Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  const SizedBox(height: 30),
-                  Text(
-                    bmi.toStringAsFixed(1),
-                    style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
+        final displayBmi = value.clamp(15.0, 40.0);
+        final percent = (displayBmi - 15) / (40 - 15);
+        
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'BMI Score',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      category,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: categoryColor,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                Text(
+                  value.toStringAsFixed(1),
+                  style: theme.textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.w900,
+                    color: theme.colorScheme.onSurface,
                   ),
-                  Text(
-                    category,
-                    style: const TextStyle(fontSize: 12, color: Colors.white70),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              height: 24,
+              child: Stack(
+                alignment: Alignment.centerLeft,
+                children: [
+                  // Track background
+                  Container(
+                    height: 8,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(4),
+                      gradient: const LinearGradient(
+                        colors: [
+                          Colors.blueAccent,
+                          FitoraColors.mintGreen,
+                          FitoraColors.warningOrange,
+                          FitoraColors.errorRed,
+                        ],
+                        stops: [0.1, 0.4, 0.7, 0.9],
+                      ),
+                    ),
+                  ),
+                  // Thumb
+                  Positioned(
+                    left: percent * (MediaQuery.of(context).size.width - 64 - 24) , // approx available width
+                    child: Container(
+                      width: 24,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.surface,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: categoryColor, width: 4),
+                        boxShadow: [
+                          BoxShadow(
+                            color: categoryColor.withValues(alpha: 0.4),
+                            blurRadius: 8,
+                            spreadRadius: 2,
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ],
               ),
             ),
-          ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('15', style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                Text('25', style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                Text('40+', style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+              ],
+            ),
+          ],
         );
       },
     );
   }
-}
-
-class BMIGaugePainter extends CustomPainter {
-  final double bmi;
-  BMIGaugePainter(this.bmi);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final rect = Rect.fromLTWH(0, 0, size.width, size.height * 2);
-    final paint = Paint()
-      ..shader = const LinearGradient(
-        colors: [Colors.blue, Colors.green, Colors.orange, Colors.red],
-        stops: [0.0, 0.3, 0.6, 1.0],
-      ).createShader(rect)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 15
-      ..strokeCap = StrokeCap.round;
-
-    canvas.drawArc(rect, math.pi, math.pi, false, paint);
-
-    // Needle
-    final needlePaint = Paint()
-      ..color = Colors.white
-      ..style = PaintingStyle.fill;
-    
-    // clamp bmi to 15-40 for the gauge display
-    final displayBmi = bmi.clamp(15.0, 40.0);
-    final percent = (displayBmi - 15) / (40 - 15);
-    final angle = math.pi + (percent * math.pi);
-    
-    final cx = size.width / 2;
-    final cy = size.height;
-    final r = size.width / 2 - 15;
-    
-    final nx = cx + r * math.cos(angle);
-    final ny = cy + r * math.sin(angle);
-    
-    canvas.drawCircle(Offset(nx, ny), 8, needlePaint);
-  }
-
-  @override
-  bool shouldRepaint(BMIGaugePainter oldDelegate) => oldDelegate.bmi != bmi;
 }

@@ -229,6 +229,7 @@ class _SleepAnalysisModalState extends ConsumerState<_SleepAnalysisModal> {
                 ),
               ),
             ),
+            const SizedBox(height: 32),
           ],
         ),
       ),

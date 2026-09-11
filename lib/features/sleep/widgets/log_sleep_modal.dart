@@ -300,6 +300,7 @@ class _LogSleepModalState extends ConsumerState<_LogSleepModal> {
                 ),
               ),
             ),
+            const SizedBox(height: 32),
           ],
         ),
       ),

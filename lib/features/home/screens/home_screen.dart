@@ -276,7 +276,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           child: Scaffold(
         backgroundColor: Colors.transparent,
         floatingActionButton: Padding(
-          padding: const EdgeInsets.only(bottom: 80),
+          padding: const EdgeInsets.only(bottom: 140),
           child: Semantics(
             button: true,
             label: 'Quick Log Workout',

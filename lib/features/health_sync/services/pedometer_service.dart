@@ -1,5 +1,7 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:math';
+import 'package:fitora/core/health/services/foreground_step_service.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../domain/health_sync_models.dart';
 
 class PedometerService {
@@ -8,21 +10,20 @@ class PedometerService {
   PedometerService._internal();
 
   StreamController<int>? _stepStreamController;
-  Timer? _simulationTimer;
-  int _currentSteps = 0; // Starts at 0, no hardcoded health fallback
+  int _currentSteps = 0;
   bool _isWalking = false;
   HealthPermissionStatus _permissionStatus = HealthPermissionStatus.notDetermined;
+  StreamSubscription<int>? _foregroundSub;
 
   bool get isWalking => _isWalking;
   int get currentSteps => _currentSteps;
   HealthPermissionStatus get permissionStatus => _permissionStatus;
 
-  // Stream of realtime steps count
   Stream<int> get stepStream {
     if (_stepStreamController == null || _stepStreamController!.isClosed) {
       _stepStreamController = StreamController<int>.broadcast(
-        onListen: _startSimulation,
-        onCancel: _stopSimulation,
+        onListen: _startListeningToForeground,
+        onCancel: _stopListeningToForeground,
       );
     }
     return _stepStreamController!.stream;
@@ -40,9 +41,19 @@ class PedometerService {
   }
 
   Future<HealthPermissionStatus> requestPermissions() async {
-    await Future.delayed(const Duration(milliseconds: 600)); // OS pop-up speed
+    await Future.delayed(const Duration(milliseconds: 600));
+    
+    // Request activity recognition
+    await Permission.activityRecognition.request();
+    // Request notification permission for the foreground service
+    await Permission.notification.request();
+    
     _permissionStatus = HealthPermissionStatus.authorized;
     _emitCurrentSteps();
+    
+    // Start foreground service when permission is granted
+    await ForegroundStepService().startService();
+    
     return _permissionStatus;
   }
 
@@ -50,9 +61,6 @@ class PedometerService {
     _isWalking = !_isWalking;
     if (_isWalking) {
       _emitCurrentSteps();
-      _startSimulation();
-    } else {
-      _stopSimulation();
     }
   }
 
@@ -64,20 +72,16 @@ class PedometerService {
     }
   }
 
-  void _startSimulation() {
-    _simulationTimer?.cancel();
-    if (!_isWalking) return;
-    // Simulate walking: increments step counter by 1-2 steps every 900ms
-    _simulationTimer = Timer.periodic(const Duration(milliseconds: 900), (timer) {
-      if (_isWalking && _permissionStatus == HealthPermissionStatus.authorized) {
-        _currentSteps += 1 + Random().nextInt(2);
-        _emitCurrentSteps();
-      }
+  void _startListeningToForeground() {
+    _foregroundSub?.cancel();
+    _foregroundSub = ForegroundStepService().stepStream.listen((steps) {
+      _currentSteps = steps;
+      _emitCurrentSteps();
     });
   }
 
-  void _stopSimulation() {
-    _simulationTimer?.cancel();
-    _simulationTimer = null;
+  void _stopListeningToForeground() {
+    _foregroundSub?.cancel();
+    _foregroundSub = null;
   }
 }
