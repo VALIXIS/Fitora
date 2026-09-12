@@ -1,7 +1,9 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:math';
-import 'package:fitora/core/health/services/foreground_step_service.dart';
+import 'package:pedometer/pedometer.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:fitora/core/utils/app_logger.dart';
 import '../domain/health_sync_models.dart';
 
 class PedometerService {
@@ -11,9 +13,12 @@ class PedometerService {
 
   StreamController<int>? _stepStreamController;
   int _currentSteps = 0;
+  int _baseSteps = -1;
+  String _currentDate = '';
+  
   bool _isWalking = false;
   HealthPermissionStatus _permissionStatus = HealthPermissionStatus.notDetermined;
-  StreamSubscription<int>? _foregroundSub;
+  StreamSubscription<StepCount>? _pedometerSub;
 
   bool get isWalking => _isWalking;
   int get currentSteps => _currentSteps;
@@ -22,8 +27,8 @@ class PedometerService {
   Stream<int> get stepStream {
     if (_stepStreamController == null || _stepStreamController!.isClosed) {
       _stepStreamController = StreamController<int>.broadcast(
-        onListen: _startListeningToForeground,
-        onCancel: _stopListeningToForeground,
+        onListen: _startListeningToPedometer,
+        onCancel: _stopListeningToPedometer,
       );
     }
     return _stepStreamController!.stream;
@@ -42,18 +47,9 @@ class PedometerService {
 
   Future<HealthPermissionStatus> requestPermissions() async {
     await Future.delayed(const Duration(milliseconds: 600));
-    
-    // Request activity recognition
     await Permission.activityRecognition.request();
-    // Request notification permission for the foreground service
-    await Permission.notification.request();
-    
     _permissionStatus = HealthPermissionStatus.authorized;
     _emitCurrentSteps();
-    
-    // Start foreground service when permission is granted
-    await ForegroundStepService().startService();
-    
     return _permissionStatus;
   }
 
@@ -72,16 +68,44 @@ class PedometerService {
     }
   }
 
-  void _startListeningToForeground() {
-    _foregroundSub?.cancel();
-    _foregroundSub = ForegroundStepService().stepStream.listen((steps) {
-      _currentSteps = steps;
-      _emitCurrentSteps();
-    });
+  Future<void> _startListeningToPedometer() async {
+    _pedometerSub?.cancel();
+    final prefs = await SharedPreferences.getInstance();
+
+    _pedometerSub = Pedometer.stepCountStream.listen(
+      (StepCount event) async {
+        final now = DateTime.now();
+        final dateStr = '${now.year}-${now.month}-${now.day}';
+        
+        if (_currentDate != dateStr) {
+          _currentDate = dateStr;
+          final savedDate = prefs.getString('fitora_step_date');
+          
+          if (savedDate == dateStr) {
+            _baseSteps = prefs.getInt('fitora_base_steps') ?? event.steps;
+          } else {
+            _baseSteps = event.steps;
+            await prefs.setString('fitora_step_date', _currentDate);
+            await prefs.setInt('fitora_base_steps', _baseSteps);
+          }
+        }
+
+        if (event.steps < _baseSteps) {
+           _baseSteps = 0;
+           await prefs.setInt('fitora_base_steps', _baseSteps);
+        }
+        
+        _currentSteps = event.steps - _baseSteps;
+        _emitCurrentSteps();
+      },
+      onError: (error) {
+        AppLogger.error('Pedometer error', error);
+      },
+    );
   }
 
-  void _stopListeningToForeground() {
-    _foregroundSub?.cancel();
-    _foregroundSub = null;
+  void _stopListeningToPedometer() {
+    _pedometerSub?.cancel();
+    _pedometerSub = null;
   }
 }

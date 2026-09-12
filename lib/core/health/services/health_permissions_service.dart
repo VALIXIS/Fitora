@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:fitora/core/health/domain/health_models.dart';
 import 'package:fitora/core/health/data/sensor_repository.dart';
-import 'package:fitora/core/health/services/foreground_step_service.dart';
 
 final healthPermissionsServiceProvider = Provider<HealthPermissionsService>(
   (ref) => HealthPermissionsService(ref.read(sensorRepositoryProvider)),
@@ -53,9 +52,7 @@ class HealthPermissionsService {
       return SensorStatus.permissionRequired;
     }
     
-    // Permission granted, start foreground tracking
-    await ForegroundStepService().startService();
-
+    // Permission granted
     final snap = await _sensorRepo.getDebugSnapshot();
     if (!snap.sensorAvailable) {
       return SensorStatus.unavailable;

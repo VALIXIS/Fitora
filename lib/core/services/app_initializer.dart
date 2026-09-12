@@ -26,14 +26,6 @@ class AppInitializer {
     AppLogger.info('AppInitializer: BackgroundSyncManager initialized at ${s.elapsedMilliseconds}ms');
     
     // Initialize continuous foreground step service
-    await ForegroundStepService().initialize();
-    
-    // Start it if permission is already granted
-    final isPermitted = await Permission.activityRecognition.isGranted;
-    if (isPermitted) {
-      await ForegroundStepService().startService();
-    }
-    
-    AppLogger.info('AppInitializer: ForegroundStepService initialized at ${s.elapsedMilliseconds}ms');
+    AppLogger.info('AppInitializer: ForegroundStepService disabled at ${s.elapsedMilliseconds}ms');
   }
 }
