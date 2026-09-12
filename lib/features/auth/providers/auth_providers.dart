@@ -12,6 +12,7 @@ import 'package:fitora/features/auth/models/auth_action_state.dart';
 import 'package:fitora/features/auth/models/auth_session.dart';
 import 'package:fitora/features/auth/models/auth_user.dart';
 import 'package:fitora/features/auth/services/firebase_auth_service.dart';
+import 'package:fitora/features/cloud_backup/providers/cloud_backup_providers.dart';
 
 final firebaseAuthServiceProvider = Provider<FirebaseAuthService>((ref) {
   return FirebaseAuthService(GoogleSignIn());
@@ -122,6 +123,16 @@ class AuthActionController extends StateNotifier<AuthActionState> {
           action: null,
         );
         return;
+      }
+
+      // Automatically sync cloud backup for authenticated non-guest users
+      if (action != AuthActionType.guest && !user.isGuest) {
+        try {
+          final syncService = _ref.read(cloudBackupSyncServiceProvider);
+          await syncService.performSync(user.id);
+        } catch (e, st) {
+          AppLogger.error('Failed to sync cloud backup on login: $e', st);
+        }
       }
 
       state = state.copyWith(isLoading: false, action: null);

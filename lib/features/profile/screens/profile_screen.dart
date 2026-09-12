@@ -119,7 +119,7 @@ class ProfileScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: FitoraSpacing.md),
                     const FitoraNativeAdCard(),
-                    const SizedBox(height: 130),
+                    const SizedBox(height: 160),
                   ]),
                 ),
               ),

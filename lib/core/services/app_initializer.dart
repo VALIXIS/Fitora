@@ -5,6 +5,7 @@ import 'package:fitora/core/health/services/background_sync_service.dart';
 import 'package:fitora/core/health/services/foreground_step_service.dart';
 import 'package:fitora/core/storage/local_database_service.dart';
 import 'package:fitora/core/utils/app_logger.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class AppInitializer {
   static Future<void> initialize() async {
@@ -26,6 +27,13 @@ class AppInitializer {
     
     // Initialize continuous foreground step service
     await ForegroundStepService().initialize();
+    
+    // Start it if permission is already granted
+    final isPermitted = await Permission.activityRecognition.isGranted;
+    if (isPermitted) {
+      await ForegroundStepService().startService();
+    }
+    
     AppLogger.info('AppInitializer: ForegroundStepService initialized at ${s.elapsedMilliseconds}ms');
   }
 }

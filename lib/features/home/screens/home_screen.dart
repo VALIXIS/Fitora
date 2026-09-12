@@ -371,7 +371,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     const Center(child: FitoraBannerAd()),
                     const SizedBox(height: FitoraSpacing.lg),
 
-                    const SizedBox(height: 130), // Bottom scroll padding
+                    const SizedBox(height: 160), // Bottom scroll padding
                   ]),
                 ),
               ),
