@@ -33,7 +33,7 @@ final authStateProvider =
 
 final authActionProvider =
     StateNotifierProvider<AuthActionController, AuthActionState>((ref) {
-  return AuthActionController(ref.read(authRepositoryProvider));
+  return AuthActionController(ref.read(authRepositoryProvider), ref);
 });
 
 class AuthController extends StateNotifier<AuthSession> {
@@ -76,8 +76,9 @@ class AuthController extends StateNotifier<AuthSession> {
 
 class AuthActionController extends StateNotifier<AuthActionState> {
   final AuthRepository _repository;
+  final Ref _ref;
 
-  AuthActionController(this._repository) : super(AuthActionState.idle());
+  AuthActionController(this._repository, this._ref) : super(AuthActionState.idle());
 
   Future<void> signInWithGoogle() async {
     await _runAction(
@@ -126,7 +127,7 @@ class AuthActionController extends StateNotifier<AuthActionState> {
       }
 
       // Automatically sync cloud backup for authenticated non-guest users
-      if (action != AuthActionType.guest && !user.isGuest) {
+      if (action != AuthActionType.guest && !user.isAnonymous) {
         try {
           final syncService = _ref.read(cloudBackupSyncServiceProvider);
           await syncService.performSync(user.id);

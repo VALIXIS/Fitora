@@ -81,25 +81,33 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
         ? allSummaries.sublist(0, periodDays)
         : <DailyActivitySummary>[];
 
-    final weightKg = ref.watch(personalizationControllerProvider.select((s) => s.profile.weightKg));
+    final weightKg = ref.watch(
+      personalizationControllerProvider.select((s) => s.profile.weightKg),
+    );
     final hasWeight = weightKg != null && weightKg > 0;
 
     return FitoraBackground(
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        floatingActionButton: Semantics(
-          button: true,
-          label: 'Log Workout',
-          child: ScaleOnPress(
-            child: FloatingActionButton.extended(
-              onPressed: () {
-                ref.read(hapticServiceProvider).buttonPress();
-                LogWorkoutModal.show(context);
-              },
-              label: const Text('Log Workout', style: TextStyle(fontWeight: FontWeight.bold)),
-              icon: const Icon(Icons.add_rounded),
-              backgroundColor: FitoraColors.mintGreen,
-              foregroundColor: Colors.black,
+        floatingActionButton: Padding(
+          padding: const EdgeInsets.only(bottom: 120),
+          child: Semantics(
+            button: true,
+            label: 'Log Workout',
+            child: ScaleOnPress(
+              child: FloatingActionButton.extended(
+                onPressed: () {
+                  ref.read(hapticServiceProvider).buttonPress();
+                  LogWorkoutModal.show(context);
+                },
+                label: const Text(
+                  'Log Workout',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                icon: const Icon(Icons.add_rounded),
+                backgroundColor: FitoraColors.mintGreen,
+                foregroundColor: Colors.black,
+              ),
             ),
           ),
         ),
@@ -158,7 +166,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                   ],
                   _buildStreakCard(textTheme),
                   const SizedBox(height: FitoraSpacing.lg),
-                  const FitoraNativeAdCard(),
+                  const Center(child: FitoraBannerAd()),
                   const SizedBox(height: 160), // Bottom scroll padding
                 ]),
               ),
@@ -193,9 +201,15 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                color: theme.colorScheme.surfaceContainerHighest.withValues(
+                  alpha: 0.5,
+                ),
                 borderRadius: BorderRadius.circular(99),
-                border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5)),
+                border: Border.all(
+                  color: theme.colorScheme.outlineVariant.withValues(
+                    alpha: 0.5,
+                  ),
+                ),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -231,56 +245,64 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
       decoration: BoxDecoration(
         color: theme.colorScheme.onSurface.withValues(alpha: 0.04),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4)),
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
+        ),
       ),
-      child: Row(
-        children: options.map((opt) {
-          final isSelected = _selectedFilter == opt;
-          return Expanded(
-            child: Semantics(
-              button: true,
-              selected: isSelected,
-              label: '$opt filter',
-              hint: isSelected ? 'Selected' : 'Double tap to select',
-              child: GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _selectedFilter = opt;
-                  });
-                },
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(minHeight: 48),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 250),
-                    curve: Curves.easeOutCubic,
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      gradient: isSelected
-                          ? const LinearGradient(
-                              colors: [
-                                FitoraColors.mintGreen,
-                                FitoraColors.calmCyan,
-                              ],
-                            )
-                          : null,
-                    ),
-                    child: Text(
-                      opt,
-                      textAlign: TextAlign.center,
-                      style: textTheme.labelLarge?.copyWith(
-                        color: isSelected ? Colors.black : theme.colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.bold,
+      child:
+          Row(
+                children: options.map((opt) {
+                  final isSelected = _selectedFilter == opt;
+                  return Expanded(
+                    child: Semantics(
+                      button: true,
+                      selected: isSelected,
+                      label: '$opt filter',
+                      hint: isSelected ? 'Selected' : 'Double tap to select',
+                      child: GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _selectedFilter = opt;
+                          });
+                        },
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(minHeight: 48),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 250),
+                            curve: Curves.easeOutCubic,
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              gradient: isSelected
+                                  ? const LinearGradient(
+                                      colors: [
+                                        FitoraColors.mintGreen,
+                                        FitoraColors.calmCyan,
+                                      ],
+                                    )
+                                  : null,
+                            ),
+                            child: Text(
+                              opt,
+                              textAlign: TextAlign.center,
+                              style: textTheme.labelLarge?.copyWith(
+                                color: isSelected
+                                    ? Colors.black
+                                    : theme.colorScheme.onSurfaceVariant,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                ),
-              ),
-            ),
-          );
-        }).toList(),
-      ).animate().fadeIn(duration: 400.ms).slideX(begin: 0.1, end: 0, curve: Curves.easeOutCubic),
+                  );
+                }).toList(),
+              )
+              .animate()
+              .fadeIn(duration: 400.ms)
+              .slideX(begin: 0.1, end: 0, curve: Curves.easeOutCubic),
     );
   }
 
@@ -446,9 +468,13 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
       child: Container(
         padding: const EdgeInsets.all(FitoraSpacing.md),
         decoration: BoxDecoration(
-          color: theme.cardTheme.color ?? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+          color:
+              theme.cardTheme.color ??
+              theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5)),
+          border: Border.all(
+            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+          ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -637,9 +663,13 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
       child: Container(
         padding: const EdgeInsets.all(FitoraSpacing.xl),
         decoration: BoxDecoration(
-          color: theme.cardTheme.color ?? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+          color:
+              theme.cardTheme.color ??
+              theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5)),
+          border: Border.all(
+            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+          ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -760,7 +790,9 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                         goal > 0
                             ? 'Goal: ${goal.toStringAsFixed(1)} L (1 glass = 250ml)'
                             : 'Set Daily Water Goal',
-                        style: tt.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                        style: tt.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
                       ),
                     ],
                   ),
@@ -819,7 +851,10 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     final hours = sleep.totalSleep.inHours;
     final minutes = sleep.totalSleep.inMinutes.remainder(60);
 
-    final sleepGoalMinutes = ref.watch(settingsProvider).sleepTargetDurationMinutes.toDouble();
+    final sleepGoalMinutes = ref
+        .watch(settingsProvider)
+        .sleepTargetDurationMinutes
+        .toDouble();
     final progress = (totalMinutes / sleepGoalMinutes).clamp(0.0, 1.0);
 
     String qualityText = 'Unknown';
@@ -847,7 +882,9 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
 
     final goalHours = (sleepGoalMinutes / 60).toInt();
     final goalMins = (sleepGoalMinutes % 60).toInt();
-    final goalStr = goalMins > 0 ? '${goalHours}h ${goalMins}m' : '$goalHours hrs';
+    final goalStr = goalMins > 0
+        ? '${goalHours}h ${goalMins}m'
+        : '$goalHours hrs';
 
     return GestureDetector(
       onTap: () => showSleepAnalysisModal(context, ref),
@@ -858,9 +895,13 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
         child: Container(
           padding: const EdgeInsets.all(FitoraSpacing.xl),
           decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+            color: theme.colorScheme.surfaceContainerHighest.withValues(
+              alpha: 0.4,
+            ),
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4)),
+            border: Border.all(
+              color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
+            ),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -921,7 +962,9 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
               if (totalMinutes == 0) ...[
                 Text(
                   'Log your last night\'s sleep or set your target sleep schedule dial.',
-                  style: tt.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                  style: tt.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
                 ),
                 const SizedBox(height: FitoraSpacing.md),
                 Row(
@@ -952,7 +995,8 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                           child: CircularProgressIndicator(
                             value: progress,
                             strokeWidth: 7,
-                            backgroundColor: theme.colorScheme.onSurface.withValues(alpha: 0.08),
+                            backgroundColor: theme.colorScheme.onSurface
+                                .withValues(alpha: 0.08),
                             valueColor: const AlwaysStoppedAnimation<Color>(
                               FitoraColors.calmCyan,
                             ),
@@ -983,7 +1027,9 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                           const SizedBox(height: 2),
                           Text(
                             'Sleep Goal: $goalStr',
-                            style: tt.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                            style: tt.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
                           ),
                         ],
                       ),
@@ -1100,9 +1146,13 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
       child: Container(
         padding: const EdgeInsets.all(FitoraSpacing.lg),
         decoration: BoxDecoration(
-          color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+          color: theme.colorScheme.surfaceContainerHighest.withValues(
+            alpha: 0.4,
+          ),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4)),
+          border: Border.all(
+            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
+          ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1140,7 +1190,9 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                   padding: const EdgeInsets.only(bottom: 6, left: 4),
                   child: Text(
                     'kg',
-                    style: tt.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                    style: tt.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ),
               ],
@@ -1163,9 +1215,13 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
       child: Container(
         padding: const EdgeInsets.all(FitoraSpacing.lg),
         decoration: BoxDecoration(
-          color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+          color: theme.colorScheme.surfaceContainerHighest.withValues(
+            alpha: 0.4,
+          ),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4)),
+          border: Border.all(
+            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
+          ),
         ),
         child: Row(
           children: [
@@ -1204,7 +1260,9 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                   ),
                   Text(
                     'Keep the momentum going.',
-                    style: tt.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                    style: tt.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ],
               ),
@@ -1224,9 +1282,13 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
       child: Container(
         padding: const EdgeInsets.all(FitoraSpacing.xl),
         decoration: BoxDecoration(
-          color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+          color: theme.colorScheme.surfaceContainerHighest.withValues(
+            alpha: 0.4,
+          ),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4)),
+          border: Border.all(
+            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
+          ),
         ),
         child: Column(
           children: [
@@ -1246,7 +1308,9 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
             const SizedBox(height: FitoraSpacing.xs),
             Text(
               'Start tracking today to unlock insights.',
-              style: tt.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              style: tt.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
               textAlign: TextAlign.center,
             ),
           ],
@@ -1255,7 +1319,11 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     );
   }
 
-  void _showMoodDialog(BuildContext context, WidgetRef ref, String currentMood) {
+  void _showMoodDialog(
+    BuildContext context,
+    WidgetRef ref,
+    String currentMood,
+  ) {
     showDialog(
       context: context,
       builder: (context) {
@@ -1275,17 +1343,18 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
-            children: [
-              'Great',
-              'Good',
-              'Okay',
-              'Poor',
-              'Terrible'
-            ].map((mood) {
+            children: ['Great', 'Good', 'Okay', 'Poor', 'Terrible'].map((mood) {
               final isSelected = mood == currentMood;
               return ListTile(
-                title: Text(mood, style: tt.bodyLarge?.copyWith(color: isSelected ? Colors.amber : Colors.white70)),
-                trailing: isSelected ? const Icon(Icons.check, color: Colors.amber) : null,
+                title: Text(
+                  mood,
+                  style: tt.bodyLarge?.copyWith(
+                    color: isSelected ? Colors.amber : Colors.white70,
+                  ),
+                ),
+                trailing: isSelected
+                    ? const Icon(Icons.check, color: Colors.amber)
+                    : null,
                 onTap: () {
                   ref.read(wellnessProvider.notifier).logMood(mood);
                   Navigator.pop(context);
@@ -1319,7 +1388,10 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('Log 5 minutes of mindful breathing?', style: tt.bodyMedium?.copyWith(color: Colors.white70)),
+              Text(
+                'Log 5 minutes of mindful breathing?',
+                style: tt.bodyMedium?.copyWith(color: Colors.white70),
+              ),
               const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: () {
@@ -1327,11 +1399,13 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                   Navigator.pop(context);
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: FitoraColors.softEmerald.withValues(alpha: 0.2),
+                  backgroundColor: FitoraColors.softEmerald.withValues(
+                    alpha: 0.2,
+                  ),
                   foregroundColor: FitoraColors.softEmerald,
                 ),
                 child: const Text('Log 5 mins'),
-              )
+              ),
             ],
           ),
         );
@@ -1353,7 +1427,8 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
 
     final nextPeriod = cycleNotifier.getEstimatedNextPeriod();
     final stats = cycleNotifier.getStatistics();
-    final hasPrediction = nextPeriod != null && stats.completedIntervalsCount >= 2;
+    final hasPrediction =
+        nextPeriod != null && stats.completedIntervalsCount >= 2;
 
     String headline = 'Cycle Tracker';
     String sub = 'Keep logging to build your history';
@@ -1383,9 +1458,13 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
         child: Container(
           padding: const EdgeInsets.all(FitoraSpacing.xl),
           decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+            color: theme.colorScheme.surfaceContainerHighest.withValues(
+              alpha: 0.4,
+            ),
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4)),
+            border: Border.all(
+              color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
+            ),
           ),
           child: Row(
             children: [
@@ -1434,7 +1513,9 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
               ),
               Icon(
                 Icons.arrow_forward_ios_rounded,
-                color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                color: theme.colorScheme.onSurfaceVariant.withValues(
+                  alpha: 0.6,
+                ),
                 size: 16,
               ),
             ],
