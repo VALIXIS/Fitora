@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:fitora/core/constants/spacing.dart';
 import 'package:fitora/core/theme/fitora_colors.dart';
 import 'package:fitora/shared/widgets/glow_container.dart';
 import 'package:fitora/core/health/providers/health_providers.dart';
 import 'package:fitora/core/health/domain/health_models.dart';
+import 'package:fitora/features/progress/domain/progress_models.dart';
+import 'package:fitora/features/progress/providers/health_analytics_provider.dart';
+import 'package:fitora/features/progress/providers/progress_controller.dart';
 import 'package:fitora/features/wellness/providers/wellness_provider.dart';
 import 'package:fitora/features/wellness/domain/wellness_models.dart';
 import 'package:fitora/features/personalization/providers/personalization_controller.dart';
@@ -29,21 +33,14 @@ class ProgressScreen extends ConsumerStatefulWidget {
 }
 
 class _ProgressScreenState extends ConsumerState<ProgressScreen> {
-  String _selectedFilter = 'Week';
+  String _historyFilter = 'All'; // 'All', 'Workouts', 'Sleep', 'Hydration', 'Mood'
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
 
-  int get _periodDays {
-    switch (_selectedFilter) {
-      case 'Day':
-        return 1;
-      case 'Week':
-        return 7;
-      case 'Month':
-        return 30;
-      case 'Year':
-        return 365;
-      default:
-        return 7;
-    }
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   double _calculateDeltaPercentage(double currentVal, double priorVal) {
@@ -54,25 +51,13 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     return res.isNaN || res.isInfinite ? 0.0 : res;
   }
 
-  String _headerFilterLabel() {
-    switch (_selectedFilter) {
-      case 'Day':
-        return 'Today';
-      case 'Week':
-        return 'This Week';
-      case 'Month':
-        return 'This Month';
-      case 'Year':
-        return 'This Year';
-      default:
-        return 'This Week';
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-    final periodDays = _periodDays;
+    final theme = Theme.of(context);
+    final timeframe = ref.watch(healthTimeframeProvider);
+    final periodDays = timeframe.days;
+
     final allSummaries = ref.watch(healthActivityRangeProvider(periodDays * 2));
     final currentSummaries = allSummaries.length >= periodDays
         ? allSummaries.sublist(allSummaries.length - periodDays)
@@ -81,175 +66,623 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
         ? allSummaries.sublist(0, periodDays)
         : <DailyActivitySummary>[];
 
-    final weightKg = ref.watch(personalizationControllerProvider.select((s) => s.profile.weightKg));
+    final weightKg = ref.watch(
+      personalizationControllerProvider.select((s) => s.profile.weightKg),
+    );
     final hasWeight = weightKg != null && weightKg > 0;
 
-    return FitoraBackground(
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        floatingActionButton: Semantics(
-          button: true,
-          label: 'Log Workout',
-          child: ScaleOnPress(
-            child: FloatingActionButton.extended(
-              onPressed: () {
-                ref.read(hapticServiceProvider).buttonPress();
-                LogWorkoutModal.show(context);
-              },
-              label: const Text('Log Workout', style: TextStyle(fontWeight: FontWeight.bold)),
-              icon: const Icon(Icons.add_rounded),
-              backgroundColor: FitoraColors.mintGreen,
-              foregroundColor: Colors.black,
+    return DefaultTabController(
+      length: 2,
+      child: FitoraBackground(
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          floatingActionButton: Semantics(
+            button: true,
+            label: 'Log Workout',
+            child: ScaleOnPress(
+              child: FloatingActionButton.extended(
+                onPressed: () {
+                  ref.read(hapticServiceProvider).buttonPress();
+                  LogWorkoutModal.show(context);
+                },
+                label: const Text(
+                  'Log Workout',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                icon: const Icon(Icons.add_rounded),
+                backgroundColor: FitoraColors.mintGreen,
+                foregroundColor: Colors.black,
+              ),
+            ),
+          ),
+          body: SafeArea(
+            child: Column(
+              children: [
+                // Top Header with Title and Material TabBar
+                _buildHeaderWithTabBar(context, textTheme, theme),
+
+                // TabBarView containing Trends tab and History Logs tab
+                Expanded(
+                  child: TabBarView(
+                    children: [
+                      // ── TAB 1: TRENDS EXPERIENCE ─────────────────────────
+                      _buildTrendsTabContent(
+                        context: context,
+                        textTheme: textTheme,
+                        timeframe: timeframe,
+                        currentSummaries: currentSummaries,
+                        priorSummaries: priorSummaries,
+                        hasWeight: hasWeight,
+                        weightKg: weightKg ?? 0.0,
+                      ),
+
+                      // ── TAB 2: HISTORY LOGS ───────────────────────────────
+                      _buildHistoryLogsTabContent(
+                        context: context,
+                        textTheme: textTheme,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
         ),
-        body: CustomScrollView(
-          physics: const BouncingScrollPhysics(),
-          slivers: [
-            // ── Premium SafeArea Header ─────────────────────────────────────────
-            SliverToBoxAdapter(child: _buildHeader(context, textTheme)),
-
-            // ── Scrollable Content List ────────────────────────────────────────
-            SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: FitoraSpacing.xl),
-              sliver: SliverList(
-                delegate: SliverChildListDelegate([
-                  const SizedBox(height: FitoraSpacing.sm),
-
-                  // Time Filter Segmented Control
-                  _buildTimeFilter(textTheme),
-                  const SizedBox(height: FitoraSpacing.xl),
-
-                  // Activity Summary Metrics
-                  _buildSectionHeader(textTheme, 'OVERVIEW'),
-                  const SizedBox(height: FitoraSpacing.md),
-                  if (currentSummaries.isEmpty) ...[
-                    _buildEmptyActivityCard(context, textTheme),
-                  ] else ...[
-                    _buildActivitySection(
-                      textTheme,
-                      currentSummaries,
-                      priorSummaries,
-                    ),
-                  ],
-                  const SizedBox(height: FitoraSpacing.xl),
-
-                  // Task 8: Weekly Health Summary & WoW Comparisons
-                  _buildSectionHeader(textTheme, 'WEEKLY PERFORMANCE'),
-                  const SizedBox(height: FitoraSpacing.md),
-                  const WeeklySummaryCard(),
-                  const SizedBox(height: FitoraSpacing.xl),
-
-                  // Task 7: 7-Day / 30-Day Health Trend Charts
-                  _buildSectionHeader(textTheme, 'HEALTH TRENDS & ANALYTICS'),
-                  const SizedBox(height: FitoraSpacing.md),
-                  const HealthTrendChart(),
-                  const SizedBox(height: FitoraSpacing.xl),
-
-                  // Recovery Stats Section
-                  _buildSectionHeader(textTheme, 'RECOVERY'),
-                  const SizedBox(height: FitoraSpacing.md),
-                  _buildRecoverySection(context, textTheme),
-                  const SizedBox(height: FitoraSpacing.xl),
-
-                  if (hasWeight) ...[
-                    _buildWeightTrend(textTheme, weightKg),
-                    const SizedBox(height: FitoraSpacing.lg),
-                  ],
-                  _buildStreakCard(textTheme),
-                  const SizedBox(height: FitoraSpacing.lg),
-                  const FitoraNativeAdCard(),
-                  const SizedBox(height: 130), // Bottom scroll padding
-                ]),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
 
-  Widget _buildHeader(BuildContext context, TextTheme textTheme) {
-    final theme = Theme.of(context);
-    return SafeArea(
-      bottom: false,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(
-          FitoraSpacing.xl,
-          FitoraSpacing.md,
-          FitoraSpacing.xl,
-          FitoraSpacing.md,
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'Analytics',
-              style: textTheme.titleLarge?.copyWith(
+  // ── Header & TabBar ────────────────────────────────────────────────────────
+  Widget _buildHeaderWithTabBar(
+    BuildContext context,
+    TextTheme textTheme,
+    ThemeData theme,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        FitoraSpacing.xl,
+        FitoraSpacing.md,
+        FitoraSpacing.xl,
+        FitoraSpacing.sm,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Analytics & Progress',
+                style: textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w900,
+                  color: theme.colorScheme.onSurface,
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: FitoraColors.mintGreen.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(99),
+                  border: Border.all(
+                    color: FitoraColors.mintGreen.withValues(alpha: 0.3),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.insights_rounded,
+                      color: FitoraColors.mintGreen,
+                      size: 13,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'FITORA ANALYTICS',
+                      style: textTheme.labelSmall?.copyWith(
+                        color: FitoraColors.mintGreen,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 9.5,
+                        letterSpacing: 0.8,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: FitoraSpacing.md),
+
+          // Clean Material TabBar
+          Container(
+            height: 44,
+            padding: const EdgeInsets.all(3),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.06),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
+              ),
+            ),
+            child: TabBar(
+              indicator: BoxDecoration(
+                color: FitoraColors.mintGreen,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              labelColor: Colors.black,
+              unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
+              labelStyle: textTheme.labelLarge?.copyWith(
                 fontWeight: FontWeight.w900,
-                color: theme.colorScheme.onSurface,
+                fontSize: 13,
               ),
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-                borderRadius: BorderRadius.circular(99),
-                border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5)),
+              unselectedLabelStyle: textTheme.labelLarge?.copyWith(
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(
-                    Icons.calendar_today_rounded,
-                    color: FitoraColors.mintGreen,
-                    size: 12,
+              dividerColor: Colors.transparent,
+              indicatorSize: TabBarIndicatorSize.tab,
+              tabs: const [
+                Tab(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.show_chart_rounded, size: 16),
+                      SizedBox(width: 6),
+                      Text('Trends'),
+                    ],
                   ),
-                  const SizedBox(width: 6),
-                  Text(
-                    _headerFilterLabel(),
-                    style: textTheme.labelLarge?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 11,
-                    ),
+                ),
+                Tab(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.history_rounded, size: 16),
+                      SizedBox(width: 6),
+                      Text('History Logs'),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildTimeFilter(TextTheme textTheme) {
+  // ── Tab 1: Trends Content ───────────────────────────────────────────────────
+  Widget _buildTrendsTabContent({
+    required BuildContext context,
+    required TextTheme textTheme,
+    required HealthTimeframe timeframe,
+    required List<DailyActivitySummary> currentSummaries,
+    required List<DailyActivitySummary> priorSummaries,
+    required bool hasWeight,
+    required double weightKg,
+  }) {
+    return ListView(
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.symmetric(
+        horizontal: FitoraSpacing.xl,
+        vertical: FitoraSpacing.md,
+      ),
+      children: [
+        // Period Filter Segmented Toggle (Day / Week / Month)
+        _buildPeriodFilterSegmentedControl(textTheme),
+        const SizedBox(height: FitoraSpacing.xl),
+
+        // Section 1: Interactive Health Trend Chart (Steps, Sleep, Hydration)
+        _buildSectionHeader(textTheme, 'INTERACTIVE HEALTH TRENDS'),
+        const SizedBox(height: FitoraSpacing.md),
+        const HealthTrendChart(),
+        const SizedBox(height: FitoraSpacing.xl),
+
+        // Section 2: Overview Activity Metric Cards
+        _buildSectionHeader(textTheme, 'OVERVIEW'),
+        const SizedBox(height: FitoraSpacing.md),
+        if (currentSummaries.isEmpty) ...[
+          _buildEmptyActivityCard(context, textTheme),
+        ] else ...[
+          _buildActivitySection(
+            textTheme,
+            currentSummaries,
+            priorSummaries,
+          ),
+        ],
+        const SizedBox(height: FitoraSpacing.xl),
+
+        // Section 3: Weekly Performance & WoW Deltas
+        _buildSectionHeader(textTheme, 'WEEKLY PERFORMANCE'),
+        const SizedBox(height: FitoraSpacing.md),
+        const WeeklySummaryCard(),
+        const SizedBox(height: FitoraSpacing.xl),
+
+        // Section 4: Recovery (Sleep, Hydration, Cycle, Mood, Breathing)
+        _buildSectionHeader(textTheme, 'RECOVERY & WELLNESS'),
+        const SizedBox(height: FitoraSpacing.md),
+        _buildRecoverySection(context, textTheme),
+        const SizedBox(height: FitoraSpacing.xl),
+
+        if (hasWeight) ...[
+          _buildWeightTrend(textTheme, weightKg),
+          const SizedBox(height: FitoraSpacing.lg),
+        ],
+        _buildStreakCard(textTheme),
+        const SizedBox(height: FitoraSpacing.lg),
+        const FitoraNativeAdCard(),
+        const SizedBox(height: 120),
+      ],
+    );
+  }
+
+  // ── Tab 2: History Logs Content ─────────────────────────────────────────────
+  Widget _buildHistoryLogsTabContent({
+    required BuildContext context,
+    required TextTheme textTheme,
+  }) {
     final theme = Theme.of(context);
-    final options = ['Day', 'Week', 'Month', 'Year'];
+    final progressState = ref.watch(progressControllerProvider);
+    final wellness = ref.watch(wellnessProvider);
+
+    final historyList = progressState.history;
+    final sleepLogs = wellness.sleepLogHistory;
+    final waterLogs = wellness.waterLogs;
+    final waterHistory = wellness.waterLogHistory;
+
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: FitoraSpacing.xl,
+            vertical: FitoraSpacing.sm,
+          ),
+          child: Column(
+            children: [
+              // Search Input Field
+              TextField(
+                controller: _searchController,
+                onChanged: (val) {
+                  setState(() {
+                    _searchQuery = val.trim().toLowerCase();
+                  });
+                },
+                decoration: InputDecoration(
+                  hintText: 'Search logs (workout, sleep, water)...',
+                  hintStyle: textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  prefixIcon: Icon(
+                    Icons.search_rounded,
+                    color: theme.colorScheme.onSurfaceVariant,
+                    size: 20,
+                  ),
+                  suffixIcon: _searchQuery.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear_rounded, size: 18),
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() => _searchQuery = '');
+                          },
+                        )
+                      : null,
+                  filled: true,
+                  fillColor: theme.colorScheme.onSurface.withValues(alpha: 0.04),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide(
+                      color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
+                    ),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide(
+                      color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
+                    ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: const BorderSide(
+                      color: FitoraColors.mintGreen,
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: FitoraSpacing.sm),
+
+              // Filter Category Chips (All, Workouts, Sleep, Hydration)
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                physics: const BouncingScrollPhysics(),
+                child: Row(
+                  children: ['All', 'Workouts', 'Sleep', 'Hydration'].map((cat) {
+                    final isSelected = _historyFilter == cat;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 6),
+                      child: FilterChip(
+                        selected: isSelected,
+                        label: Text(cat),
+                        labelStyle: textTheme.labelSmall?.copyWith(
+                          color: isSelected
+                              ? Colors.black
+                              : theme.colorScheme.onSurfaceVariant,
+                          fontWeight:
+                              isSelected ? FontWeight.bold : FontWeight.w600,
+                        ),
+                        selectedColor: FitoraColors.mintGreen,
+                        backgroundColor: theme.colorScheme.onSurface
+                            .withValues(alpha: 0.05),
+                        onSelected: (_) {
+                          setState(() => _historyFilter = cat);
+                        },
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          side: BorderSide(
+                            color: isSelected
+                                ? FitoraColors.mintGreen
+                                : theme.colorScheme.outlineVariant
+                                    .withValues(alpha: 0.4),
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // Scrollable History Items List
+        Expanded(
+          child: _buildFilteredHistoryList(
+            context: context,
+            tt: textTheme,
+            historyList: historyList,
+            sleepLogs: sleepLogs,
+            waterLogs: waterLogs,
+            waterHistory: waterHistory,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFilteredHistoryList({
+    required BuildContext context,
+    required TextTheme tt,
+    required List<WorkoutHistoryEntry> historyList,
+    required Map<String, int> sleepLogs,
+    required List<WaterLogEntry> waterLogs,
+    required Map<String, double> waterHistory,
+  }) {
+    final theme = Theme.of(context);
+    final items = <_HistoryLogItem>[];
+
+    final dateFormat = DateFormat('MMM d, yyyy • h:mm a');
+    final dateOnlyFormat = DateFormat('EEE, MMM d, yyyy');
+
+    // 1. Workouts
+    if (_historyFilter == 'All' || _historyFilter == 'Workouts') {
+      for (final w in historyList) {
+        if (_searchQuery.isNotEmpty &&
+            !w.title.toLowerCase().contains(_searchQuery) &&
+            !'workout'.contains(_searchQuery)) {
+          continue;
+        }
+        items.add(
+          _HistoryLogItem(
+            dateTime: w.completedAt,
+            title: w.title,
+            subtitle: '${w.durationLabel} • ${w.calories} kcal • ${w.exercisesCompleted} exercises',
+            dateLabel: dateFormat.format(w.completedAt),
+            type: _LogType.workout,
+            icon: Icons.fitness_center_rounded,
+            color: FitoraColors.mintGreen,
+          ),
+        );
+      }
+    }
+
+    // 2. Sleep Logs
+    if (_historyFilter == 'All' || _historyFilter == 'Sleep') {
+      sleepLogs.forEach((dateStr, mins) {
+        if (mins > 0) {
+          final dt = DateTime.tryParse(dateStr) ?? DateTime.now();
+          final hours = (mins / 60.0).toStringAsFixed(1);
+          final title = 'Sleep Log ($hours hrs)';
+          if (_searchQuery.isNotEmpty &&
+              !title.toLowerCase().contains(_searchQuery) &&
+              !dateStr.contains(_searchQuery)) {
+            return;
+          }
+          items.add(
+            _HistoryLogItem(
+              dateTime: dt,
+              title: title,
+              subtitle: 'Duration: $mins minutes of tracked rest',
+              dateLabel: dateOnlyFormat.format(dt),
+              type: _LogType.sleep,
+              icon: Icons.bedtime_rounded,
+              color: FitoraColors.calmCyan,
+            ),
+          );
+        }
+      });
+    }
+
+    // 3. Hydration Logs
+    if (_historyFilter == 'All' || _historyFilter == 'Hydration') {
+      for (final wl in waterLogs) {
+        final liters = (wl.amountMl / 1000.0).toStringAsFixed(2);
+        final title = 'Hydration Intakes: ${wl.amountMl} ml ($liters L)';
+        if (_searchQuery.isNotEmpty &&
+            !title.toLowerCase().contains(_searchQuery)) {
+          continue;
+        }
+        items.add(
+          _HistoryLogItem(
+            dateTime: wl.timestamp,
+            title: title,
+            subtitle: 'Logged via water tracker',
+            dateLabel: dateFormat.format(wl.timestamp),
+            type: _LogType.water,
+            icon: Icons.water_drop_rounded,
+            color: Colors.blueAccent,
+          ),
+        );
+      }
+    }
+
+    // Sort items by date descending (newest first)
+    items.sort((a, b) => b.dateTime.compareTo(a.dateTime));
+
+    if (items.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(FitoraSpacing.xl),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.history_toggle_off_rounded,
+                color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                size: 48,
+              ),
+              const SizedBox(height: FitoraSpacing.md),
+              Text(
+                'No History Logs Found',
+                style: tt.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onSurface,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Log your workouts, sleep, and water intake to view your historical logs here.',
+                style: tt.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return ListView.builder(
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.fromLTRB(
+        FitoraSpacing.xl,
+        FitoraSpacing.sm,
+        FitoraSpacing.xl,
+        120,
+      ),
+      itemCount: items.length,
+      itemBuilder: (context, index) {
+        final item = items[index];
+        return Padding(
+          padding: const EdgeInsets.only(bottom: FitoraSpacing.sm),
+          child: Container(
+            padding: const EdgeInsets.all(FitoraSpacing.md),
+            decoration: BoxDecoration(
+              color: theme.cardTheme.color ??
+                  theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: item.color.withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(item.icon, color: item.color, size: 20),
+                ),
+                const SizedBox(width: FitoraSpacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              item.title,
+                              style: tt.titleSmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: theme.colorScheme.onSurface,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          Text(
+                            item.dateLabel,
+                            style: tt.labelSmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                              fontSize: 9.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        item.subtitle,
+                        style: tt.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                          fontSize: 11,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // ── Period Filter Control for Trends ───────────────────────────────────────
+  Widget _buildPeriodFilterSegmentedControl(TextTheme textTheme) {
+    final theme = Theme.of(context);
+    final currentTimeframe = ref.watch(healthTimeframeProvider);
+
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         color: theme.colorScheme.onSurface.withValues(alpha: 0.04),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4)),
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
+        ),
       ),
       child: Row(
-        children: options.map((opt) {
-          final isSelected = _selectedFilter == opt;
+        children: HealthTimeframe.values.map((tf) {
+          final isSelected = currentTimeframe == tf;
           return Expanded(
             child: Semantics(
               button: true,
               selected: isSelected,
-              label: '$opt filter',
-              hint: isSelected ? 'Selected' : 'Double tap to select',
+              label: '${tf.label} filter',
               child: GestureDetector(
                 onTap: () {
-                  setState(() {
-                    _selectedFilter = opt;
-                  });
+                  ref.read(healthTimeframeProvider.notifier).state = tf;
                 },
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(minHeight: 48),
+                  constraints: const BoxConstraints(minHeight: 44),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 250),
                     curve: Curves.easeOutCubic,
@@ -267,10 +700,12 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                           : null,
                     ),
                     child: Text(
-                      opt,
+                      tf.label,
                       textAlign: TextAlign.center,
                       style: textTheme.labelLarge?.copyWith(
-                        color: isSelected ? Colors.black : theme.colorScheme.onSurfaceVariant,
+                        color: isSelected
+                            ? Colors.black
+                            : theme.colorScheme.onSurfaceVariant,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -280,7 +715,11 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
             ),
           );
         }).toList(),
-      ).animate().fadeIn(duration: 400.ms).slideX(begin: 0.1, end: 0, curve: Curves.easeOutCubic),
+      ).animate().fadeIn(duration: 400.ms).slideX(
+            begin: 0.1,
+            end: 0,
+            curve: Curves.easeOutCubic,
+          ),
     );
   }
 
@@ -296,11 +735,13 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     );
   }
 
+  // ── Overview Activity Section Cards ─────────────────────────────────────────
   Widget _buildActivitySection(
     TextTheme tt,
     List<DailyActivitySummary> currentSummaries,
     List<DailyActivitySummary> priorSummaries,
   ) {
+    final timeframe = ref.watch(healthTimeframeProvider);
     int totalSteps = 0;
     double totalCalories = 0.0;
     int totalActiveMinutes = 0;
@@ -342,7 +783,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
       priorDistanceKm,
     );
 
-    final isSingleDay = _selectedFilter == 'Day';
+    final isSingleDay = timeframe == HealthTimeframe.day;
     final latestGoal = currentSummaries.isNotEmpty
         ? currentSummaries.last.stepsGoal
         : 10000;
@@ -350,8 +791,8 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     final stepsValueStr = isSingleDay
         ? totalSteps.toString()
         : (totalSteps >= 10000
-              ? '${(totalSteps / 1000).toStringAsFixed(1)}k'
-              : totalSteps.toString());
+            ? '${(totalSteps / 1000).toStringAsFixed(1)}k'
+            : totalSteps.toString());
     final stepsUnitStr = isSingleDay ? ' / $latestGoal' : ' steps';
 
     return Column(
@@ -439,6 +880,10 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     required TextTheme textTheme,
   }) {
     final theme = Theme.of(context);
+    final trendColor = isPositiveTrend
+        ? FitoraColors.mintGreen
+        : FitoraColors.warningOrange;
+
     return GlowContainer(
       glowColor: color.withValues(alpha: 0.05),
       borderRadius: BorderRadius.circular(20),
@@ -446,9 +891,12 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
       child: Container(
         padding: const EdgeInsets.all(FitoraSpacing.md),
         decoration: BoxDecoration(
-          color: theme.cardTheme.color ?? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+          color: theme.cardTheme.color ??
+              theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5)),
+          border: Border.all(
+            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+          ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -470,11 +918,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                     vertical: 2,
                   ),
                   decoration: BoxDecoration(
-                    color:
-                        (isPositiveTrend
-                                ? FitoraColors.mintGreen
-                                : FitoraColors.errorRed)
-                            .withValues(alpha: 0.1),
+                    color: trendColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Row(
@@ -484,18 +928,14 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                         isPositiveTrend
                             ? Icons.trending_up_rounded
                             : Icons.trending_down_rounded,
-                        color: isPositiveTrend
-                            ? FitoraColors.mintGreen
-                            : FitoraColors.errorRed,
+                        color: trendColor,
                         size: 10,
                       ),
                       const SizedBox(width: 2),
                       Text(
                         trend,
                         style: textTheme.labelSmall?.copyWith(
-                          color: isPositiveTrend
-                              ? FitoraColors.mintGreen
-                              : FitoraColors.errorRed,
+                          color: trendColor,
                           fontWeight: FontWeight.bold,
                           fontSize: 9,
                         ),
@@ -548,6 +988,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     );
   }
 
+  // ── Recovery & Wellness Section ────────────────────────────────────────────
   Widget _buildRecoverySection(BuildContext context, TextTheme tt) {
     return Consumer(
       builder: (context, ref, _) {
@@ -559,55 +1000,55 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
         final mood = wellness.loggedMoods[todayStr] ?? 'Not logged';
 
         return Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _buildSleepCard(context, tt, sleep),
+            const SizedBox(height: FitoraSpacing.md),
+            _buildHydrationCard(context, ref, tt, wellness),
+            if (ref.watch(cycleProvider).cycleTrackingEnabled) ...[
+              const SizedBox(height: FitoraSpacing.md),
+              _buildCycleCard(context, ref, tt),
+            ],
+            const SizedBox(height: FitoraSpacing.md),
+            Row(
               children: [
-                _buildSleepCard(context, tt, sleep),
-                const SizedBox(height: FitoraSpacing.md),
-                _buildHydrationCard(context, ref, tt, wellness),
-                if (ref.watch(cycleProvider).cycleTrackingEnabled) ...[
-                  const SizedBox(height: FitoraSpacing.md),
-                  _buildCycleCard(context, ref, tt),
-                ],
-                const SizedBox(height: FitoraSpacing.md),
-                Row(
-                  children: [
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () => _showMoodDialog(context, ref, mood),
-                        child: _buildOverviewCard(
-                          context,
-                          label: 'Mood',
-                          value: mood,
-                          unit: '',
-                          trend: 'Daily',
-                          isPositiveTrend: true,
-                          icon: Icons.sentiment_satisfied_rounded,
-                          color: Colors.amber,
-                          textTheme: tt,
-                        ),
-                      ),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => _showMoodDialog(context, ref, mood),
+                    child: _buildOverviewCard(
+                      context,
+                      label: 'Mood',
+                      value: mood,
+                      unit: '',
+                      trend: 'Daily',
+                      isPositiveTrend: true,
+                      icon: Icons.sentiment_satisfied_rounded,
+                      color: Colors.amber,
+                      textTheme: tt,
                     ),
-                    const SizedBox(width: FitoraSpacing.sm),
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () => _showBreathingDialog(context, ref),
-                        child: _buildOverviewCard(
-                          context,
-                          label: 'Breathing',
-                          value: '${wellness.breathingMinutes} min',
-                          unit: '',
-                          trend: '+${wellness.breathingMinutes}m',
-                          isPositiveTrend: true,
-                          icon: Icons.air_rounded,
-                          color: FitoraColors.softEmerald,
-                          textTheme: tt,
-                        ),
-                      ),
+                  ),
+                ),
+                const SizedBox(width: FitoraSpacing.sm),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => _showBreathingDialog(context, ref),
+                    child: _buildOverviewCard(
+                      context,
+                      label: 'Breathing',
+                      value: '${wellness.breathingMinutes} min',
+                      unit: '',
+                      trend: '+${wellness.breathingMinutes}m',
+                      isPositiveTrend: true,
+                      icon: Icons.air_rounded,
+                      color: FitoraColors.softEmerald,
+                      textTheme: tt,
                     ),
-                  ],
+                  ),
                 ),
               ],
-            )
+            ),
+          ],
+        )
             .animate()
             .fadeIn(delay: 150.ms, duration: 400.ms)
             .slideY(begin: 0.05, end: 0);
@@ -637,9 +1078,12 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
       child: Container(
         padding: const EdgeInsets.all(FitoraSpacing.xl),
         decoration: BoxDecoration(
-          color: theme.cardTheme.color ?? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+          color: theme.cardTheme.color ??
+              theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5)),
+          border: Border.all(
+            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+          ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -760,7 +1204,9 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                         goal > 0
                             ? 'Goal: ${goal.toStringAsFixed(1)} L (1 glass = 250ml)'
                             : 'Set Daily Water Goal',
-                        style: tt.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                        style: tt.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
                       ),
                     ],
                   ),
@@ -819,7 +1265,8 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     final hours = sleep.totalSleep.inHours;
     final minutes = sleep.totalSleep.inMinutes.remainder(60);
 
-    final sleepGoalMinutes = ref.watch(settingsProvider).sleepTargetDurationMinutes.toDouble();
+    final sleepGoalMinutes =
+        ref.watch(settingsProvider).sleepTargetDurationMinutes.toDouble();
     final progress = (totalMinutes / sleepGoalMinutes).clamp(0.0, 1.0);
 
     String qualityText = 'Unknown';
@@ -847,7 +1294,8 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
 
     final goalHours = (sleepGoalMinutes / 60).toInt();
     final goalMins = (sleepGoalMinutes % 60).toInt();
-    final goalStr = goalMins > 0 ? '${goalHours}h ${goalMins}m' : '$goalHours hrs';
+    final goalStr =
+        goalMins > 0 ? '${goalHours}h ${goalMins}m' : '$goalHours hrs';
 
     return GestureDetector(
       onTap: () => showSleepAnalysisModal(context, ref),
@@ -860,7 +1308,9 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
           decoration: BoxDecoration(
             color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4)),
+            border: Border.all(
+              color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
+            ),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -921,7 +1371,9 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
               if (totalMinutes == 0) ...[
                 Text(
                   'Log your last night\'s sleep or set your target sleep schedule dial.',
-                  style: tt.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                  style: tt.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
                 ),
                 const SizedBox(height: FitoraSpacing.md),
                 Row(
@@ -952,7 +1404,8 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                           child: CircularProgressIndicator(
                             value: progress,
                             strokeWidth: 7,
-                            backgroundColor: theme.colorScheme.onSurface.withValues(alpha: 0.08),
+                            backgroundColor: theme.colorScheme.onSurface
+                                .withValues(alpha: 0.08),
                             valueColor: const AlwaysStoppedAnimation<Color>(
                               FitoraColors.calmCyan,
                             ),
@@ -983,7 +1436,9 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                           const SizedBox(height: 2),
                           Text(
                             'Sleep Goal: $goalStr',
-                            style: tt.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                            style: tt.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
                           ),
                         ],
                       ),
@@ -1102,7 +1557,9 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
         decoration: BoxDecoration(
           color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4)),
+          border: Border.all(
+            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
+          ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1140,7 +1597,9 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                   padding: const EdgeInsets.only(bottom: 6, left: 4),
                   child: Text(
                     'kg',
-                    style: tt.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                    style: tt.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ),
               ],
@@ -1165,7 +1624,9 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
         decoration: BoxDecoration(
           color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4)),
+          border: Border.all(
+            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
+          ),
         ),
         child: Row(
           children: [
@@ -1204,7 +1665,9 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                   ),
                   Text(
                     'Keep the momentum going.',
-                    style: tt.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                    style: tt.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ],
               ),
@@ -1226,7 +1689,9 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
         decoration: BoxDecoration(
           color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4)),
+          border: Border.all(
+            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
+          ),
         ),
         child: Column(
           children: [
@@ -1246,7 +1711,9 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
             const SizedBox(height: FitoraSpacing.xs),
             Text(
               'Start tracking today to unlock insights.',
-              style: tt.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              style: tt.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
               textAlign: TextAlign.center,
             ),
           ],
@@ -1255,7 +1722,11 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     );
   }
 
-  void _showMoodDialog(BuildContext context, WidgetRef ref, String currentMood) {
+  void _showMoodDialog(
+    BuildContext context,
+    WidgetRef ref,
+    String currentMood,
+  ) {
     showDialog(
       context: context,
       builder: (context) {
@@ -1275,17 +1746,18 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
-            children: [
-              'Great',
-              'Good',
-              'Okay',
-              'Poor',
-              'Terrible'
-            ].map((mood) {
+            children: ['Great', 'Good', 'Okay', 'Poor', 'Terrible'].map((mood) {
               final isSelected = mood == currentMood;
               return ListTile(
-                title: Text(mood, style: tt.bodyLarge?.copyWith(color: isSelected ? Colors.amber : Colors.white70)),
-                trailing: isSelected ? const Icon(Icons.check, color: Colors.amber) : null,
+                title: Text(
+                  mood,
+                  style: tt.bodyLarge?.copyWith(
+                    color: isSelected ? Colors.amber : Colors.white70,
+                  ),
+                ),
+                trailing: isSelected
+                    ? const Icon(Icons.check, color: Colors.amber)
+                    : null,
                 onTap: () {
                   ref.read(wellnessProvider.notifier).logMood(mood);
                   Navigator.pop(context);
@@ -1319,7 +1791,10 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('Log 5 minutes of mindful breathing?', style: tt.bodyMedium?.copyWith(color: Colors.white70)),
+              Text(
+                'Log 5 minutes of mindful breathing?',
+                style: tt.bodyMedium?.copyWith(color: Colors.white70),
+              ),
               const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: () {
@@ -1327,11 +1802,13 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                   Navigator.pop(context);
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: FitoraColors.softEmerald.withValues(alpha: 0.2),
+                  backgroundColor: FitoraColors.softEmerald.withValues(
+                    alpha: 0.2,
+                  ),
                   foregroundColor: FitoraColors.softEmerald,
                 ),
                 child: const Text('Log 5 mins'),
-              )
+              ),
             ],
           ),
         );
@@ -1353,7 +1830,8 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
 
     final nextPeriod = cycleNotifier.getEstimatedNextPeriod();
     final stats = cycleNotifier.getStatistics();
-    final hasPrediction = nextPeriod != null && stats.completedIntervalsCount >= 2;
+    final hasPrediction =
+        nextPeriod != null && stats.completedIntervalsCount >= 2;
 
     String headline = 'Cycle Tracker';
     String sub = 'Keep logging to build your history';
@@ -1385,7 +1863,9 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
           decoration: BoxDecoration(
             color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4)),
+            border: Border.all(
+              color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
+            ),
           ),
           child: Row(
             children: [
@@ -1434,7 +1914,9 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
               ),
               Icon(
                 Icons.arrow_forward_ios_rounded,
-                color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                color: theme.colorScheme.onSurfaceVariant.withValues(
+                  alpha: 0.6,
+                ),
                 size: 16,
               ),
             ],
@@ -1443,4 +1925,27 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
       ),
     );
   }
+}
+
+// ── Internal Helper Data Model for History Logs List ─────────────────────────
+enum _LogType { workout, sleep, water }
+
+class _HistoryLogItem {
+  final DateTime dateTime;
+  final String title;
+  final String subtitle;
+  final String dateLabel;
+  final _LogType type;
+  final IconData icon;
+  final Color color;
+
+  const _HistoryLogItem({
+    required this.dateTime,
+    required this.title,
+    required this.subtitle,
+    required this.dateLabel,
+    required this.type,
+    required this.icon,
+    required this.color,
+  });
 }

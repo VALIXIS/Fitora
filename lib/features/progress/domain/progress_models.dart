@@ -133,11 +133,31 @@ class WeeklyTrend {
 }
 
 enum HealthTimeframe {
+  day,
   sevenDays,
   thirtyDays;
 
-  int get days => this == HealthTimeframe.sevenDays ? 7 : 30;
-  String get label => this == HealthTimeframe.sevenDays ? '7 Days' : '30 Days';
+  int get days {
+    switch (this) {
+      case HealthTimeframe.day:
+        return 1;
+      case HealthTimeframe.sevenDays:
+        return 7;
+      case HealthTimeframe.thirtyDays:
+        return 30;
+    }
+  }
+
+  String get label {
+    switch (this) {
+      case HealthTimeframe.day:
+        return 'Day';
+      case HealthTimeframe.sevenDays:
+        return 'Week';
+      case HealthTimeframe.thirtyDays:
+        return 'Month';
+    }
+  }
 }
 
 enum HealthMetricType {
