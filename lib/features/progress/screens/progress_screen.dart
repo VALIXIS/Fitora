@@ -76,22 +76,25 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
       child: FitoraBackground(
         child: Scaffold(
           backgroundColor: Colors.transparent,
-          floatingActionButton: Semantics(
-            button: true,
-            label: 'Log Workout',
-            child: ScaleOnPress(
-              child: FloatingActionButton.extended(
-                onPressed: () {
-                  ref.read(hapticServiceProvider).buttonPress();
-                  LogWorkoutModal.show(context);
-                },
-                label: const Text(
-                  'Log Workout',
-                  style: TextStyle(fontWeight: FontWeight.bold),
+          floatingActionButton: Padding(
+            padding: const EdgeInsets.only(bottom: 120),
+            child: Semantics(
+              button: true,
+              label: 'Log Workout',
+              child: ScaleOnPress(
+                child: FloatingActionButton.extended(
+                  onPressed: () {
+                    ref.read(hapticServiceProvider).buttonPress();
+                    LogWorkoutModal.show(context);
+                  },
+                  label: const Text(
+                    'Log Workout',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  icon: const Icon(Icons.add_rounded),
+                  backgroundColor: FitoraColors.mintGreen,
+                  foregroundColor: Colors.black,
                 ),
-                icon: const Icon(Icons.add_rounded),
-                backgroundColor: FitoraColors.mintGreen,
-                foregroundColor: Colors.black,
               ),
             ),
           ),
@@ -677,12 +680,13 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
               button: true,
               selected: isSelected,
               label: '${tf.label} filter',
+              hint: isSelected ? 'Selected' : 'Double tap to select',
               child: GestureDetector(
                 onTap: () {
                   ref.read(healthTimeframeProvider.notifier).state = tf;
                 },
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(minHeight: 44),
+                  constraints: const BoxConstraints(minHeight: 48),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 250),
                     curve: Curves.easeOutCubic,
@@ -1306,7 +1310,9 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
         child: Container(
           padding: const EdgeInsets.all(FitoraSpacing.xl),
           decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+            color: theme.colorScheme.surfaceContainerHighest.withValues(
+              alpha: 0.4,
+            ),
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
               color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
@@ -1555,7 +1561,9 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
       child: Container(
         padding: const EdgeInsets.all(FitoraSpacing.lg),
         decoration: BoxDecoration(
-          color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+          color: theme.colorScheme.surfaceContainerHighest.withValues(
+            alpha: 0.4,
+          ),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
@@ -1622,7 +1630,9 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
       child: Container(
         padding: const EdgeInsets.all(FitoraSpacing.lg),
         decoration: BoxDecoration(
-          color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+          color: theme.colorScheme.surfaceContainerHighest.withValues(
+            alpha: 0.4,
+          ),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
@@ -1687,7 +1697,9 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
       child: Container(
         padding: const EdgeInsets.all(FitoraSpacing.xl),
         decoration: BoxDecoration(
-          color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+          color: theme.colorScheme.surfaceContainerHighest.withValues(
+            alpha: 0.4,
+          ),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
@@ -1861,7 +1873,9 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
         child: Container(
           padding: const EdgeInsets.all(FitoraSpacing.xl),
           decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+            color: theme.colorScheme.surfaceContainerHighest.withValues(
+              alpha: 0.4,
+            ),
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
               color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),

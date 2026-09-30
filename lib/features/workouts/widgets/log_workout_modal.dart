@@ -270,6 +270,7 @@ class _LogWorkoutModalState extends ConsumerState<LogWorkoutModal> {
                 ),
               ),
             ),
+            const SizedBox(height: 32),
           ],
         ),
       ),

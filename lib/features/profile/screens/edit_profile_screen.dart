@@ -102,7 +102,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
+    final theme = Theme.of(context);
+    final textTheme = theme.textTheme;
 
     return Scaffold(
       backgroundColor: const Color(0xFF0E1312),
@@ -121,73 +122,101 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           key: _formKey,
           child: SingleChildScrollView(
             physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.all(FitoraSpacing.xl),
+            padding: const EdgeInsets.symmetric(horizontal: FitoraSpacing.xl, vertical: FitoraSpacing.lg),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 _buildSectionTitle(textTheme, 'PERSONAL INFO'),
-                _buildTextField('Name', _nameController, TextInputType.name, validator: (v) {
-                  if (v == null || v.trim().isEmpty) return 'Name cannot be blank';
-                  return null;
-                }),
-                const SizedBox(height: FitoraSpacing.md),
-                Row(
-                  children: [
-                    Expanded(child: _buildTextField('Age', _ageController, TextInputType.number)),
-                    const SizedBox(width: FitoraSpacing.md),
-                    Expanded(child: _buildTextField('Height (cm)', _heightController, TextInputType.numberWithOptions(decimal: true))),
-                    const SizedBox(width: FitoraSpacing.md),
-                    Expanded(child: _buildTextField('Weight (kg)', _weightController, TextInputType.numberWithOptions(decimal: true))),
-                  ],
+                _buildCard(
+                  child: Column(
+                    children: [
+                      _buildTextField('Full Name', _nameController, TextInputType.name, Icons.person_rounded, validator: (v) {
+                        if (v == null || v.trim().isEmpty) return 'Name cannot be blank';
+                        return null;
+                      }),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(child: _buildTextField('Age', _ageController, TextInputType.number, Icons.cake_rounded)),
+                          const SizedBox(width: 16),
+                          Expanded(child: _buildTextField('Height (cm)', _heightController, const TextInputType.numberWithOptions(decimal: true), Icons.height_rounded)),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      _buildTextField('Weight (kg)', _weightController, const TextInputType.numberWithOptions(decimal: true), Icons.monitor_weight_rounded),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: FitoraSpacing.xxl),
 
                 _buildSectionTitle(textTheme, 'GOALS & PREFERENCES'),
-                _buildDropdown<PersonalizationGoal>('Primary Goal', _goal, PersonalizationGoal.values, (v) => v.label, (v) => setState(() => _goal = v)),
-                const SizedBox(height: FitoraSpacing.md),
-                _buildDropdown<ExperienceLevel>('Activity Level', _experienceLevel, ExperienceLevel.values, (v) => v.label, (v) => setState(() => _experienceLevel = v)),
-                const SizedBox(height: FitoraSpacing.md),
-                _buildDropdown<WorkoutPreference>('Workout Preference', _workoutPreference, WorkoutPreference.values, (v) => v.label, (v) => setState(() => _workoutPreference = v)),
+                _buildCard(
+                  child: Column(
+                    children: [
+                      _buildDropdown<PersonalizationGoal>('Primary Goal', _goal, PersonalizationGoal.values, (v) => v.label, (v) => setState(() => _goal = v), Icons.flag_rounded),
+                      const SizedBox(height: 16),
+                      _buildDropdown<ExperienceLevel>('Activity Level', _experienceLevel, ExperienceLevel.values, (v) => v.label, (v) => setState(() => _experienceLevel = v), Icons.directions_run_rounded),
+                      const SizedBox(height: 16),
+                      _buildDropdown<WorkoutPreference>('Workout Preference', _workoutPreference, WorkoutPreference.values, (v) => v.label, (v) => setState(() => _workoutPreference = v), Icons.fitness_center_rounded),
+                    ],
+                  ),
+                ),
                 const SizedBox(height: FitoraSpacing.xxl),
                 
                 _buildSectionTitle(textTheme, 'WELLNESS FOCUS'),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: WellnessInterest.values.map((interest) {
-                    final isSelected = _interests.contains(interest);
-                    return ChoiceChip(
-                      label: Text(interest.label),
-                      selected: isSelected,
-                      selectedColor: FitoraColors.lavender.withValues(alpha: 0.2),
-                      backgroundColor: Colors.white.withValues(alpha: 0.05),
-                      labelStyle: textTheme.labelSmall?.copyWith(
-                        color: isSelected ? FitoraColors.lavender : Colors.white70,
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                      ),
-                      onSelected: (selected) {
-                        setState(() {
-                          if (selected) {
-                            _interests.add(interest);
-                          } else {
-                            _interests.remove(interest);
-                          }
-                        });
-                      },
-                    );
-                  }).toList(),
-                ),
-                const SizedBox(height: 48), // Replace xxxl with 48
-                
-                ElevatedButton(
-                  onPressed: _saveProfile,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: FitoraColors.mintGreen,
-                    foregroundColor: Colors.black,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                _buildCard(
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 12,
+                    children: WellnessInterest.values.map((interest) {
+                      final isSelected = _interests.contains(interest);
+                      return FilterChip(
+                        label: Text(interest.label),
+                        selected: isSelected,
+                        showCheckmark: false,
+                        selectedColor: FitoraColors.mintGreen.withValues(alpha: 0.2),
+                        backgroundColor: Colors.white.withValues(alpha: 0.05),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                          side: BorderSide(
+                            color: isSelected ? FitoraColors.mintGreen : Colors.transparent,
+                          ),
+                        ),
+                        labelStyle: textTheme.labelMedium?.copyWith(
+                          color: isSelected ? FitoraColors.mintGreen : Colors.white70,
+                          fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                        ),
+                        onSelected: (selected) {
+                          ref.read(hapticServiceProvider).selectionClick();
+                          setState(() {
+                            if (selected) {
+                              _interests.add(interest);
+                            } else {
+                              _interests.remove(interest);
+                            }
+                          });
+                        },
+                      );
+                    }).toList(),
                   ),
-                  child: const Text('Save Changes', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                ),
+                const SizedBox(height: 48),
+                
+                Semantics(
+                  button: true,
+                  label: 'Save Profile Changes',
+                  child: ElevatedButton(
+                    onPressed: _saveProfile,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: FitoraColors.mintGreen,
+                      foregroundColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(vertical: 18),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      elevation: 8,
+                      shadowColor: FitoraColors.mintGreen.withValues(alpha: 0.4),
+                    ),
+                    child: const Text('Save Changes', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
+                  ),
                 ),
                 const SizedBox(height: 100),
               ],
@@ -198,69 +227,68 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     );
   }
 
+  Widget _buildCard({required Widget child}) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A2220).withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+      ),
+      child: child,
+    );
+  }
+
   Widget _buildSectionTitle(TextTheme textTheme, String title) {
     return Padding(
-      padding: const EdgeInsets.only(left: 4, bottom: 12),
+      padding: const EdgeInsets.only(bottom: 12, left: 8),
       child: Text(
         title,
         style: textTheme.labelSmall?.copyWith(
+          color: Colors.white54,
           fontWeight: FontWeight.bold,
           letterSpacing: 1.5,
-          color: Colors.white54,
         ),
       ),
     );
   }
 
-  Widget _buildTextField(String label, TextEditingController controller, TextInputType type, {String? Function(String?)? validator}) {
+  Widget _buildTextField(String label, TextEditingController controller, TextInputType type, IconData icon, {String? Function(String?)? validator}) {
     return TextFormField(
       controller: controller,
       keyboardType: type,
-      style: const TextStyle(color: Colors.white),
       validator: validator,
+      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w500),
       decoration: InputDecoration(
         labelText: label,
         labelStyle: const TextStyle(color: Colors.white54),
+        prefixIcon: Icon(icon, color: Colors.white30, size: 20),
         filled: true,
-        fillColor: Colors.white.withValues(alpha: 0.05),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.05)),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: FitoraColors.mintGreen),
-        ),
+        fillColor: Colors.white.withValues(alpha: 0.03),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: FitoraColors.mintGreen)),
+        errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: FitoraColors.errorRed)),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       ),
     );
   }
 
-  Widget _buildDropdown<T>(String label, T? value, List<T> items, String Function(T) labelBuilder, void Function(T?) onChanged) {
+  Widget _buildDropdown<T>(String label, T? value, List<T> items, String Function(T) labelBuilder, void Function(T?) onChanged, IconData icon) {
     return DropdownButtonFormField<T>(
       initialValue: value,
-      dropdownColor: const Color(0xFF1A2221),
-      style: const TextStyle(color: Colors.white),
+      items: items.map((e) => DropdownMenuItem(value: e, child: Text(labelBuilder(e), style: const TextStyle(color: Colors.white)))).toList(),
+      onChanged: onChanged,
+      dropdownColor: const Color(0xFF1A2220),
+      icon: const Icon(Icons.arrow_drop_down_rounded, color: Colors.white54),
       decoration: InputDecoration(
         labelText: label,
         labelStyle: const TextStyle(color: Colors.white54),
+        prefixIcon: Icon(icon, color: Colors.white30, size: 20),
         filled: true,
-        fillColor: Colors.white.withValues(alpha: 0.05),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
-        ),
+        fillColor: Colors.white.withValues(alpha: 0.03),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       ),
-      items: items.map((T item) {
-        return DropdownMenuItem<T>(
-          value: item,
-          child: Text(labelBuilder(item)),
-        );
-      }).toList(),
-      onChanged: onChanged,
     );
   }
 }

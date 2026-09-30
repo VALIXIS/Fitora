@@ -421,7 +421,7 @@ class SettingsScreen extends ConsumerWidget {
                             context.pushNamed(AppRouteNames.termsOfService),
                       ),
                     ]),
-                    const SizedBox(height: 100),
+                    const SizedBox(height: 140),
                   ]),
                 ),
               ),

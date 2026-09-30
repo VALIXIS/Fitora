@@ -378,6 +378,7 @@ class _DailyLogModalState extends ConsumerState<DailyLogModal> {
                   ),
                 ],
               ),
+              const SizedBox(height: 32),
             ],
           ),
         ),

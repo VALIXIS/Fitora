@@ -17,6 +17,7 @@ class AppRoutes {
   
   static const String sleepDetail = 'sleep-detail';
   static const String sleepSchedule = 'schedule';
+  static const String soundscapes = 'soundscapes';
   static const String cycleDetail = 'cycle';
 }
 
@@ -38,5 +39,6 @@ class AppRouteNames {
   
   static const String sleepDetail = 'sleepDetail';
   static const String sleepSchedule = 'sleepSchedule';
+  static const String soundscapes = 'soundscapes';
   static const String cycleDetail = 'cycleDetail';
 }

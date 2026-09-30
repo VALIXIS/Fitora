@@ -276,7 +276,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           child: Scaffold(
         backgroundColor: Colors.transparent,
         floatingActionButton: Padding(
-          padding: const EdgeInsets.only(bottom: 80),
+          padding: const EdgeInsets.only(bottom: 140),
           child: Semantics(
             button: true,
             label: 'Quick Log Workout',
@@ -350,6 +350,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
                     // Weekly Activity Section
                     _buildWeeklyActivity(textTheme, weeklySummaries),
+                    const SizedBox(height: FitoraSpacing.lg),
+
+                    // Native Sponsored Ad Banner below Weekly Activity
+                    const FitoraNativeAdCard(),
                     const SizedBox(height: FitoraSpacing.xl),
 
                     // Daily Goals Section Header
@@ -371,7 +375,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     const Center(child: FitoraBannerAd()),
                     const SizedBox(height: FitoraSpacing.lg),
 
-                    const SizedBox(height: 130), // Bottom scroll padding
+                    const SizedBox(height: 160), // Bottom scroll padding
                   ]),
                 ),
               ),
