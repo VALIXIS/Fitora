@@ -119,7 +119,6 @@ class BackgroundSyncManager {
       if (!isTesting) {
         await Workmanager().initialize(
           callbackDispatcher,
-          isInDebugMode: false,
         );
         await schedulePeriodicSync();
       }
@@ -137,9 +136,9 @@ class BackgroundSyncManager {
         'fitora_periodic_health_sync',
         kFitoraBackgroundSyncTask,
         frequency: const Duration(hours: 1),
-        existingWorkPolicy: ExistingWorkPolicy.keep,
+        existingWorkPolicy: ExistingPeriodicWorkPolicy.keep,
         constraints: Constraints(
-          networkType: NetworkType.not_required,
+          networkType: NetworkType.notRequired,
         ),
         tag: kFitoraBackgroundSyncTag,
       );
