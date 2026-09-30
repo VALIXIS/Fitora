@@ -177,6 +177,10 @@ class _SleepDetailScreenState extends ConsumerState<SleepDetailScreen> {
             _buildGuidanceCard(tt, guidance),
             SizedBox(height: FitoraSpacing.lg),
 
+            // Sleep Soundscapes Card
+            _buildSoundscapesCard(context, tt),
+            SizedBox(height: FitoraSpacing.lg),
+
             // Target sleep configurations card
             _buildTargetConfigurationCard(tt, targetBedHour, targetBedMinute, targetWakeHour, targetWakeMinute, targetDuration),
             SizedBox(height: FitoraSpacing.xxl),
@@ -694,6 +698,84 @@ class _SleepDetailScreenState extends ConsumerState<SleepDetailScreen> {
             child: const Text(
               'Change Sleep Target Schedule',
               style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSoundscapesCard(BuildContext context, TextTheme tt) {
+    return Container(
+      padding: EdgeInsets.all(FitoraSpacing.xl),
+      decoration: BoxDecoration(
+        color: const Color(0xFF141A18),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: FitoraColors.calmCyan.withValues(alpha: 0.3)),
+        boxShadow: [
+          BoxShadow(
+            color: FitoraColors.calmCyan.withValues(alpha: 0.06),
+            blurRadius: 20,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: FitoraColors.calmCyan.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.headphones_rounded,
+                  color: FitoraColors.calmCyan,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'SLEEP SOUNDSCAPES',
+                      style: tt.labelSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.0,
+                        color: FitoraColors.calmCyan,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Rain, binaural theta waves & nature',
+                      style: tt.bodySmall?.copyWith(color: Colors.white70),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: FitoraSpacing.lg),
+          Text(
+            'Immerse yourself in acoustic masking and delta wave entrainment. Watch a rewarded video ad to unlock premium soothing soundscapes.',
+            style: tt.bodySmall?.copyWith(color: Colors.white60, height: 1.4),
+          ),
+          SizedBox(height: FitoraSpacing.lg),
+          ElevatedButton.icon(
+            onPressed: () => context.push('/progress/sleep-detail/soundscapes'),
+            icon: const Icon(Icons.music_note_rounded, size: 18),
+            label: const Text('Open Soundscape Library'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: FitoraColors.calmCyan,
+              foregroundColor: Colors.black,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              textStyle: const TextStyle(fontWeight: FontWeight.bold),
             ),
           ),
         ],

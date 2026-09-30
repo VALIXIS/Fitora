@@ -350,6 +350,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
                     // Weekly Activity Section
                     _buildWeeklyActivity(textTheme, weeklySummaries),
+                    const SizedBox(height: FitoraSpacing.lg),
+
+                    // Native Sponsored Ad Banner below Weekly Activity
+                    const FitoraNativeAdCard(),
                     const SizedBox(height: FitoraSpacing.xl),
 
                     // Daily Goals Section Header
