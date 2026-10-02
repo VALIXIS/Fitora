@@ -55,8 +55,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
     _isWeightMetric = isMetricSetting;
     _isHeightMetric = isMetricSetting;
 
-    // Resolve initial name (Auth -> Profile -> '')
-    final initialName = authSession.user?.displayName ?? profile.name ?? '';
+    // Resolve initial name (Profile -> Auth -> '')
+    final initialName = (profile.name != null && profile.name!.trim().isNotEmpty)
+        ? profile.name!.trim()
+        : (authSession.user?.displayName ?? '');
 
     // Unit conversions for initial presentation
     String initialHeight = '';
@@ -66,8 +68,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
           profile.heightCm! % 1 == 0 ? 0 : 1,
         );
       } else {
-        final ft = profile.heightCm! / 30.48;
-        initialHeight = ft.toStringAsFixed(1);
+        initialHeight = _formatCmToFeetAndInches(profile.heightCm!);
       }
     }
 
@@ -119,6 +120,44 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
     );
   }
 
+  static double? _parseHeightToCm(String input, bool isMetric) {
+    final text = input.trim();
+    if (text.isEmpty) return null;
+    if (isMetric) {
+      return double.tryParse(text);
+    } else {
+      // Imperial format: handles "5.10", "5'10", "5'10\"", "5.8", "6"
+      if (text.contains("'")) {
+        final parts = text.replaceAll('"', '').split("'");
+        final ft = double.tryParse(parts[0].trim()) ?? 0;
+        final inches = parts.length > 1 ? (double.tryParse(parts[1].trim()) ?? 0) : 0;
+        return ((ft * 12) + inches) * 2.54;
+      }
+      if (text.contains(".")) {
+        final parts = text.split(".");
+        final ft = double.tryParse(parts[0].trim()) ?? 0;
+        final inches = parts.length > 1 ? (double.tryParse(parts[1].trim()) ?? 0) : 0;
+        return ((ft * 12) + inches) * 2.54;
+      }
+      final ft = double.tryParse(text);
+      if (ft != null) {
+        return (ft * 12) * 2.54;
+      }
+      return null;
+    }
+  }
+
+  static String _formatCmToFeetAndInches(double cm) {
+    final totalInches = cm / 2.54;
+    var feet = totalInches ~/ 12;
+    var inches = (totalInches % 12).round();
+    if (inches >= 12) {
+      feet += 1;
+      inches = 0;
+    }
+    return '$feet.$inches';
+  }
+
   @override
   void dispose() {
     _avatarAnimController.dispose();
@@ -159,19 +198,22 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
     if (_isHeightMetric == toMetric) return;
     HapticFeedback.selectionClick();
     final currentText = _heightController.text.trim();
-    final currentVal = double.tryParse(currentText);
 
     setState(() {
       _isHeightMetric = toMetric;
-      if (currentVal != null && currentVal > 0) {
+      if (currentText.isNotEmpty) {
         if (toMetric) {
-          // ft to cm
-          final cm = currentVal * 30.48;
-          _heightController.text = cm.toStringAsFixed(0);
+          // Imperial (e.g. 5.10 ft -> 178 cm)
+          final cm = _parseHeightToCm(currentText, false);
+          if (cm != null && cm > 0) {
+            _heightController.text = cm.round().toString();
+          }
         } else {
-          // cm to ft
-          final ft = currentVal / 30.48;
-          _heightController.text = ft.toStringAsFixed(1);
+          // Metric (e.g. 178 cm -> 5.10 ft)
+          final cm = double.tryParse(currentText);
+          if (cm != null && cm > 0) {
+            _heightController.text = _formatCmToFeetAndInches(cm);
+          }
         }
       }
     });
@@ -190,11 +232,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
     final age = int.tryParse(_ageController.text.trim());
 
     // Height normalization to cm
-    double? heightCm;
-    final rawHeight = double.tryParse(_heightController.text.trim());
-    if (rawHeight != null && rawHeight > 0) {
-      heightCm = _isHeightMetric ? rawHeight : rawHeight * 30.48;
-    }
+    double? heightCm = _parseHeightToCm(_heightController.text.trim(), _isHeightMetric);
 
     // Weight normalization to kg
     double? weightKg;
@@ -471,11 +509,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
                 _buildSectionHeader(textTheme, 'WELLNESS FOCUS', Icons.spa_rounded),
                 const SizedBox(height: 12),
                 _buildWellnessChips(textTheme),
-                const SizedBox(height: 36),
-
-                // 6. Action Button
-                _buildSaveButton(),
-                const SizedBox(height: 120),
+                const SizedBox(height: 60),
               ],
             ),
           ),
@@ -996,56 +1030,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
             },
           );
         }).toList(),
-      ),
-    );
-  }
-
-  /// Save Button
-  Widget _buildSaveButton() {
-    return Semantics(
-      label: 'Save profile changes',
-      button: true,
-      child: Container(
-        height: 54,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          gradient: const LinearGradient(
-            colors: [FitoraColors.mintGreen, FitoraColors.softEmerald],
-            begin: Alignment.centerLeft,
-            end: Alignment.centerRight,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: FitoraColors.mintGreen.withValues(alpha: 0.3),
-              blurRadius: 16,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: ElevatedButton(
-          onPressed: _saveProfile,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.transparent,
-            shadowColor: Colors.transparent,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          ),
-          child: const Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.check_rounded, color: Colors.black, size: 20),
-              SizedBox(width: 8),
-              Text(
-                'Save Changes',
-                style: TextStyle(
-                  color: Colors.black,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 16,
-                  letterSpacing: 0.3,
-                ),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }

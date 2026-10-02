@@ -13,7 +13,6 @@ import 'package:fitora/features/progress/providers/progress_controller.dart';
 import 'package:fitora/features/wellness/providers/wellness_provider.dart';
 import 'package:fitora/features/wellness/domain/wellness_models.dart';
 import 'package:fitora/features/personalization/providers/personalization_controller.dart';
-import 'package:fitora/features/progress/widgets/weekly_summary_card.dart';
 import 'package:fitora/features/progress/widgets/health_trend_chart.dart';
 import 'package:fitora/shared/widgets/fitora_background.dart';
 import 'package:fitora/features/workouts/widgets/log_workout_modal.dart';
@@ -77,7 +76,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
         child: Scaffold(
           backgroundColor: Colors.transparent,
           floatingActionButton: Padding(
-            padding: const EdgeInsets.only(bottom: 120),
+            padding: const EdgeInsets.only(bottom: 16),
             child: Semantics(
               button: true,
               label: 'Log Workout',
@@ -292,15 +291,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
             priorSummaries,
           ),
         ],
-        const SizedBox(height: FitoraSpacing.xl),
-
-        // Section 3: Weekly Performance & WoW Deltas
-        _buildSectionHeader(textTheme, 'WEEKLY PERFORMANCE'),
-        const SizedBox(height: FitoraSpacing.md),
-        const WeeklySummaryCard(),
-        const SizedBox(height: FitoraSpacing.xl),
-
-        // Section 4: Recovery (Sleep, Hydration, Cycle, Mood, Breathing)
+        // Section 3: Recovery (Sleep, Hydration, Cycle, Mood, Breathing)
         _buildSectionHeader(textTheme, 'RECOVERY & WELLNESS'),
         const SizedBox(height: FitoraSpacing.md),
         _buildRecoverySection(context, textTheme),

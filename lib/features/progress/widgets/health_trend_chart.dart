@@ -107,54 +107,42 @@ class _HealthTrendChartState extends ConsumerState<HealthTrendChart>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header with Title & Period Filter Pills
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              // Header with Title & Delta Information (Clean & Uncluttered)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Text(
-                              'TRENDS & ANALYTICS',
-                              style: tt.labelSmall?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 1.2,
-                                color: theme.colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            Text(
-                              hasData
-                                  ? 'Avg: ${_formatMetricValue(selectedMetric, avgValue)} ${selectedMetric.unit}'
-                                  : 'No entries recorded',
-                              style: tt.bodySmall?.copyWith(
-                                color: hasData
-                                    ? metricColor
-                                    : theme.colorScheme.onSurfaceVariant,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 11,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            _buildDeltaBadge(
-                              context: context,
-                              tt: tt,
-                              deltaPct: deltaPct,
-                              timeframe: timeframe,
-                            ),
-                          ],
-                        ),
-                      ],
+                  Text(
+                    'TRENDS & ANALYTICS',
+                    style: tt.labelSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.2,
+                      color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
-                  _buildPeriodFilterToggle(ref, timeframe, tt, context),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Text(
+                        hasData
+                            ? 'Avg: ${_formatMetricValue(selectedMetric, avgValue)} ${selectedMetric.unit}'
+                            : 'No entries recorded',
+                        style: tt.bodySmall?.copyWith(
+                          color: hasData
+                              ? metricColor
+                              : theme.colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      _buildDeltaBadge(
+                        context: context,
+                        tt: tt,
+                        deltaPct: deltaPct,
+                        timeframe: timeframe,
+                      ),
+                    ],
+                  ),
                 ],
               ),
 
@@ -297,64 +285,6 @@ class _HealthTrendChartState extends ConsumerState<HealthTrendChart>
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  // ── Period Filter Selector ───────────────────────────────────────────────────
-  Widget _buildPeriodFilterToggle(
-    WidgetRef ref,
-    HealthTimeframe current,
-    TextTheme tt,
-    BuildContext context,
-  ) {
-    final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.all(3),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.onSurface.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: HealthTimeframe.values.map((tf) {
-          final isSelected = tf == current;
-          return GestureDetector(
-            onTap: () {
-              setState(() => _touchedIndex = null);
-              ref.read(healthTimeframeProvider.notifier).state = tf;
-            },
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(10),
-                gradient: isSelected
-                    ? const LinearGradient(
-                        colors: [
-                          FitoraColors.mintGreen,
-                          FitoraColors.calmCyan,
-                        ],
-                      )
-                    : null,
-              ),
-              child: Text(
-                tf.label,
-                style: tt.labelSmall?.copyWith(
-                  color: isSelected
-                      ? Colors.black
-                      : theme.colorScheme.onSurfaceVariant,
-                  fontWeight: isSelected ? FontWeight.w900 : FontWeight.w600,
-                  fontSize: 10,
-                ),
-              ),
-            ),
-          );
-        }).toList(),
       ),
     );
   }

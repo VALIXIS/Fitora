@@ -59,8 +59,8 @@ void main() {
     expect(find.text('kg'), findsOneWidget);
     expect(find.text('lbs'), findsOneWidget);
 
-    // Verify Save Button
-    expect(find.text('Save Changes'), findsOneWidget);
+    // Verify Save Button at top
+    expect(find.text('Save'), findsOneWidget);
 
     // Toggle weight to lbs
     await tester.tap(find.text('lbs'));
@@ -73,8 +73,8 @@ void main() {
     await tester.tap(find.text('ft'));
     await tester.pump(const Duration(milliseconds: 200));
 
-    // 180 cm / 30.48 = 5.9 ft
-    expect(find.text('5.9'), findsOneWidget);
+    // 180 cm in feet and inches is 5'11" (5.11)
+    expect(find.text('5.11'), findsOneWidget);
 
     // Unmount and flush to ensure all timers and frames finish cleanly
     await tester.pumpWidget(const SizedBox());
