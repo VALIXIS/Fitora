@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -14,7 +15,9 @@ import 'package:fitora/shared/widgets/glow_container.dart';
 import 'package:fitora/features/wellness/providers/wellness_provider.dart';
 import 'package:fitora/shared/widgets/fitora_background.dart';
 import 'package:fitora/features/profile/widgets/achievements_grid.dart';
+import 'package:fitora/features/cloud_backup/widgets/cloud_backup_modal.dart';
 import 'package:fitora/core/ads/ad_service.dart';
+import 'package:fitora/core/services/haptic_service.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -89,7 +92,7 @@ class ProfileScreen extends ConsumerWidget {
                     const SizedBox(height: FitoraSpacing.xl),
 
                     _buildSectionTitle(context, textTheme, 'QUICK ACTIONS'),
-                    _buildQuickActions(context, textTheme),
+                    _buildQuickActions(context, textTheme, ref),
                     const SizedBox(height: FitoraSpacing.xl),
 
                     const AchievementsGrid(),
@@ -115,8 +118,8 @@ class ProfileScreen extends ConsumerWidget {
                       },
                     ),
                     const SizedBox(height: FitoraSpacing.md),
-                    const FitoraNativeAdCard(),
-                    const SizedBox(height: 100),
+                    const Center(child: FitoraBannerAd()),
+                    const SizedBox(height: 160),
                   ]),
                 ),
               ),
@@ -127,7 +130,11 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildSectionTitle(BuildContext context, TextTheme textTheme, String title) {
+  Widget _buildSectionTitle(
+    BuildContext context,
+    TextTheme textTheme,
+    String title,
+  ) {
     final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.only(left: 4, bottom: 12),
@@ -142,7 +149,11 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildCard(BuildContext context, List<Widget> children, {Color? highlightColor}) {
+  Widget _buildCard(
+    BuildContext context,
+    List<Widget> children, {
+    Color? highlightColor,
+  }) {
     final theme = Theme.of(context);
     final glowColor = highlightColor ?? FitoraColors.calmCyan;
     return GlowContainer(
@@ -152,7 +163,9 @@ class ProfileScreen extends ConsumerWidget {
       child: Container(
         width: double.infinity,
         decoration: BoxDecoration(
-          color: theme.cardTheme.color ?? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+          color:
+              theme.cardTheme.color ??
+              theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color:
@@ -211,7 +224,9 @@ class ProfileScreen extends ConsumerWidget {
                   const SizedBox(height: 4),
                   Text(
                     subtitle,
-                    style: tt.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                    style: tt.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                   ),
                   const SizedBox(height: 6),
                   Container(
@@ -252,7 +267,11 @@ class ProfileScreen extends ConsumerWidget {
     ]);
   }
 
-  Widget _buildHealthOverview(BuildContext context, TextTheme tt, PersonalizationProfile profile) {
+  Widget _buildHealthOverview(
+    BuildContext context,
+    TextTheme tt,
+    PersonalizationProfile profile,
+  ) {
     double bmi = 0.0;
     if (profile.weightKg != null &&
         profile.heightCm != null &&
@@ -266,7 +285,12 @@ class ProfileScreen extends ConsumerWidget {
         Row(
           children: [
             Expanded(
-              child: _buildHealthMetric(context, tt, 'Age', '${profile.age ?? 25}'),
+              child: _buildHealthMetric(
+                context,
+                tt,
+                'Age',
+                '${profile.age ?? 25}',
+              ),
             ),
             const SizedBox(width: FitoraSpacing.sm),
             Expanded(
@@ -293,42 +317,7 @@ class ProfileScreen extends ConsumerWidget {
           _buildCard(context, [
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.monitor_weight_outlined,
-                    color: FitoraColors.mintGreen,
-                    size: 28,
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'BMI (Body Mass Index)',
-                          style: tt.bodyMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurface,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          _getBmiCategory(bmi),
-                          style: tt.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Text(
-                    bmi.toStringAsFixed(1),
-                    style: tt.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: FitoraColors.mintGreen,
-                    ),
-                  ),
-                ],
-              ),
+              child: AnimatedBMIGauge(bmi: bmi),
             ),
           ]),
         ],
@@ -336,14 +325,12 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  String _getBmiCategory(double bmi) {
-    if (bmi < 18.5) return 'Underweight';
-    if (bmi < 25) return 'Normal Weight';
-    if (bmi < 30) return 'Overweight';
-    return 'Obese';
-  }
-
-  Widget _buildHealthMetric(BuildContext context, TextTheme tt, String label, String value) {
+  Widget _buildHealthMetric(
+    BuildContext context,
+    TextTheme tt,
+    String label,
+    String value,
+  ) {
     final theme = Theme.of(context);
     return GlowContainer(
       glowColor: FitoraColors.calmCyan.withValues(alpha: 0.02),
@@ -352,9 +339,13 @@ class ProfileScreen extends ConsumerWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: FitoraSpacing.lg),
         decoration: BoxDecoration(
-          color: theme.cardTheme.color ?? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+          color:
+              theme.cardTheme.color ??
+              theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5)),
+          border: Border.all(
+            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+          ),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -443,8 +434,16 @@ class ProfileScreen extends ConsumerWidget {
     ]);
   }
 
-  Widget _buildQuickActions(BuildContext context, TextTheme tt) {
+  Widget _buildQuickActions(BuildContext context, TextTheme tt, WidgetRef ref) {
     return _buildCard(context, [
+      _buildActionTile(
+        context,
+        tt,
+        Icons.cloud_sync_rounded,
+        'Cloud Backup & Restore',
+        onTap: () => showCloudBackupModal(context, ref),
+      ),
+      _buildDivider(context),
       _buildActionTile(
         context,
         tt,
@@ -476,7 +475,9 @@ class ProfileScreen extends ConsumerWidget {
         'Help & Support',
         onTap: () {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Support email: official.valixis@gmail.com')),
+            const SnackBar(
+              content: Text('Support email: official.valixis@gmail.com'),
+            ),
           );
         },
       ),
@@ -485,7 +486,9 @@ class ProfileScreen extends ConsumerWidget {
 
   Widget _buildDivider(BuildContext context) {
     return Divider(
-      color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.3),
+      color: Theme.of(
+        context,
+      ).colorScheme.outlineVariant.withValues(alpha: 0.3),
       height: 1,
       indent: 56,
     );
@@ -506,7 +509,11 @@ class ProfileScreen extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       child: Row(
         children: [
-          Icon(icon, color: iconColor ?? theme.colorScheme.onSurfaceVariant, size: 24),
+          Icon(
+            icon,
+            color: iconColor ?? theme.colorScheme.onSurfaceVariant,
+            size: 24,
+          ),
           const SizedBox(width: 16),
           Expanded(
             child: Text(
@@ -651,10 +658,16 @@ void showStepGoalPicker(BuildContext context, WidgetRef ref, int currentGoal) {
                     max: 30000,
                     divisions: 54,
                     activeColor: FitoraColors.mintGreen,
-                    inactiveColor: theme.colorScheme.onSurface.withValues(alpha: 0.12),
+                    inactiveColor: theme.colorScheme.onSurface.withValues(
+                      alpha: 0.12,
+                    ),
                     onChanged: (val) {
+                      final newGoal = (val / 500).round() * 500;
+                      if (newGoal != tempGoal) {
+                        ref.read(hapticServiceProvider).sliderChange();
+                      }
                       setState(() {
-                        tempGoal = (val / 500).round() * 500;
+                        tempGoal = newGoal;
                       });
                     },
                   ),
@@ -671,14 +684,20 @@ void showStepGoalPicker(BuildContext context, WidgetRef ref, int currentGoal) {
                         selected: isSelected,
                         label: kStr,
                         child: ConstrainedBox(
-                          constraints: const BoxConstraints(minHeight: 48, minWidth: 48),
+                          constraints: const BoxConstraints(
+                            minHeight: 48,
+                            minWidth: 48,
+                          ),
                           child: ChoiceChip(
                             label: Text('${p ~/ 1000}k'),
                             selected: isSelected,
                             selectedColor: FitoraColors.mintGreen,
-                            backgroundColor: theme.colorScheme.onSurface.withValues(alpha: 0.05),
+                            backgroundColor: theme.colorScheme.onSurface
+                                .withValues(alpha: 0.05),
                             labelStyle: TextStyle(
-                              color: isSelected ? Colors.black : theme.colorScheme.onSurfaceVariant,
+                              color: isSelected
+                                  ? Colors.black
+                                  : theme.colorScheme.onSurfaceVariant,
                               fontWeight: isSelected
                                   ? FontWeight.bold
                                   : FontWeight.normal,
@@ -699,7 +718,9 @@ void showStepGoalPicker(BuildContext context, WidgetRef ref, int currentGoal) {
                     label: 'Save Step Target',
                     child: ElevatedButton(
                       onPressed: () {
-                        ref.read(customStepGoalProvider.notifier).setGoal(tempGoal);
+                        ref
+                            .read(customStepGoalProvider.notifier)
+                            .setGoal(tempGoal);
                         Navigator.pop(ctx);
                       },
                       style: ElevatedButton.styleFrom(
@@ -713,7 +734,10 @@ void showStepGoalPicker(BuildContext context, WidgetRef ref, int currentGoal) {
                       ),
                       child: const Text(
                         'Save Step Target',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
                       ),
                     ),
                   ),
@@ -725,4 +749,154 @@ void showStepGoalPicker(BuildContext context, WidgetRef ref, int currentGoal) {
       );
     },
   );
+}
+
+class AnimatedBMIGauge extends StatelessWidget {
+  final double bmi;
+  const AnimatedBMIGauge({super.key, required this.bmi});
+
+  @override
+  Widget build(BuildContext context) {
+    String category = 'Normal';
+    Color categoryColor = FitoraColors.mintGreen;
+
+    if (bmi < 18.5) {
+      category = 'Underweight';
+      categoryColor = Colors.blueAccent;
+    } else if (bmi < 25) {
+      category = 'Normal';
+      categoryColor = FitoraColors.mintGreen;
+    } else if (bmi < 30) {
+      category = 'Overweight';
+      categoryColor = FitoraColors.warningOrange;
+    } else {
+      category = 'Obese';
+      categoryColor = FitoraColors.errorRed;
+    }
+
+    final theme = Theme.of(context);
+
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: 15.0, end: bmi),
+      duration: const Duration(milliseconds: 1400),
+      curve: Curves.easeOutCubic,
+      builder: (context, value, child) {
+        final displayBmi = value.clamp(15.0, 40.0);
+        final percent = (displayBmi - 15) / (40 - 15);
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'BMI Score',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      category,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: categoryColor,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                Text(
+                  value.toStringAsFixed(1),
+                  style: theme.textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.w900,
+                    color: theme.colorScheme.onSurface,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              height: 24,
+              child: Stack(
+                alignment: Alignment.centerLeft,
+                children: [
+                  // Track background
+                  Container(
+                    height: 8,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(4),
+                      gradient: const LinearGradient(
+                        colors: [
+                          Colors.blueAccent,
+                          FitoraColors.mintGreen,
+                          FitoraColors.warningOrange,
+                          FitoraColors.errorRed,
+                        ],
+                        stops: [0.1, 0.4, 0.7, 0.9],
+                      ),
+                    ),
+                  ),
+                  // Thumb
+                  Positioned(
+                    left:
+                        percent *
+                        (MediaQuery.of(context).size.width -
+                            64 -
+                            24), // approx available width
+                    child: Container(
+                      width: 24,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.surface,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: categoryColor, width: 4),
+                        boxShadow: [
+                          BoxShadow(
+                            color: categoryColor.withValues(alpha: 0.4),
+                            blurRadius: 8,
+                            spreadRadius: 2,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  '15',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                Text(
+                  '25',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                Text(
+                  '40+',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        );
+      },
+    );
+  }
 }

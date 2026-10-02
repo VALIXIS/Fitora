@@ -51,7 +51,8 @@ class HealthPermissionsService {
     if (!result.isGranted) {
       return SensorStatus.permissionRequired;
     }
-
+    
+    // Permission granted
     final snap = await _sensorRepo.getDebugSnapshot();
     if (!snap.sensorAvailable) {
       return SensorStatus.unavailable;

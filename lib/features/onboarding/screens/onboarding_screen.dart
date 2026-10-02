@@ -4,6 +4,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:fitora/app/router/app_routes.dart';
 import 'package:fitora/core/constants/spacing.dart';
+import 'package:fitora/core/theme/fitora_colors.dart';
 import 'package:fitora/core/services/permission_manager.dart';
 import 'package:fitora/features/onboarding/presentation/onboarding_page.dart';
 import 'package:fitora/features/onboarding/providers/onboarding_controller.dart';
@@ -201,21 +202,19 @@ class _OnboardingIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: List.generate(total, (index) {
         final isActive = index == currentIndex;
         return AnimatedContainer(
-          duration: const Duration(milliseconds: 220),
-          curve: Curves.easeOutCubic,
-          margin: const EdgeInsets.symmetric(horizontal: FitoraSpacing.xs),
-          width: isActive ? 18 : 6,
-          height: 6,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+          margin: const EdgeInsets.symmetric(horizontal: 4),
+          width: isActive ? 24 : 8,
+          height: 8,
           decoration: BoxDecoration(
-            color: isActive ? colorScheme.primary : colorScheme.outlineVariant,
-            borderRadius: BorderRadius.circular(999),
+            color: isActive ? FitoraColors.mintGreen : Colors.white30,
+            borderRadius: BorderRadius.circular(4),
           ),
         );
       }),

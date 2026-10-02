@@ -4,10 +4,13 @@ import 'package:go_router/go_router.dart';
 import 'package:fitora/core/constants/spacing.dart';
 import 'package:fitora/core/theme/fitora_colors.dart';
 import 'package:fitora/features/settings/providers/settings_provider.dart';
+import 'package:fitora/shared/widgets/scale_on_press.dart';
+import 'package:fitora/core/services/haptic_service.dart';
 
 Future<void> showSleepAnalysisModal(BuildContext context, WidgetRef ref) async {
   await showModalBottomSheet(
     context: context,
+    useRootNavigator: true,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     builder: (context) => const _SleepAnalysisModal(),
@@ -152,7 +155,12 @@ class _SleepAnalysisModalState extends ConsumerState<_SleepAnalysisModal> {
                 max: 12.0,
                 divisions: 14,
                 label: '${_targetHours.toStringAsFixed(1)}h Target',
-                onChanged: (val) => setState(() => _targetHours = val),
+                onChanged: (val) {
+                  if (val != _targetHours) {
+                    ref.read(hapticServiceProvider).sliderChange();
+                  }
+                  setState(() => _targetHours = val);
+                },
               ),
             ),
 
@@ -181,7 +189,10 @@ class _SleepAnalysisModalState extends ConsumerState<_SleepAnalysisModal> {
                         fontWeight: FontWeight.bold,
                         fontSize: 12,
                       ),
-                      onSelected: (_) => setState(() => _targetHours = tVal),
+                      onSelected: (_) {
+                        ref.read(hapticServiceProvider).buttonPress();
+                        setState(() => _targetHours = tVal);
+                      },
                     ),
                   ),
                 );
@@ -193,26 +204,32 @@ class _SleepAnalysisModalState extends ConsumerState<_SleepAnalysisModal> {
             Semantics(
               button: true,
               label: 'Save Target Goal',
-              child: ElevatedButton(
-                onPressed: _saveTargetGoal,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: FitoraColors.calmCyan,
-                  foregroundColor: Colors.black,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  minimumSize: const Size.fromHeight(48),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+              child: ScaleOnPress(
+                child: ElevatedButton(
+                  onPressed: () {
+                    ref.read(hapticServiceProvider).buttonPress();
+                    _saveTargetGoal();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: FitoraColors.calmCyan,
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    minimumSize: const Size.fromHeight(48),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                   ),
-                ),
-                child: Text(
-                  'Save Target Goal',
-                  style: tt.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w900,
-                    color: Colors.black,
+                  child: Text(
+                    'Save Target Goal',
+                    style: tt.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w900,
+                      color: Colors.black,
+                    ),
                   ),
                 ),
               ),
             ),
+            const SizedBox(height: 32),
           ],
         ),
       ),

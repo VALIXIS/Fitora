@@ -2,8 +2,10 @@ import 'package:fitora/core/services/firebase_initializer.dart';
 import 'package:fitora/core/services/notification_service.dart';
 import 'package:fitora/core/storage/app_preferences.dart';
 import 'package:fitora/core/health/services/background_sync_service.dart';
+import 'package:fitora/core/health/services/foreground_step_service.dart';
 import 'package:fitora/core/storage/local_database_service.dart';
 import 'package:fitora/core/utils/app_logger.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class AppInitializer {
   static Future<void> initialize() async {
@@ -22,5 +24,8 @@ class AppInitializer {
     // Initialize WorkManager background sync for 1-hour periodic health data updates
     await BackgroundSyncManager.initialize();
     AppLogger.info('AppInitializer: BackgroundSyncManager initialized at ${s.elapsedMilliseconds}ms');
+    
+    // Initialize continuous foreground step service
+    AppLogger.info('AppInitializer: ForegroundStepService disabled at ${s.elapsedMilliseconds}ms');
   }
 }

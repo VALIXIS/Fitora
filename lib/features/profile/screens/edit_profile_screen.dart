@@ -475,7 +475,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
 
                 // 6. Action Button
                 _buildSaveButton(),
-                const SizedBox(height: 48),
+                const SizedBox(height: 120),
               ],
             ),
           ),

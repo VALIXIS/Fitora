@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:fitora/app/navigation/fitora_bottom_nav_bar.dart';
+import 'package:fitora/core/services/haptic_service.dart';
 
-class AppShell extends StatelessWidget {
+class AppShell extends ConsumerWidget {
   final StatefulNavigationShell navigationShell;
 
   const AppShell({
@@ -10,7 +12,10 @@ class AppShell extends StatelessWidget {
     required this.navigationShell,
   });
 
-  void _onTap(int index) {
+  void _onTap(WidgetRef ref, int index) {
+    if (index != navigationShell.currentIndex) {
+      ref.read(hapticServiceProvider).tabSwitch();
+    }
     navigationShell.goBranch(
       index,
       initialLocation: index == navigationShell.currentIndex,
@@ -18,12 +23,13 @@ class AppShell extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
+      extendBody: true,
       body: navigationShell,
       bottomNavigationBar: FitoraBottomNavBar(
         currentIndex: navigationShell.currentIndex,
-        onTap: _onTap,
+        onTap: (index) => _onTap(ref, index),
       ),
     );
   }

@@ -7,10 +7,13 @@ import 'package:fitora/features/wellness/providers/wellness_provider.dart';
 import 'package:fitora/features/settings/providers/settings_provider.dart';
 import 'package:fitora/features/sleep/widgets/circular_sleep_dial.dart';
 import 'package:fitora/core/health/domain/sleep_calculations.dart';
+import 'package:fitora/shared/widgets/scale_on_press.dart';
+import 'package:fitora/core/services/haptic_service.dart';
 
 Future<void> showSleepLogModal(BuildContext context, WidgetRef ref) async {
   await showModalBottomSheet(
     context: context,
+    useRootNavigator: true,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     builder: (context) => const _LogSleepModal(),
@@ -50,6 +53,7 @@ class _LogSleepModalState extends ConsumerState<_LogSleepModal> {
   }
 
   Future<void> _onSave() async {
+    ref.read(hapticServiceProvider).buttonPress();
     final duration = SleepCalculations.calculateTargetDuration(
       _bedHour,
       _bedMin,
@@ -275,25 +279,28 @@ class _LogSleepModalState extends ConsumerState<_LogSleepModal> {
             Semantics(
               button: true,
               label: 'Save Sleep Log',
-              child: ElevatedButton(
-                onPressed: _onSave,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: FitoraColors.calmCyan,
-                  foregroundColor: Colors.black,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+              child: ScaleOnPress(
+                child: ElevatedButton(
+                  onPressed: _onSave,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: FitoraColors.calmCyan,
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                   ),
-                ),
-                child: Text(
-                  'Save Sleep Log',
-                  style: tt.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w900,
-                    color: Colors.black,
+                  child: Text(
+                    'Save Sleep Log',
+                    style: tt.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w900,
+                      color: Colors.black,
+                    ),
                   ),
                 ),
               ),
             ),
+            const SizedBox(height: 32),
           ],
         ),
       ),

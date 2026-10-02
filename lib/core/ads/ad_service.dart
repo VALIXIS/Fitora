@@ -13,12 +13,15 @@ class AdService {
   static const String productionBannerAdUnitId = 'ca-app-pub-6059224677913709/5926741912';
   static const String productionInterstitialAdUnitId = 'ca-app-pub-6059224677913709/2861972172';
   static const String productionNativeAdUnitId = 'ca-app-pub-6059224677913709/5926741912';
+  static const String productionRewardedAdUnitId = 'ca-app-pub-6059224677913709/5224354917';
 
   // Google Test Ad Unit IDs (Used in Debug mode to protect AdMob account)
   static const String testInterstitialAdUnitId = 'ca-app-pub-3940256099942544/1033173712';
   static const String testBannerAdUnitId = 'ca-app-pub-3940256099942544/6300978111';
   static const String testNativeAdUnitIdAndroid = 'ca-app-pub-3940256099942544/2247696110';
   static const String testNativeAdUnitIdIos = 'ca-app-pub-3940256099942544/3986624511';
+  static const String testRewardedAdUnitIdAndroid = 'ca-app-pub-3940256099942544/5224354917';
+  static const String testRewardedAdUnitIdIos = 'ca-app-pub-3940256099942544/1712485313';
 
   static String get bannerAdUnitId =>
       kDebugMode ? testBannerAdUnitId : productionBannerAdUnitId;
@@ -32,9 +35,129 @@ class AdService {
           : testNativeAdUnitIdAndroid)
       : productionNativeAdUnitId;
 
+  static String get rewardedAdUnitId => kDebugMode
+      ? (defaultTargetPlatform == TargetPlatform.iOS
+          ? testRewardedAdUnitIdIos
+          : testRewardedAdUnitIdAndroid)
+      : productionRewardedAdUnitId;
+
   static bool _initialized = false;
   static InterstitialAd? _interstitialAd;
+  static RewardedAd? _rewardedAd;
   static bool _isAdLoading = false;
+  static bool _isRewardedLoading = false;
+
+  // In-memory session unlock tokens for soundscape tracks
+  static final Set<String> _sessionUnlockedSoundscapeTokens = <String>{};
+
+  /// Checks if a soundscape track has an active session unlock token
+  static bool isSoundscapeUnlocked(String soundscapeId) {
+    return _sessionUnlockedSoundscapeTokens.contains(soundscapeId);
+  }
+
+  /// Grants a session unlock token for a soundscape track
+  static void unlockSoundscape(String soundscapeId) {
+    _sessionUnlockedSoundscapeTokens.add(soundscapeId);
+    AppLogger.info('Soundscape $soundscapeId unlocked with session token.');
+  }
+
+  /// Revokes soundscape session unlock tokens (e.g. for testing)
+  static void resetSoundscapeUnlocks() {
+    _sessionUnlockedSoundscapeTokens.clear();
+  }
+
+  /// Preloads a Rewarded Video Ad into cache
+  static Future<void> preloadRewardedAd() async {
+    if (_rewardedAd != null || _isRewardedLoading) return;
+    await initialize();
+
+    _isRewardedLoading = true;
+    RewardedAd.load(
+      adUnitId: rewardedAdUnitId,
+      request: const AdRequest(),
+      rewardedAdLoadCallback: RewardedAdLoadCallback(
+        onAdLoaded: (ad) {
+          _isRewardedLoading = false;
+          _rewardedAd = ad;
+          AppLogger.info('Rewarded ad preloaded successfully.');
+        },
+        onAdFailedToLoad: (error) {
+          _isRewardedLoading = false;
+          _rewardedAd = null;
+          AppLogger.info('Rewarded ad failed to preload: ${error.message}');
+        },
+      ),
+    );
+  }
+
+  /// Shows a Rewarded Video Ad to unlock a soundscape.
+  /// On reward earned, grants a session unlock token for [soundscapeId].
+  static Future<void> showRewardedAdForSoundscape({
+    required BuildContext context,
+    required String soundscapeId,
+    required VoidCallback onRewardEarned,
+    VoidCallback? onAdDismissed,
+    Function(String error)? onAdFailed,
+  }) async {
+    await initialize();
+
+    // If already unlocked during this session, execute reward callback immediately
+    if (isSoundscapeUnlocked(soundscapeId)) {
+      onRewardEarned();
+      return;
+    }
+
+    void presentLoadedAd(RewardedAd ad) {
+      ad.fullScreenContentCallback = FullScreenContentCallback(
+        onAdDismissedFullScreenContent: (ad) {
+          ad.dispose();
+          _rewardedAd = null;
+          onAdDismissed?.call();
+          preloadRewardedAd(); // Preload next ad for high eCPM fill
+        },
+        onAdFailedToShowFullScreenContent: (ad, error) {
+          ad.dispose();
+          _rewardedAd = null;
+          AppLogger.info('Rewarded ad failed to show: ${error.message}');
+          // If ad presentation fails, gracefully unlock so user is not blocked
+          unlockSoundscape(soundscapeId);
+          onRewardEarned();
+          preloadRewardedAd();
+        },
+      );
+
+      ad.show(
+        onUserEarnedReward: (AdWithoutView ad, RewardItem reward) {
+          unlockSoundscape(soundscapeId);
+          onRewardEarned();
+        },
+      );
+    }
+
+    if (_rewardedAd != null) {
+      final ad = _rewardedAd!;
+      _rewardedAd = null;
+      presentLoadedAd(ad);
+      return;
+    }
+
+    // Otherwise load on-demand
+    RewardedAd.load(
+      adUnitId: rewardedAdUnitId,
+      request: const AdRequest(),
+      rewardedAdLoadCallback: RewardedAdLoadCallback(
+        onAdLoaded: (ad) {
+          presentLoadedAd(ad);
+        },
+        onAdFailedToLoad: (error) {
+          AppLogger.info('Rewarded ad failed to load: ${error.message}');
+          // Graceful fallback in development/test environments
+          unlockSoundscape(soundscapeId);
+          onRewardEarned();
+        },
+      ),
+    );
+  }
 
   /// Initializes Google Mobile Ads SDK
   static Future<void> initialize() async {

@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:fitora/core/constants/spacing.dart';
@@ -48,35 +49,40 @@ class AuthScreen extends HookConsumerWidget {
                           children: [
                             const _AuthHeader(),
                             const SizedBox(height: FitoraSpacing.lg),
-                            AuthSectionCard(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  AuthActionButton(
-                                    label: 'Continue with Google',
-                                    icon: Icons.g_mobiledata_rounded,
-                                    style: AuthActionStyle.primary,
-                                    isLoading: isBusy &&
-                                        activeAction == AuthActionType.google,
-                                    onPressed: isBusy
-                                        ? null
-                                        : () =>
-                                            actionController.signInWithGoogle(),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(16),
+                              child: BackdropFilter(
+                                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                                child: AuthSectionCard(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                                    children: [
+                                      AuthActionButton(
+                                        label: 'Continue with Google',
+                                        icon: Icons.g_mobiledata_rounded,
+                                        style: AuthActionStyle.primary,
+                                        isLoading: isBusy &&
+                                            activeAction == AuthActionType.google,
+                                        onPressed: isBusy
+                                            ? null
+                                            : () =>
+                                                actionController.signInWithGoogle(),
+                                      ),
+                                      const SizedBox(height: FitoraSpacing.md),
+                                      AuthActionButton(
+                                        label: 'Continue as Guest',
+                                        icon: Icons.person_outline,
+                                        style: AuthActionStyle.subtle,
+                                        isLoading: isBusy &&
+                                            activeAction == AuthActionType.guest,
+                                        onPressed: isBusy
+                                            ? null
+                                            : () => actionController
+                                                .signInAnonymously(),
+                                      ),
+                                    ],
                                   ),
-                                  const SizedBox(height: FitoraSpacing.md),
-
-                                  AuthActionButton(
-                                    label: 'Continue as Guest',
-                                    icon: Icons.person_outline,
-                                    style: AuthActionStyle.subtle,
-                                    isLoading: isBusy &&
-                                        activeAction == AuthActionType.guest,
-                                    onPressed: isBusy
-                                        ? null
-                                        : () => actionController
-                                            .signInAnonymously(),
-                                  ),
-                                ],
+                                ),
                               ),
                             ),
                             if (errorMessage != null) ...[

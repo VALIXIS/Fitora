@@ -183,7 +183,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                 )
                     .animate()
                     .fadeIn(delay: 200.ms, duration: 600.ms)
-                    .slideY(begin: 0.2, end: 0, curve: Curves.easeOutCubic),
+                    .slideY(begin: 0.2, end: 0, curve: Curves.easeOutCubic)
+                    .animate(onPlay: (c) => c.repeat())
+                    .shimmer(duration: 1500.ms, color: Colors.white.withOpacity(0.4), delay: 300.ms),
 
                 const SizedBox(height: 8),
 

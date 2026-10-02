@@ -1,5 +1,9 @@
 import 'dart:async';
 import 'dart:math';
+import 'package:pedometer/pedometer.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:fitora/core/utils/app_logger.dart';
 import '../domain/health_sync_models.dart';
 
 class PedometerService {
@@ -8,21 +12,23 @@ class PedometerService {
   PedometerService._internal();
 
   StreamController<int>? _stepStreamController;
-  Timer? _simulationTimer;
-  int _currentSteps = 0; // Starts at 0, no hardcoded health fallback
+  int _currentSteps = 0;
+  int _baseSteps = -1;
+  String _currentDate = '';
+  
   bool _isWalking = false;
   HealthPermissionStatus _permissionStatus = HealthPermissionStatus.notDetermined;
+  StreamSubscription<StepCount>? _pedometerSub;
 
   bool get isWalking => _isWalking;
   int get currentSteps => _currentSteps;
   HealthPermissionStatus get permissionStatus => _permissionStatus;
 
-  // Stream of realtime steps count
   Stream<int> get stepStream {
     if (_stepStreamController == null || _stepStreamController!.isClosed) {
       _stepStreamController = StreamController<int>.broadcast(
-        onListen: _startSimulation,
-        onCancel: _stopSimulation,
+        onListen: _startListeningToPedometer,
+        onCancel: _stopListeningToPedometer,
       );
     }
     return _stepStreamController!.stream;
@@ -40,7 +46,8 @@ class PedometerService {
   }
 
   Future<HealthPermissionStatus> requestPermissions() async {
-    await Future.delayed(const Duration(milliseconds: 600)); // OS pop-up speed
+    await Future.delayed(const Duration(milliseconds: 600));
+    await Permission.activityRecognition.request();
     _permissionStatus = HealthPermissionStatus.authorized;
     _emitCurrentSteps();
     return _permissionStatus;
@@ -50,9 +57,6 @@ class PedometerService {
     _isWalking = !_isWalking;
     if (_isWalking) {
       _emitCurrentSteps();
-      _startSimulation();
-    } else {
-      _stopSimulation();
     }
   }
 
@@ -64,20 +68,44 @@ class PedometerService {
     }
   }
 
-  void _startSimulation() {
-    _simulationTimer?.cancel();
-    if (!_isWalking) return;
-    // Simulate walking: increments step counter by 1-2 steps every 900ms
-    _simulationTimer = Timer.periodic(const Duration(milliseconds: 900), (timer) {
-      if (_isWalking && _permissionStatus == HealthPermissionStatus.authorized) {
-        _currentSteps += 1 + Random().nextInt(2);
+  Future<void> _startListeningToPedometer() async {
+    _pedometerSub?.cancel();
+    final prefs = await SharedPreferences.getInstance();
+
+    _pedometerSub = Pedometer.stepCountStream.listen(
+      (StepCount event) async {
+        final now = DateTime.now();
+        final dateStr = '${now.year}-${now.month}-${now.day}';
+        
+        if (_currentDate != dateStr) {
+          _currentDate = dateStr;
+          final savedDate = prefs.getString('fitora_step_date');
+          
+          if (savedDate == dateStr) {
+            _baseSteps = prefs.getInt('fitora_base_steps') ?? event.steps;
+          } else {
+            _baseSteps = event.steps;
+            await prefs.setString('fitora_step_date', _currentDate);
+            await prefs.setInt('fitora_base_steps', _baseSteps);
+          }
+        }
+
+        if (event.steps < _baseSteps) {
+           _baseSteps = 0;
+           await prefs.setInt('fitora_base_steps', _baseSteps);
+        }
+        
+        _currentSteps = event.steps - _baseSteps;
         _emitCurrentSteps();
-      }
-    });
+      },
+      onError: (error) {
+        AppLogger.error('Pedometer error', error);
+      },
+    );
   }
 
-  void _stopSimulation() {
-    _simulationTimer?.cancel();
-    _simulationTimer = null;
+  void _stopListeningToPedometer() {
+    _pedometerSub?.cancel();
+    _pedometerSub = null;
   }
 }

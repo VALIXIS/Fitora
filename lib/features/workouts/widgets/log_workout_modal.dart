@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fitora/core/theme/fitora_colors.dart';
 import 'package:fitora/core/services/haptic_service.dart';
+import 'package:fitora/shared/widgets/scale_on_press.dart';
 import 'package:fitora/features/personalization/providers/personalization_controller.dart';
 import 'package:fitora/features/workouts/domain/workout_models.dart';
 import 'package:fitora/features/workouts/providers/workout_provider.dart';
@@ -12,6 +13,7 @@ class LogWorkoutModal extends ConsumerStatefulWidget {
   static void show(BuildContext context) {
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => const LogWorkoutModal(),
@@ -122,6 +124,7 @@ class _LogWorkoutModalState extends ConsumerState<LogWorkoutModal> {
                       selected: isSelected,
                       onSelected: (val) {
                         if (val) {
+                          ref.read(hapticServiceProvider).buttonPress();
                           setState(() {
                             _selectedType = type;
                           });
@@ -161,6 +164,9 @@ class _LogWorkoutModalState extends ConsumerState<LogWorkoutModal> {
               activeColor: FitoraColors.mintGreen,
               inactiveColor: theme.colorScheme.onSurface.withValues(alpha: 0.12),
               onChanged: (val) {
+                if (val.round() != _duration.round()) {
+                  ref.read(hapticServiceProvider).sliderChange();
+                }
                 setState(() {
                   _duration = val;
                 });
@@ -225,43 +231,46 @@ class _LogWorkoutModalState extends ConsumerState<LogWorkoutModal> {
             Semantics(
               button: true,
               label: 'Save Workout',
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: FitoraColors.mintGreen,
-                  foregroundColor: Colors.black,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+              child: ScaleOnPress(
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: FitoraColors.mintGreen,
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                   ),
-                ),
-                onPressed: () async {
-                  ref.read(hapticServiceProvider).mediumImpact();
-                  final log = WorkoutLogEntry(
-                    id: DateTime.now().millisecondsSinceEpoch.toString(),
-                    activityType: _selectedType,
-                    durationMinutes: _duration.round(),
-                    estimatedCalories: estimatedCal,
-                    timestamp: DateTime.now(),
-                    notes: _notesController.text.trim().isNotEmpty ? _notesController.text.trim() : null,
-                  );
-                  await ref.read(workoutProvider.notifier).addWorkoutLog(log);
-                  if (mounted) {
-                    Navigator.of(context).pop();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Logged ${log.activityType.label} successfully!'),
-                        backgroundColor: FitoraColors.mintGreen,
-                        behavior: SnackBarBehavior.floating,
-                      ),
+                  onPressed: () async {
+                    ref.read(hapticServiceProvider).buttonPress();
+                    final log = WorkoutLogEntry(
+                      id: DateTime.now().millisecondsSinceEpoch.toString(),
+                      activityType: _selectedType,
+                      durationMinutes: _duration.round(),
+                      estimatedCalories: estimatedCal,
+                      timestamp: DateTime.now(),
+                      notes: _notesController.text.trim().isNotEmpty ? _notesController.text.trim() : null,
                     );
-                  }
-                },
-                child: const Text(
-                  'Save Workout',
-                  style: TextStyle(fontWeight: FontWeight.bold),
+                    await ref.read(workoutProvider.notifier).addWorkoutLog(log);
+                    if (mounted) {
+                      Navigator.of(context).pop();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Logged ${log.activityType.label} successfully!'),
+                          backgroundColor: FitoraColors.mintGreen,
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    }
+                  },
+                  child: const Text(
+                    'Save Workout',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
                 ),
               ),
             ),
+            const SizedBox(height: 32),
           ],
         ),
       ),

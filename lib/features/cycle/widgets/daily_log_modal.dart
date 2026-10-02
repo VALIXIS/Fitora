@@ -13,6 +13,7 @@ class DailyLogModal extends ConsumerStatefulWidget {
   static void show(BuildContext context, DateTime date) {
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => DailyLogModal(date: date),
@@ -377,6 +378,7 @@ class _DailyLogModalState extends ConsumerState<DailyLogModal> {
                   ),
                 ],
               ),
+              const SizedBox(height: 32),
             ],
           ),
         ),

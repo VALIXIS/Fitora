@@ -1,3 +1,4 @@
+import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -22,6 +23,8 @@ import 'package:fitora/features/sleep/widgets/log_sleep_modal.dart';
 import 'package:permission_handler/permission_handler.dart' as ph;
 import 'package:fitora/features/settings/providers/settings_provider.dart';
 import 'package:fitora/core/ads/ad_service.dart';
+import 'package:fitora/shared/widgets/scale_on_press.dart';
+import 'package:fitora/core/services/haptic_service.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -31,9 +34,12 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
+  late ConfettiController _confettiController;
+
   @override
   void initState() {
     super.initState();
+    _confettiController = ConfettiController(duration: const Duration(seconds: 2));
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         PermissionManager.requestFirstLaunchPermissions(context, ref);
@@ -42,9 +48,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     });
   }
 
+  @override
+  void dispose() {
+    _confettiController.dispose();
+    super.dispose();
+  }
+
   void _showNotificationsModal(BuildContext context) {
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) {
@@ -230,26 +243,68 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final lastWeek = today.subtract(const Duration(days: 6));
     final weeklySummaries = ref.watch(weeklyActivityProvider(lastWeek));
 
-    return FitoraBackground(
-      child: Scaffold(
+    // Goal completion transition listener (incomplete -> complete)
+    ref.listen<DailyGoalStatus>(dailyGoalStatusProvider(today), (previous, next) {
+      if (previous != null) {
+        for (final nextMetric in next.metrics) {
+          final prevMetric = previous.metrics.firstWhere(
+            (m) => m.key == nextMetric.key,
+            orElse: () => GoalMetric(
+              key: nextMetric.key,
+              name: '',
+              current: 0,
+              goal: 0,
+              unit: '',
+              isCompleted: false,
+              availability: MetricAvailability.available,
+            ),
+          );
+          if (!prevMetric.isCompleted && nextMetric.isCompleted) {
+            ref.read(hapticServiceProvider).goalCompleted();
+            if (nextMetric.key == 'steps') {
+              _confettiController.play();
+            }
+            break;
+          }
+        }
+      }
+    });
+
+    return Stack(
+      children: [
+        FitoraBackground(
+          child: Scaffold(
         backgroundColor: Colors.transparent,
-        floatingActionButton: Semantics(
-          button: true,
-          label: 'Quick Log Workout',
-          hint: 'Opens workout logging modal',
-          child: FloatingActionButton.extended(
-            onPressed: () => LogWorkoutModal.show(context),
-            tooltip: 'Quick Log Workout',
-            label: const Text('Quick Log', style: TextStyle(fontWeight: FontWeight.bold)),
-            icon: const Icon(Icons.add_rounded),
-            backgroundColor: FitoraColors.mintGreen,
-            foregroundColor: Colors.black,
+        floatingActionButton: Padding(
+          padding: const EdgeInsets.only(bottom: 140),
+          child: Semantics(
+            button: true,
+            label: 'Quick Log Workout',
+            hint: 'Opens workout logging modal',
+            child: ScaleOnPress(
+              child: FloatingActionButton.extended(
+                onPressed: () {
+                  ref.read(hapticServiceProvider).buttonPress();
+                  LogWorkoutModal.show(context);
+                },
+                tooltip: 'Quick Log Workout',
+                label: const Text('Quick Log', style: TextStyle(fontWeight: FontWeight.bold)),
+                icon: const Icon(Icons.add_rounded),
+                backgroundColor: FitoraColors.mintGreen,
+                foregroundColor: Colors.black,
+              ),
+            ),
           ),
         ),
         body: RefreshIndicator(
-          onRefresh: () => Future.value(),
-          color: const Color(0xFF06B6D4),
-          backgroundColor: const Color(0xFF0D1117),
+          onRefresh: () async {
+            ref.invalidate(dailyActivityProvider);
+            ref.invalidate(wellnessProvider);
+            ref.invalidate(weeklyActivityProvider);
+            await Future.delayed(const Duration(milliseconds: 500));
+          },
+          color: FitoraColors.mintGreen,
+          backgroundColor: FitoraColors.darkSurface,
           child: CustomScrollView(
             physics: const BouncingScrollPhysics(),
             slivers: [
@@ -295,6 +350,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
                     // Weekly Activity Section
                     _buildWeeklyActivity(textTheme, weeklySummaries),
+                    const SizedBox(height: FitoraSpacing.lg),
+
+                    // Native Sponsored Ad Banner below Weekly Activity
+                    const FitoraNativeAdCard(),
                     const SizedBox(height: FitoraSpacing.xl),
 
                     // Daily Goals Section Header
@@ -312,14 +371,32 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     _buildDailyGoals(textTheme, today),
                     const SizedBox(height: FitoraSpacing.xl),
 
-                    const SizedBox(height: 100), // Bottom scroll padding
+                    // ── Bottom Banner Ad Placement ──────────────────────────────
+                    const Center(child: FitoraBannerAd()),
+                    const SizedBox(height: FitoraSpacing.lg),
+
+                    const SizedBox(height: 160), // Bottom scroll padding
                   ]),
                 ),
               ),
             ],
           ),
         ),
-      ),
+          ),
+        ),
+        Align(
+          alignment: Alignment.topCenter,
+          child: ConfettiWidget(
+            confettiController: _confettiController,
+            blastDirectionality: BlastDirectionality.explosive,
+            colors: const [
+              FitoraColors.mintGreen,
+              FitoraColors.calmCyan,
+              FitoraColors.softPink,
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -510,7 +587,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   Icons.local_fire_department_rounded,
                                   color: FitoraColors.warningOrange,
                                   size: 16,
-                                ),
+                                ).animate(onPlay: (c) => c.repeat(reverse: true))
+                                  .scale(begin: const Offset(0.95, 0.95), end: const Offset(1.15, 1.15), duration: 800.ms),
                                 const SizedBox(width: 4),
                                 Text(
                                   '${streakState.currentStreak}',
@@ -630,13 +708,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    Text(
-                      stepsValue == 0 ? '0' : formattedSteps,
-                      style: textTheme.displaySmall?.copyWith(
-                        fontWeight: FontWeight.w900,
-                        color: theme.colorScheme.onSurface,
-                        letterSpacing: -1.0,
-                      ),
+                    TweenAnimationBuilder<double>(
+                      tween: Tween<double>(begin: 0, end: stepsValue.toDouble()),
+                      duration: const Duration(milliseconds: 1200),
+                      curve: Curves.easeOutCubic,
+                      builder: (context, val, child) {
+                        final formattedVal = val.toInt().toString().replaceAllMapped(
+                          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+                          (m) => '${m[1]},',
+                        );
+                        return Text(
+                          val == 0 ? '0' : formattedVal,
+                          style: textTheme.displaySmall?.copyWith(
+                            fontWeight: FontWeight.w900,
+                            color: theme.colorScheme.onSurface,
+                            letterSpacing: -1.0,
+                          ),
+                        );
+                      },
                     ),
                     const SizedBox(height: 6),
                     Text(
@@ -678,7 +767,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ),
                   ),
                 ],
-              ),
+              ).animate(target: (stepsValue >= stepsGoal && stepsGoal > 0) ? 1 : 0)
+                .scale(begin: const Offset(1,1), end: const Offset(1.05, 1.05), duration: 800.ms, curve: Curves.easeInOut)
+                .then(delay: 0.ms).scale(begin: const Offset(1.05, 1.05), end: const Offset(1, 1), duration: 800.ms, curve: Curves.easeInOut),
             ],
           ),
         ),
@@ -755,32 +846,35 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           button: true,
                           enabled: wellness.hydrationLiters > 0,
                           label: 'Decrease hydration by 250 milliliters',
-                          child: InkWell(
-                            onTap: () {
-                              ref
-                                  .read(wellnessProvider.notifier)
-                                  .removeHydration(0.25);
-                            },
-                            borderRadius: BorderRadius.circular(12),
-                            child: ConstrainedBox(
-                              constraints: const BoxConstraints(
-                                minWidth: 48,
-                                minHeight: 48,
-                              ),
-                              child: Center(
-                                child: Container(
-                                  padding: const EdgeInsets.all(4),
-                                  decoration: BoxDecoration(
-                                    color: Colors.blueAccent.withValues(alpha: 0.15),
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(
-                                      color: Colors.blueAccent.withValues(alpha: 0.3),
+                          child: ScaleOnPress(
+                            child: InkWell(
+                              onTap: () {
+                                ref.read(hapticServiceProvider).buttonPress();
+                                ref
+                                    .read(wellnessProvider.notifier)
+                                    .removeHydration(0.25);
+                              },
+                              borderRadius: BorderRadius.circular(12),
+                              child: ConstrainedBox(
+                                constraints: const BoxConstraints(
+                                  minWidth: 48,
+                                  minHeight: 48,
+                                ),
+                                child: Center(
+                                  child: Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: BoxDecoration(
+                                      color: Colors.blueAccent.withValues(alpha: 0.15),
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(
+                                        color: Colors.blueAccent.withValues(alpha: 0.3),
+                                      ),
                                     ),
-                                  ),
-                                  child: const Icon(
-                                    Icons.remove_rounded,
-                                    color: Colors.blueAccent,
-                                    size: 18,
+                                    child: const Icon(
+                                      Icons.remove_rounded,
+                                      color: Colors.blueAccent,
+                                      size: 18,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -791,32 +885,35 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         Semantics(
                           button: true,
                           label: 'Add 250 milliliters of water',
-                          child: InkWell(
-                            onTap: () {
-                              ref
-                                  .read(wellnessProvider.notifier)
-                                  .addHydration(0.25);
-                            },
-                            borderRadius: BorderRadius.circular(12),
-                            child: ConstrainedBox(
-                              constraints: const BoxConstraints(
-                                minWidth: 48,
-                                minHeight: 48,
-                              ),
-                              child: Center(
-                                child: Container(
-                                  padding: const EdgeInsets.all(4),
-                                  decoration: BoxDecoration(
-                                    color: Colors.blueAccent.withValues(alpha: 0.15),
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(
-                                      color: Colors.blueAccent.withValues(alpha: 0.3),
+                          child: ScaleOnPress(
+                            child: InkWell(
+                              onTap: () {
+                                ref.read(hapticServiceProvider).buttonPress();
+                                ref
+                                    .read(wellnessProvider.notifier)
+                                    .addHydration(0.25);
+                              },
+                              borderRadius: BorderRadius.circular(12),
+                              child: ConstrainedBox(
+                                constraints: const BoxConstraints(
+                                  minWidth: 48,
+                                  minHeight: 48,
+                                ),
+                                child: Center(
+                                  child: Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: BoxDecoration(
+                                      color: Colors.blueAccent.withValues(alpha: 0.15),
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(
+                                        color: Colors.blueAccent.withValues(alpha: 0.3),
+                                      ),
                                     ),
-                                  ),
-                                  child: const Icon(
-                                    Icons.add_rounded,
-                                    color: Colors.blueAccent,
-                                    size: 18,
+                                    child: const Icon(
+                                      Icons.add_rounded,
+                                      color: Colors.blueAccent,
+                                      size: 18,
+                                    ),
                                   ),
                                 ),
                               ),
