@@ -298,6 +298,7 @@ final appRouterProvider = Provider<GoRouter>(
                       ),
                     ),
                     GoRoute(
+                      parentNavigatorKey: rootNavigatorKey,
                       path: AppRoutes.editProfile,
                       name: AppRouteNames.editProfile,
                       pageBuilder: (context, state) => slideUpTransitionPage(

@@ -119,7 +119,6 @@ class BackgroundSyncManager {
       if (!isTesting) {
         await Workmanager().initialize(
           callbackDispatcher,
-          isInDebugMode: false,
         );
         await schedulePeriodicSync();
       }
