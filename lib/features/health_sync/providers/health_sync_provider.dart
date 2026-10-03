@@ -97,6 +97,8 @@ class HealthSyncController extends StateNotifier<HealthSyncState> with WidgetsBi
       }
     } catch (_) {}
 
+    if (!mounted) return;
+
     state = HealthSyncState(
       connections: connections,
       priorities: priorities,

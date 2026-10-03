@@ -54,11 +54,11 @@ final gamificationProvider = StateNotifierProvider<GamificationNotifier, Gamific
   final now = DateTime.now();
   final today = DateTime(now.year, now.month, now.day);
 
-  ref.listen(dailyActivityProvider(today), (_, __) {
+  ref.listen(dailyActivityProvider(today), (_, _) {
     notifier.checkStreaksAndBadges();
   });
 
-  ref.listen(wellnessProvider, (_, __) {
+  ref.listen(wellnessProvider, (_, _) {
     notifier.checkStreaksAndBadges();
   });
 
@@ -79,19 +79,43 @@ class GamificationNotifier extends StateNotifier<GamificationState> {
 
   static List<AchievementBadge> get defaultBadges => [
         const AchievementBadge(
-          id: 'streak_3',
-          title: '3-Day Fire',
-          description: 'Achieve a 3-day step or water streak',
-          iconType: 'streak_3',
+          id: 'streak_7',
+          title: '7-Day Step Warrior',
+          description: 'Achieve a 7-day daily step or activity streak',
+          iconType: 'streak_7',
           category: 'streak',
+          tier: 'gold',
+          statRequirement: '7-Day Streak',
           isUnlocked: false,
         ),
         const AchievementBadge(
-          id: 'streak_7',
-          title: '7-Day Warrior',
-          description: 'Achieve a 7-day step or water streak',
-          iconType: 'streak_7',
+          id: 'sleep_8h',
+          title: '8h Sleep Champion',
+          description: 'Log 8 or more hours of restful, high-quality sleep',
+          iconType: 'sleep_8h',
+          category: 'sleep',
+          tier: 'diamond',
+          statRequirement: '8+ Hours Sleep',
+          isUnlocked: false,
+        ),
+        const AchievementBadge(
+          id: 'water_2l',
+          title: '2L Water Champion',
+          description: 'Reach 2.0 Liters or more of hydration in a single day',
+          iconType: 'water_2l',
+          category: 'water',
+          tier: 'emerald',
+          statRequirement: '2.0L Daily Hydration',
+          isUnlocked: false,
+        ),
+        const AchievementBadge(
+          id: 'streak_3',
+          title: '3-Day Fire',
+          description: 'Achieve a 3-day continuous wellness streak',
+          iconType: 'streak_3',
           category: 'streak',
+          tier: 'bronze',
+          statRequirement: '3-Day Streak',
           isUnlocked: false,
         ),
         const AchievementBadge(
@@ -100,6 +124,8 @@ class GamificationNotifier extends StateNotifier<GamificationState> {
           description: 'Walk 10,000 steps in a single day',
           iconType: 'steps_10k',
           category: 'steps',
+          tier: 'silver',
+          statRequirement: '10,000 Steps',
           isUnlocked: false,
         ),
         const AchievementBadge(
@@ -108,6 +134,28 @@ class GamificationNotifier extends StateNotifier<GamificationState> {
           description: 'Log your first manual workout session',
           iconType: 'workout_first',
           category: 'workout',
+          tier: 'bronze',
+          statRequirement: '1 Workout',
+          isUnlocked: false,
+        ),
+        const AchievementBadge(
+          id: 'recovery_peak',
+          title: 'Peak Readiness',
+          description: 'Reach an optimal 80%+ recovery score',
+          iconType: 'recovery_peak',
+          category: 'wellness',
+          tier: 'gold',
+          statRequirement: '80%+ Recovery',
+          isUnlocked: false,
+        ),
+        const AchievementBadge(
+          id: 'wellness_master',
+          title: 'Master of Balance',
+          description: 'Concurrently hit daily steps, hydration, and sleep goals',
+          iconType: 'wellness_master',
+          category: 'wellness',
+          tier: 'diamond',
+          statRequirement: 'Triple Goal Met',
           isUnlocked: false,
         ),
       ];
@@ -117,7 +165,10 @@ class GamificationNotifier extends StateNotifier<GamificationState> {
       final prefs = await AppPreferences.instance();
       final raw = prefs.getString(_storageKey);
       if (raw != null) {
-        state = GamificationState.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+        final loaded = GamificationState.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+        final existingIds = loaded.badges.map((b) => b.id).toSet();
+        final missingDefaults = defaultBadges.where((b) => !existingIds.contains(b.id)).toList();
+        state = loaded.copyWith(badges: [...loaded.badges, ...missingDefaults]);
       }
       checkStreaksAndBadges();
     } catch (_) {}
@@ -210,12 +261,18 @@ class GamificationNotifier extends StateNotifier<GamificationState> {
       lastActiveDate: DateTime.now(),
     );
 
-    // Badge Unlocking Checks
+    // Badge Unlocking & Stats Checks
     final now = DateTime.now();
     final todaySteps = _ref.read(dailyActivityProvider(now)).steps;
     final yesterday = now.subtract(const Duration(days: 1));
     final yesterdaySteps = _ref.read(dailyActivityProvider(yesterday)).steps;
     final has10kSteps = todaySteps >= 10000 || yesterdaySteps >= 10000;
+
+    final wellness = _ref.read(wellnessProvider);
+    final has2lWater = wellness.hydrationLiters >= 2.0;
+    final has8hSleep = wellness.sleepMinutes >= 480;
+    final hasPeakRecovery = wellness.recoveryScore >= 80;
+    final hasTripleGoals = _isStepGoalMet(now) && _isWaterGoalMet(now) && has8hSleep;
 
     // Workouts logged?
     bool hasWorkout = false;
@@ -225,21 +282,72 @@ class GamificationNotifier extends StateNotifier<GamificationState> {
     } catch (_) {}
 
     final updatedBadges = state.badges.map((badge) {
-      if (badge.isUnlocked) return badge;
+      bool shouldUnlock = badge.isUnlocked;
+      String currentProgress = badge.currentProgress ?? '';
+      double progressRatio = badge.progressRatio;
 
-      bool shouldUnlock = false;
-      if (badge.id == 'streak_3' && currentLongest >= 3) shouldUnlock = true;
-      if (badge.id == 'streak_7' && currentLongest >= 7) shouldUnlock = true;
-      if (badge.id == 'steps_10k' && has10kSteps) shouldUnlock = true;
-      if (badge.id == 'workout_first' && hasWorkout) shouldUnlock = true;
+      if (badge.id == 'streak_7') {
+        final streakVal = max(max(stepStreak, currentLongest), storedLongest);
+        progressRatio = (streakVal / 7.0).clamp(0.0, 1.0);
+        currentProgress = '$streakVal / 7 days';
+        if (streakVal >= 7) shouldUnlock = true;
+      } else if (badge.id == 'sleep_8h') {
+        final sleepHours = wellness.sleepMinutes / 60.0;
+        progressRatio = (wellness.sleepMinutes / 480.0).clamp(0.0, 1.0);
+        currentProgress = '${sleepHours.toStringAsFixed(1)}h / 8.0h';
+        if (has8hSleep) shouldUnlock = true;
+      } else if (badge.id == 'water_2l') {
+        progressRatio = (wellness.hydrationLiters / 2.0).clamp(0.0, 1.0);
+        currentProgress = '${wellness.hydrationLiters.toStringAsFixed(1)}L / 2.0L';
+        if (has2lWater) shouldUnlock = true;
+      } else if (badge.id == 'streak_3') {
+        final streak3Val = max(currentLongest, storedLongest);
+        progressRatio = (streak3Val / 3.0).clamp(0.0, 1.0);
+        currentProgress = '$streak3Val / 3 days';
+        if (streak3Val >= 3) shouldUnlock = true;
+      } else if (badge.id == 'steps_10k') {
+        final bestSteps = max(todaySteps, yesterdaySteps);
+        progressRatio = (bestSteps / 10000.0).clamp(0.0, 1.0);
+        currentProgress = '$bestSteps / 10,000';
+        if (has10kSteps) shouldUnlock = true;
+      } else if (badge.id == 'workout_first') {
+        progressRatio = hasWorkout ? 1.0 : 0.0;
+        currentProgress = hasWorkout ? '1 / 1 session' : '0 / 1 session';
+        if (hasWorkout) shouldUnlock = true;
+      } else if (badge.id == 'recovery_peak') {
+        progressRatio = (wellness.recoveryScore / 80.0).clamp(0.0, 1.0);
+        currentProgress = '${wellness.recoveryScore}% / 80%';
+        if (hasPeakRecovery) shouldUnlock = true;
+      } else if (badge.id == 'wellness_master') {
+        int goalsMet = 0;
+        if (_isStepGoalMet(now)) goalsMet++;
+        if (_isWaterGoalMet(now) || has2lWater) goalsMet++;
+        if (has8hSleep) goalsMet++;
+        progressRatio = (goalsMet / 3.0).clamp(0.0, 1.0);
+        currentProgress = '$goalsMet / 3 goals';
+        if (hasTripleGoals) shouldUnlock = true;
+      }
+
+      if (badge.isUnlocked) {
+        return badge.copyWith(
+          currentProgress: currentProgress.isNotEmpty ? currentProgress : 'Completed',
+          progressRatio: 1.0,
+        );
+      }
 
       if (shouldUnlock) {
         return badge.copyWith(
           isUnlocked: true,
-          unlockedAt: DateTime.now(),
+          unlockedAt: badge.unlockedAt ?? DateTime.now(),
+          currentProgress: currentProgress.isNotEmpty ? currentProgress : 'Completed',
+          progressRatio: 1.0,
         );
       }
-      return badge;
+
+      return badge.copyWith(
+        currentProgress: currentProgress,
+        progressRatio: progressRatio,
+      );
     }).toList();
 
     state = state.copyWith(
@@ -251,6 +359,21 @@ class GamificationNotifier extends StateNotifier<GamificationState> {
   }
 
   void checkBadges() {
+    checkStreaksAndBadges();
+  }
+
+  void updateStreak({
+    int? currentStepStreak,
+    int? currentWaterStreak,
+    int? longestStreak,
+  }) {
+    state = state.copyWith(
+      streakState: state.streakState.copyWith(
+        currentStepStreak: currentStepStreak,
+        currentWaterStreak: currentWaterStreak,
+        longestStreak: longestStreak,
+      ),
+    );
     checkStreaksAndBadges();
   }
 }
