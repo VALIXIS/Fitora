@@ -22,6 +22,7 @@ import 'package:go_router/go_router.dart';
 import 'package:fitora/features/cycle/providers/cycle_provider.dart';
 import 'package:fitora/core/services/haptic_service.dart';
 import 'package:fitora/shared/widgets/scale_on_press.dart';
+import 'package:fitora/features/wellness/widgets/recovery_gauge_3d.dart';
 
 class ProgressScreen extends ConsumerStatefulWidget {
   const ProgressScreen({super.key});
@@ -655,6 +656,19 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            Center(
+              child: RecoveryGauge3D(
+                score: wellness.recoveryScore.toDouble(),
+                sleepContribution: (wellness.sleepQualityScore > 0
+                    ? (wellness.sleepQualityScore * 0.40)
+                    : (wellness.recoveryScore * 0.40)),
+                stepContribution: (wellness.recoveryScore * 0.35),
+                restingHrContribution: (wellness.recoveryScore * 0.25),
+                sleepLabel:
+                    '${sleep.totalSleep.inHours}h ${sleep.totalSleep.inMinutes.remainder(60)}m • ${sleep.sleepScore}% Quality',
+              ),
+            ),
+            const SizedBox(height: FitoraSpacing.lg),
             _buildSleepCard(context, tt, sleep),
             const SizedBox(height: FitoraSpacing.md),
             _buildHydrationCard(context, ref, tt, wellness),
