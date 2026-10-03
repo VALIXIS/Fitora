@@ -1,18 +1,13 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:fitora/core/storage/app_preferences.dart';
 import 'package:fitora/core/storage/local_database_service.dart';
 import 'package:fitora/features/cloud_backup/data/cloud_backup_repository.dart';
 import 'package:fitora/features/cloud_backup/domain/cloud_backup_models.dart';
 import 'package:fitora/features/cloud_backup/services/cloud_backup_sync_service.dart';
-import 'package:fitora/features/cloud_backup/providers/cloud_backup_providers.dart';
 import 'package:fitora/features/workouts/domain/workout_models.dart';
 import 'package:fitora/features/cycle/domain/cycle_models.dart';
 import 'package:fitora/features/personalization/domain/personalization_models.dart';
-import 'package:fitora/features/auth/models/auth_user.dart';
-import 'package:fitora/features/auth/models/auth_session.dart';
-import 'package:fitora/features/auth/providers/auth_providers.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 void main() {

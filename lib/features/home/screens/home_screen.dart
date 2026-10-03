@@ -261,9 +261,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           );
           if (!prevMetric.isCompleted && nextMetric.isCompleted) {
             ref.read(hapticServiceProvider).goalCompleted();
-            if (nextMetric.key == 'steps') {
-              _confettiController.play();
-            }
+            _confettiController.play();
             break;
           }
         }
@@ -389,10 +387,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           child: ConfettiWidget(
             confettiController: _confettiController,
             blastDirectionality: BlastDirectionality.explosive,
+            shouldLoop: false,
+            numberOfParticles: 30,
+            emissionFrequency: 0.05,
+            gravity: 0.2,
             colors: const [
               FitoraColors.mintGreen,
               FitoraColors.calmCyan,
               FitoraColors.softPink,
+              Colors.amber,
+              Color(0xFF10B981),
+              Color(0xFF3B82F6),
+              Color(0xFFF97316),
             ],
           ),
         ),
@@ -551,8 +557,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 Consumer(
                   builder: (context, ref, _) {
                     final streakState = ref.watch(goalsStreakProvider);
-                    if (streakState.currentStreak == 0)
+                    if (streakState.currentStreak == 0) {
                       return const SizedBox.shrink();
+                    }
                     return Semantics(
                       button: true,
                       label: 'Streak History, ${streakState.currentStreak} days streak',
@@ -970,7 +977,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                   child: Icon(icon, color: color, size: 20),
                 ),
-                if (trailingAction != null) trailingAction,
+                ?trailingAction,
               ],
             ),
             const SizedBox(height: FitoraSpacing.md),

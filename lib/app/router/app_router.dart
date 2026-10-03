@@ -28,6 +28,7 @@ import 'package:fitora/features/sleep/screens/sleep_detail_screen.dart';
 import 'package:fitora/features/sleep/screens/sleep_schedule_screen.dart';
 import 'package:fitora/features/sleep/screens/soundscapes_screen.dart';
 import 'package:fitora/features/cycle/screens/cycle_dashboard_screen.dart';
+import 'package:fitora/features/gamification/screens/badges_screen.dart';
 
 final rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorKeys = [
@@ -305,6 +306,16 @@ final appRouterProvider = Provider<GoRouter>(
                         context: context,
                         state: state,
                         child: const EditProfileScreen(),
+                      ),
+                    ),
+                    GoRoute(
+                      parentNavigatorKey: rootNavigatorKey,
+                      path: AppRoutes.badges,
+                      name: AppRouteNames.badges,
+                      pageBuilder: (context, state) => slideUpTransitionPage(
+                        context: context,
+                        state: state,
+                        child: const BadgesScreen(),
                       ),
                     ),
                     GoRoute(

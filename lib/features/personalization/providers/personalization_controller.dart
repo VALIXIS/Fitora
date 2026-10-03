@@ -90,6 +90,7 @@ class PersonalizationController extends StateNotifier<PersonalizationViewState> 
   Future<void> _load() async {
     final completed = await _dataSource.isCompleted();
     final profile = await _dataSource.fetchProfile();
+    if (!mounted) return;
     state = state.copyWith(
       isCompleted: completed,
       isLoading: false,
