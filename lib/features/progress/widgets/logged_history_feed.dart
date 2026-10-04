@@ -157,9 +157,11 @@ class _LoggedHistoryFeedState extends ConsumerState<LoggedHistoryFeed> {
           child: isEmpty
               ? _buildEmptyState(context, textTheme)
               : ListView.builder(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: FitoraSpacing.xl,
-                    vertical: FitoraSpacing.xs,
+                  padding: const EdgeInsets.only(
+                    left: FitoraSpacing.xl,
+                    right: FitoraSpacing.xl,
+                    top: FitoraSpacing.xs,
+                    bottom: 110,
                   ),
                   physics: const BouncingScrollPhysics(),
                   itemCount: groupedLogs.keys.length,

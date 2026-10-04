@@ -67,7 +67,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
         child: Scaffold(
           backgroundColor: Colors.transparent,
           floatingActionButton: Padding(
-            padding: const EdgeInsets.only(bottom: 16),
+            padding: const EdgeInsets.only(bottom: 100),
             child: Semantics(
               button: true,
               label: 'Log Workout',
@@ -255,9 +255,11 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
   }) {
     return ListView(
       physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.symmetric(
-        horizontal: FitoraSpacing.xl,
-        vertical: FitoraSpacing.md,
+      padding: const EdgeInsets.only(
+        left: FitoraSpacing.xl,
+        right: FitoraSpacing.xl,
+        top: FitoraSpacing.md,
+        bottom: 110,
       ),
       children: [
         // Period Filter Segmented Toggle (Day / Week / Month)
@@ -653,19 +655,48 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
             "${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}";
         final mood = wellness.loggedMoods[todayStr] ?? 'Not logged';
 
+        final todayActivity = ref.watch(dailyActivityProvider(today));
+
+        // Real Sleep contribution (up to 35 pts)
+        final sleepPts = sleep.totalSleep.inMinutes > 0
+            ? (sleep.sleepScore * 0.35).clamp(0.0, 35.0)
+            : 0.0;
+
+        // Real Activity & Steps contribution (up to 35 pts)
+        final stepsGoal = todayActivity.stepsGoal > 0 ? todayActivity.stepsGoal : 10000;
+        final stepRatio = (todayActivity.steps / stepsGoal).clamp(0.0, 1.0);
+        final stepPts = (stepRatio * 35.0).clamp(0.0, 35.0);
+
+        // Real Hydration & Resting contribution (up to 30 pts: 20 hydration + 10 rest/mood)
+        final hydrationGoal = wellness.hydrationGoalLiters > 0 ? wellness.hydrationGoalLiters : 2.5;
+        final hydrationRatio = (wellness.hydrationLiters / hydrationGoal).clamp(0.0, 1.0);
+        final hydrationPts = (hydrationRatio * 20.0).clamp(0.0, 20.0);
+
+        final moodBonus = mood != 'Not logged' ? 5.0 : 0.0;
+        final restBaseline = 5.0 + moodBonus;
+        final restPts = (hydrationPts + restBaseline).clamp(0.0, 30.0);
+
+        // Real dynamic recovery score
+        final dynamicScore = (sleepPts + stepPts + restPts).clamp(10.0, 100.0);
+
+        final sleepLabelStr = sleep.totalSleep.inMinutes > 0
+            ? '${sleep.totalSleep.inHours}h ${sleep.totalSleep.inMinutes.remainder(60)}m • ${sleep.sleepScore}% Quality'
+            : 'No sleep logged (0h 0m)';
+        final stepLabelStr = '${todayActivity.steps} / $stepsGoal steps (${(stepRatio * 100).round()}%)';
+        final restLabelStr = '${wellness.hydrationLiters.toStringAsFixed(1)}L / ${hydrationGoal.toStringAsFixed(1)}L Hydration • Rest';
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Center(
               child: RecoveryGauge3D(
-                score: wellness.recoveryScore.toDouble(),
-                sleepContribution: (wellness.sleepQualityScore > 0
-                    ? (wellness.sleepQualityScore * 0.40)
-                    : (wellness.recoveryScore * 0.40)),
-                stepContribution: (wellness.recoveryScore * 0.35),
-                restingHrContribution: (wellness.recoveryScore * 0.25),
-                sleepLabel:
-                    '${sleep.totalSleep.inHours}h ${sleep.totalSleep.inMinutes.remainder(60)}m • ${sleep.sleepScore}% Quality',
+                score: dynamicScore,
+                sleepContribution: sleepPts,
+                stepContribution: stepPts,
+                restingHrContribution: restPts,
+                sleepLabel: sleepLabelStr,
+                stepLabel: stepLabelStr,
+                restingHrLabel: restLabelStr,
               ),
             ),
             const SizedBox(height: FitoraSpacing.lg),

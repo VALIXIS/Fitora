@@ -65,13 +65,14 @@ class CloudBackupSyncNotifier extends StateNotifier<CloudBackupSyncState> {
           status: CloudBackupSyncStatus.unauthenticated,
         );
       } else {
-        if (state.enabled) {
-          state = state.copyWith(status: CloudBackupSyncStatus.idle);
-          // Perform automatic initial sync on sign-in
-          syncNow();
-        } else {
-          state = state.copyWith(status: CloudBackupSyncStatus.disabled);
-        }
+        // Automatically enable backup & sync if user signs in with Google
+        prefs.setBool(_prefEnabledKey, true);
+        state = state.copyWith(
+          enabled: true,
+          status: CloudBackupSyncStatus.idle,
+        );
+        // Perform automatic restore and sync on sign-in
+        syncNow();
       }
     });
   }

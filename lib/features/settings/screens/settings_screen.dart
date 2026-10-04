@@ -17,6 +17,9 @@ import 'package:fitora/core/health/providers/health_providers.dart';
 import 'package:fitora/core/health/domain/health_models.dart';
 import 'package:fitora/features/personalization/providers/personalization_controller.dart';
 import 'package:fitora/features/settings/providers/settings_provider.dart';
+import 'package:fitora/features/workouts/providers/workout_provider.dart';
+import 'package:fitora/features/wellness/providers/wellness_provider.dart';
+import 'package:fitora/features/cloud_backup/widgets/cloud_backup_modal.dart';
 import 'package:fitora/shared/widgets/fitora_background.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -345,13 +348,22 @@ class SettingsScreen extends ConsumerWidget {
                     const SizedBox(height: FitoraSpacing.xl),
 
                     // ── DATA ──────────────────────────────────────────────────
-                    _buildSectionTitle(context, 'DATA'),
+                    _buildSectionTitle(context, 'DATA & BACKUP'),
                     _buildSettingsCard(context, [
                       _buildTile(
                         context,
                         textTheme,
+                        Icons.cloud_sync_rounded,
+                        'Cloud Backup & Restore',
+                        null,
+                        onTap: () => showCloudBackupModal(context, ref),
+                      ),
+                      _buildDivider(context),
+                      _buildTile(
+                        context,
+                        textTheme,
                         Icons.download_rounded,
-                        'Export Data',
+                        'Export Data (JSON)',
                         null,
                         onTap: () => _exportData(context, ref),
                       ),
@@ -671,6 +683,7 @@ class SettingsScreen extends ConsumerWidget {
     final tt = theme.textTheme;
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
       backgroundColor: theme.colorScheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -812,8 +825,12 @@ class SettingsScreen extends ConsumerWidget {
     try {
       final profile = ref.read(personalizationControllerProvider).profile;
       final settings = ref.read(settingsProvider);
+      final workouts = ref.read(workoutProvider);
+      final wellness = ref.read(wellnessProvider);
 
       final data = {
+        'version': 2,
+        'exportedAt': DateTime.now().toIso8601String(),
         'profile': profile.toJson(),
         'settings': {
           'isDarkMode': settings.isDarkMode,
@@ -831,6 +848,8 @@ class SettingsScreen extends ConsumerWidget {
           'quietHoursStartHour': settings.quietHoursStartHour,
           'quietHoursEndHour': settings.quietHoursEndHour,
         },
+        'workouts': workouts.map((w) => w.toJson()).toList(),
+        'wellness': wellness.toJson(),
       };
 
       final jsonStr = jsonEncode(data);

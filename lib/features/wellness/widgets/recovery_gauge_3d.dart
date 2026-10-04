@@ -675,14 +675,14 @@ class _RecoveryGauge3DState extends State<RecoveryGauge3D>
           ),
           const SizedBox(height: FitoraSpacing.sm),
 
-          // Factor 3: Resting HR & HRV
+          // Factor 3: Hydration & Rest / Stress Recovery
           _buildFactorRow(
             context: context,
-            icon: Icons.favorite_rounded,
-            iconColor: const Color(0xFFF472B6),
-            title: 'Resting HR & Stress Recovery',
+            icon: hrLabel.contains('Hydration') ? Icons.water_drop_rounded : Icons.favorite_rounded,
+            iconColor: hrLabel.contains('Hydration') ? const Color(0xFF38BDF8) : const Color(0xFFF472B6),
+            title: hrLabel.contains('Hydration') ? 'Hydration & Rest Recovery' : 'Resting HR & Stress Recovery',
             subtitle: hrLabel,
-            contributionRatio: (hrPoints / 25.0).clamp(0.0, 1.0),
+            contributionRatio: (hrPoints / 30.0).clamp(0.0, 1.0),
             pointsText: '+${hrPoints.round()} pts',
             isDark: isDark,
           ),

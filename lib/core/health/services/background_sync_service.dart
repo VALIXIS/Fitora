@@ -9,7 +9,7 @@ import 'package:fitora/core/utils/app_logger.dart';
 import 'package:fitora/features/health_sync/services/health_sync_service.dart' as feature_sync;
 
 /// Unique task identifier for periodic background health synchronization.
-const String kFitoraBackgroundSyncTask = 'com.valixis.fitora.background_health_sync';
+const String kFitoraBackgroundSyncTask = 'com.subhash.fitora.background_health_sync';
 
 /// Unique tag for WorkManager task identification.
 const String kFitoraBackgroundSyncTag = 'fitora_health_sync_tag';

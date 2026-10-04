@@ -650,19 +650,28 @@ void showStepGoalPicker(BuildContext context, WidgetRef ref, int currentGoal) {
 
   showModalBottomSheet(
     context: context,
+    useRootNavigator: true,
+    isScrollControlled: true,
     backgroundColor: theme.colorScheme.surface,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
     ),
     builder: (ctx) {
-      return StatefulBuilder(
-        builder: (context, setState) {
-          return Semantics(
-            scopesRoute: true,
-            namesRoute: true,
-            label: 'Daily Step Target Picker',
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+      return SafeArea(
+        top: false,
+        child: StatefulBuilder(
+          builder: (context, setState) {
+            return Semantics(
+              scopesRoute: true,
+              namesRoute: true,
+              label: 'Daily Step Target Picker',
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(
+                  24,
+                  20,
+                  24,
+                  24 + MediaQuery.of(ctx).viewInsets.bottom,
+                ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -790,9 +799,10 @@ void showStepGoalPicker(BuildContext context, WidgetRef ref, int currentGoal) {
             ),
           );
         },
-      );
-    },
-  );
+      ),
+    );
+  },
+);
 }
 
 class AnimatedBMIGauge extends StatelessWidget {

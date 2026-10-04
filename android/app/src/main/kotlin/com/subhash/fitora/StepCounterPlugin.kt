@@ -19,6 +19,7 @@ class StepCounterPlugin : FlutterPlugin, EventChannel.StreamHandler, MethodChann
         const val PREFS_NAME      = "fitora_step_prefs"
         const val KEY_BOOT_STEP   = "boot_baseline_steps"
         const val KEY_SAVED_DATE  = "baseline_date"
+        const val KEY_LAST_RAW    = "last_raw_steps"
     }
 
     private lateinit var eventChannel: EventChannel
@@ -115,15 +116,27 @@ class StepCounterPlugin : FlutterPlugin, EventChannel.StreamHandler, MethodChann
                 latestRaw = rawSteps
                 lastEventTimestamp = System.currentTimeMillis()
 
+                val prefs     = getPrefs()
                 val todayStr  = todayString()
-                val savedDate = getPrefs().getString(KEY_SAVED_DATE, "")
+                val savedDate = prefs.getString(KEY_SAVED_DATE, "")
 
-                // First reading ever for today — set baseline
+                // If date changed or no baseline yet
                 if (bootBaseline < 0 || savedDate != todayStr) {
-                    // Midnight crossed or first boot reading
-                    bootBaseline = rawSteps
+                    val lastRaw = prefs.getInt(KEY_LAST_RAW, -1)
+                    // If device was not rebooted (rawSteps >= lastRaw), baseline for today is
+                    // the raw step count from end of yesterday. This ensures steps walked early
+                    // in the morning before opening Fitora are accurately counted!
+                    if (lastRaw in 0..rawSteps) {
+                        bootBaseline = lastRaw
+                    } else {
+                        // Phone was rebooted or first time app install
+                        bootBaseline = rawSteps
+                    }
                     saveBaseline(bootBaseline)
                 }
+
+                // Always persist latest raw step count
+                prefs.edit().putInt(KEY_LAST_RAW, rawSteps).apply()
 
                 val todaySteps = (rawSteps - bootBaseline).coerceAtLeast(0)
                 latestTodaySteps = todaySteps
@@ -165,7 +178,7 @@ class StepCounterPlugin : FlutterPlugin, EventChannel.StreamHandler, MethodChann
         bootBaseline  = if (savedDate == todayString()) {
             prefs.getInt(KEY_BOOT_STEP, -1)
         } else {
-            -1   // New day — will be set on first sensor reading
+            -1   // New day — will be calculated preserving morning steps on first reading
         }
     }
 

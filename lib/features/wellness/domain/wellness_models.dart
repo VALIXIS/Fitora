@@ -121,7 +121,7 @@ class WellnessState {
         loggedSymptoms: const {},
         loggedMoods: const {},
         loggedEnergy: const {},
-        recoveryScore: 82,
+        recoveryScore: 20,
         muscleFatigue: 'Low',
         wellnessStreak: 0,
         lastActiveDate: null,

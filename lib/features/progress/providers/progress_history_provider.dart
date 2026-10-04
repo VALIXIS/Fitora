@@ -4,9 +4,12 @@ import 'package:intl/intl.dart';
 import 'package:fitora/core/theme/fitora_colors.dart';
 import 'package:fitora/core/services/haptic_service.dart';
 import 'package:fitora/features/wellness/providers/wellness_provider.dart';
+import 'package:fitora/features/workouts/providers/workout_provider.dart';
+import 'package:fitora/features/workouts/domain/workout_models.dart';
 
 enum LogCategory {
   all,
+  workouts,
   steps,
   sleep,
   water,
@@ -16,6 +19,8 @@ enum LogCategory {
     switch (this) {
       case LogCategory.all:
         return 'All';
+      case LogCategory.workouts:
+        return 'Workouts';
       case LogCategory.steps:
         return 'Steps';
       case LogCategory.sleep:
@@ -31,6 +36,8 @@ enum LogCategory {
     switch (this) {
       case LogCategory.all:
         return Icons.list_alt_rounded;
+      case LogCategory.workouts:
+        return Icons.fitness_center_rounded;
       case LogCategory.steps:
         return Icons.directions_walk_rounded;
       case LogCategory.sleep:
@@ -46,6 +53,8 @@ enum LogCategory {
     switch (this) {
       case LogCategory.all:
         return FitoraColors.mintGreen;
+      case LogCategory.workouts:
+        return const Color(0xFFF97316);
       case LogCategory.steps:
         return FitoraColors.mintGreen;
       case LogCategory.sleep:
@@ -174,6 +183,13 @@ class ProgressHistoryNotifier extends StateNotifier<ProgressHistoryState> {
 
   ProgressHistoryNotifier(this._ref) : super(ProgressHistoryState.initial()) {
     _loadInitialData();
+    // Reactively refresh when workouts or wellness change
+    _ref.listen(workoutProvider, (prev, next) {
+      _refreshLogsAndStats();
+    });
+    _ref.listen(wellnessProvider, (prev, next) {
+      _refreshLogsAndStats();
+    });
   }
 
   void _loadInitialData() {
@@ -198,6 +214,25 @@ class ProgressHistoryNotifier extends StateNotifier<ProgressHistoryState> {
     final now = DateTime.now();
     final wellnessState = _ref.read(wellnessProvider);
     final List<LoggedHistoryEntry> entries = [];
+
+    // 0. Workouts (from Quick Log or regular workout logging)
+    final workouts = _ref.read(workoutProvider);
+    for (final w in workouts) {
+      if (_deletedIds.contains(w.id)) continue;
+      final noteSuffix = (w.notes != null && w.notes!.isNotEmpty) ? ' • ${w.notes}' : '';
+      entries.add(
+        LoggedHistoryEntry(
+          id: w.id,
+          category: LogCategory.workouts,
+          title: '${w.activityType.label} Workout',
+          displayValue: '${w.durationMinutes} min',
+          numericValue: w.durationMinutes.toDouble(),
+          unit: 'min',
+          timestamp: w.timestamp,
+          details: '${w.estimatedCalories.round()} kcal burned$noteSuffix',
+        ),
+      );
+    }
 
     // 1. Water Logs
     for (final waterEntry in wellnessState.waterLogs) {
@@ -470,6 +505,10 @@ class ProgressHistoryNotifier extends StateNotifier<ProgressHistoryState> {
         await _ref
             .read(wellnessProvider.notifier)
             .deleteWaterLogEntry(entry.id);
+      } else if (entry.category == LogCategory.workouts) {
+        await _ref
+            .read(workoutProvider.notifier)
+            .deleteWorkoutLog(entry.id);
       }
 
       // Remove from custom logs if present
