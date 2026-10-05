@@ -1,4 +1,3 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -33,9 +32,21 @@ class ProfileScreen extends ConsumerWidget {
     final today = ref.watch(todayProvider);
     final activity = ref.watch(dailyActivityProvider(today));
 
-    String displayName = authSession.user?.displayName ?? '';
-    if (displayName.isEmpty) displayName = profile.name ?? '';
-    if (displayName.isEmpty) displayName = 'Guest User';
+    String displayName = (profile.name != null && profile.name!.trim().isNotEmpty)
+        ? profile.name!.trim()
+        : (authSession.user?.displayName?.isNotEmpty == true
+            ? authSession.user!.displayName!
+            : 'Guest User');
+
+    final parts = displayName.trim().split(RegExp(r'\s+'));
+    String initials = '';
+    if (parts.isNotEmpty && parts[0].isNotEmpty) {
+      initials += parts[0][0].toUpperCase();
+    }
+    if (parts.length > 1 && parts[1].isNotEmpty) {
+      initials += parts[1][0].toUpperCase();
+    }
+    if (initials.isEmpty) initials = 'U';
 
     return FitoraBackground(
       child: Scaffold(
@@ -69,12 +80,13 @@ class ProfileScreen extends ConsumerWidget {
                       textTheme,
                       profile,
                       displayName,
+                      initials,
                       profile.goal?.label ?? 'General Fitness',
                     ),
                     const SizedBox(height: FitoraSpacing.xl),
 
                     _buildSectionTitle(context, textTheme, 'HEALTH OVERVIEW'),
-                    _buildHealthOverview(context, textTheme, profile),
+                    _buildHealthOverview(context, textTheme, profile, ref),
                     const SizedBox(height: FitoraSpacing.xl),
 
                     _buildSectionTitle(context, textTheme, 'PERSONALIZATION'),
@@ -187,6 +199,7 @@ class ProfileScreen extends ConsumerWidget {
     TextTheme tt,
     PersonalizationProfile profile,
     String name,
+    String initials,
     String subtitle,
   ) {
     final theme = Theme.of(context);
@@ -206,7 +219,16 @@ class ProfileScreen extends ConsumerWidget {
                   end: Alignment.bottomRight,
                 ),
               ),
-              child: const Icon(Icons.person, color: Colors.white, size: 36),
+              alignment: Alignment.center,
+              child: Text(
+                initials,
+                style: const TextStyle(
+                  color: Colors.black,
+                  fontSize: 26,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0.5,
+                ),
+              ),
             ),
             const SizedBox(width: FitoraSpacing.lg),
             Expanded(
@@ -271,6 +293,7 @@ class ProfileScreen extends ConsumerWidget {
     BuildContext context,
     TextTheme tt,
     PersonalizationProfile profile,
+    WidgetRef ref,
   ) {
     double bmi = 0.0;
     if (profile.weightKg != null &&
@@ -278,6 +301,27 @@ class ProfileScreen extends ConsumerWidget {
         profile.heightCm! > 0) {
       final heightM = profile.heightCm! / 100;
       bmi = profile.weightKg! / (heightM * heightM);
+    }
+
+    final isMetric = ref.watch(settingsProvider).isMetric;
+    String heightDisplay = '${profile.heightCm?.round() ?? 170} cm';
+    String weightDisplay = '${profile.weightKg?.toStringAsFixed(1) ?? 65.0} kg';
+
+    if (!isMetric) {
+      if (profile.heightCm != null && profile.heightCm! > 0) {
+        final totalInches = profile.heightCm! / 2.54;
+        var feet = totalInches ~/ 12;
+        var inches = (totalInches % 12).round();
+        if (inches >= 12) {
+          feet += 1;
+          inches = 0;
+        }
+        heightDisplay = '$feet.$inches ft';
+      } else {
+        heightDisplay = '5.10 ft';
+      }
+      final lbs = (profile.weightKg ?? 65.0) * 2.20462;
+      weightDisplay = '${lbs.toStringAsFixed(1)} lbs';
     }
 
     return Column(
@@ -298,7 +342,7 @@ class ProfileScreen extends ConsumerWidget {
                 context,
                 tt,
                 'Height',
-                '${profile.heightCm?.round() ?? 170} cm',
+                heightDisplay,
               ),
             ),
             const SizedBox(width: FitoraSpacing.sm),
@@ -307,7 +351,7 @@ class ProfileScreen extends ConsumerWidget {
                 context,
                 tt,
                 'Weight',
-                '${profile.weightKg?.toStringAsFixed(1) ?? 65.0} kg',
+                weightDisplay,
               ),
             ),
           ],
@@ -606,19 +650,28 @@ void showStepGoalPicker(BuildContext context, WidgetRef ref, int currentGoal) {
 
   showModalBottomSheet(
     context: context,
+    useRootNavigator: true,
+    isScrollControlled: true,
     backgroundColor: theme.colorScheme.surface,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
     ),
     builder: (ctx) {
-      return StatefulBuilder(
-        builder: (context, setState) {
-          return Semantics(
-            scopesRoute: true,
-            namesRoute: true,
-            label: 'Daily Step Target Picker',
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+      return SafeArea(
+        top: false,
+        child: StatefulBuilder(
+          builder: (context, setState) {
+            return Semantics(
+              scopesRoute: true,
+              namesRoute: true,
+              label: 'Daily Step Target Picker',
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(
+                  24,
+                  20,
+                  24,
+                  24 + MediaQuery.of(ctx).viewInsets.bottom,
+                ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -746,9 +799,10 @@ void showStepGoalPicker(BuildContext context, WidgetRef ref, int currentGoal) {
             ),
           );
         },
-      );
-    },
-  );
+      ),
+    );
+  },
+);
 }
 
 class AnimatedBMIGauge extends StatelessWidget {

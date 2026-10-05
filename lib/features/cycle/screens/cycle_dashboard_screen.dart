@@ -44,6 +44,7 @@ class CycleDashboardScreen extends ConsumerWidget {
     ref.read(hapticServiceProvider).lightImpact();
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
       backgroundColor: Colors.transparent,
       builder: (context) => const _CycleSettingsBottomSheet(),
     );

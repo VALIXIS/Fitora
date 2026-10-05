@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:fitora/core/services/haptic_service.dart';
 
 class ScaleOnPress extends StatefulWidget {
   final Widget child;
   final VoidCallback? onTap;
   final double scaleDownTo;
+  final bool enableHaptics;
 
   const ScaleOnPress({
     super.key,
     required this.child,
     this.onTap,
     this.scaleDownTo = 0.95,
+    this.enableHaptics = true,
   });
 
   @override
@@ -50,6 +53,9 @@ class _ScaleOnPressState extends State<ScaleOnPress> with SingleTickerProviderSt
 
   void _onPointerDown(PointerDownEvent event) {
     _controller.forward();
+    if (widget.enableHaptics) {
+      AppHaptics.light();
+    }
   }
 
   void _onPointerUp(PointerUpEvent event) {

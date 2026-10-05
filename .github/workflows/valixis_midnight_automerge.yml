@@ -1,0 +1,59 @@
+name: VALIXIS Midnight Auto-Merge Bot
+
+on:
+  schedule:
+    # 12:00 AM Midnight IST (18:30 UTC).
+    # Multi-slot redundancy: GitHub Actions schedulers often delay exact half-hour crons (:30)
+    # due to global peak load. Providing primary (:30) and off-peak fallback slots (:35, :00)
+    # guarantees execution every single night.
+    - cron: '30 18 * * *'  # 12:00 AM Midnight IST (Primary)
+    - cron: '35 18 * * *'  # 12:05 AM IST (Off-peak congestion bypass)
+    - cron: '00 19 * * *'  # 12:30 AM IST (Secondary failsafe)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  midnight-merge:
+    name: VALIXIS Midnight Autonomous PR Auto-Merge
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure Git Identity
+        run: |
+          git config --global user.name "VALIXIS Midnight Bot"
+          git config --global user.email "bot@valixis.internal"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run Midnight Auto-Merge & Conflict Prompt Engine
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          python .github/scripts/automerge_bot.py
+
+      - name: Upload Midnight Executive Briefing
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: midnight-automerge-briefing
+          path: |
+            MIDNIGHT_AUTOFOCUS_REPORT.md
+            midnight_summary.json
+          if-no-files-found: ignore

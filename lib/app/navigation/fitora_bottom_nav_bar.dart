@@ -21,13 +21,32 @@ class FitoraBottomNavBar extends StatefulWidget {
 class _FitoraBottomNavBarState extends State<FitoraBottomNavBar> {
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    final containerBg = isDark
+        ? const Color(0xFF141918).withValues(alpha: 0.88)
+        : Colors.white.withValues(alpha: 0.95);
+    final borderColor = isDark
+        ? Colors.white.withValues(alpha: 0.12)
+        : const Color(0xFFE2E8F0);
+    final shadowColor = isDark
+        ? FitoraColors.mintGreen.withValues(alpha: 0.15)
+        : Colors.black.withValues(alpha: 0.08);
+
+    final activeColor = isDark ? FitoraColors.mintGreen : const Color(0xFF047857);
+    final inactiveColor = isDark ? Colors.white54 : const Color(0xFF64748B);
+    final indicatorColor = isDark
+        ? FitoraColors.mintGreen.withValues(alpha: 0.20)
+        : const Color(0xFFDCFCE7);
+
     return Container(
       margin: const EdgeInsets.only(left: 16, right: 16, bottom: 24),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
-            color: FitoraColors.mintGreen.withOpacity(0.15),
+            color: shadowColor,
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -41,8 +60,8 @@ class _FitoraBottomNavBarState extends State<FitoraBottomNavBar> {
             height: 72,
             padding: const EdgeInsets.symmetric(horizontal: 8),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.04),
-              border: Border.all(color: Colors.white.withOpacity(0.1)),
+              color: containerBg,
+              border: Border.all(color: borderColor),
               borderRadius: BorderRadius.circular(28),
             ),
             child: LayoutBuilder(
@@ -60,7 +79,7 @@ class _FitoraBottomNavBarState extends State<FitoraBottomNavBar> {
                       width: itemWidth - 8,
                       child: Container(
                         decoration: BoxDecoration(
-                          color: FitoraColors.mintGreen.withOpacity(0.2),
+                          color: indicatorColor,
                           borderRadius: BorderRadius.circular(20),
                         ),
                       ),
@@ -89,8 +108,8 @@ class _FitoraBottomNavBarState extends State<FitoraBottomNavBar> {
                                       Icon(
                                         isSelected ? item.selectedIcon : item.icon,
                                         color: isSelected
-                                            ? FitoraColors.mintGreen
-                                            : Colors.white54,
+                                            ? activeColor
+                                            : inactiveColor,
                                         size: 26,
                                       ),
                                       const SizedBox(height: 4),
@@ -99,11 +118,11 @@ class _FitoraBottomNavBarState extends State<FitoraBottomNavBar> {
                                         style: TextStyle(
                                           fontSize: 10,
                                           fontWeight: isSelected
-                                              ? FontWeight.w600
-                                              : FontWeight.normal,
+                                              ? FontWeight.w700
+                                              : FontWeight.w500,
                                           color: isSelected
-                                              ? FitoraColors.mintGreen
-                                              : Colors.white54,
+                                              ? activeColor
+                                              : inactiveColor,
                                         ),
                                       ),
                                     ],

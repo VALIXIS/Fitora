@@ -184,16 +184,27 @@ class _CloudBackupModalContent extends ConsumerWidget {
                         borderRadius: BorderRadius.circular(16),
                       ),
                     ),
-                    onPressed: backupState.status == CloudBackupSyncStatus.syncing
+                    onPressed: (backupState.status == CloudBackupSyncStatus.syncing || backupState.isRestoring)
                         ? null
                         : () async {
                             ref.read(hapticServiceProvider).buttonPress();
-                            await backupNotifier.syncNow();
+                            await backupNotifier.restoreData();
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Cloud data restored successfully!')),
+                              );
+                            }
                           },
-                    icon: const Icon(Icons.refresh_rounded, color: FitoraColors.mintGreen, size: 20),
-                    label: const Text(
-                      'Sync',
-                      style: TextStyle(color: FitoraColors.mintGreen, fontWeight: FontWeight.bold),
+                    icon: backupState.isRestoring
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: FitoraColors.mintGreen),
+                          )
+                        : const Icon(Icons.cloud_download_rounded, color: FitoraColors.mintGreen, size: 20),
+                    label: Text(
+                      backupState.isRestoring ? 'Restoring' : 'Restore',
+                      style: const TextStyle(color: FitoraColors.mintGreen, fontWeight: FontWeight.bold),
                     ),
                   ),
                 ),
@@ -211,13 +222,18 @@ class _CloudBackupModalContent extends ConsumerWidget {
                         borderRadius: BorderRadius.circular(16),
                       ),
                     ),
-                    onPressed: backupState.status == CloudBackupSyncStatus.syncing
+                    onPressed: (backupState.status == CloudBackupSyncStatus.syncing || backupState.isRestoring)
                         ? null
                         : () async {
                             ref.read(hapticServiceProvider).buttonPress();
                             await backupNotifier.syncNow();
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Cloud backup completed successfully!')),
+                              );
+                            }
                           },
-                    icon: backupState.status == CloudBackupSyncStatus.syncing
+                    icon: (backupState.status == CloudBackupSyncStatus.syncing && !backupState.isRestoring)
                         ? const SizedBox(
                             width: 18,
                             height: 18,
@@ -225,7 +241,7 @@ class _CloudBackupModalContent extends ConsumerWidget {
                           )
                         : const Icon(Icons.cloud_upload_rounded, size: 20),
                     label: Text(
-                      backupState.status == CloudBackupSyncStatus.syncing ? 'Syncing' : 'Backup Now',
+                      (backupState.status == CloudBackupSyncStatus.syncing && !backupState.isRestoring) ? 'Syncing' : 'Backup Now',
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ),

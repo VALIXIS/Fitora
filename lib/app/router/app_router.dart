@@ -29,7 +29,7 @@ import 'package:fitora/features/sleep/screens/sleep_schedule_screen.dart';
 import 'package:fitora/features/sleep/screens/soundscapes_screen.dart';
 import 'package:fitora/features/cycle/screens/cycle_dashboard_screen.dart';
 import 'package:fitora/features/ai_coach/screens/ai_coach_screen.dart';
-
+import 'package:fitora/features/gamification/screens/badges_screen.dart';
 
 final rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorKeys = [
@@ -38,6 +38,7 @@ final _shellNavigatorKeys = [
   GlobalKey<NavigatorState>(debugLabel: 'profile'),
 ];
 
+/// 60fps Fade-through transition for primary bottom shell navigation tabs
 CustomTransitionPage<T> fadeThroughTransitionPage<T>({
   required BuildContext context,
   required GoRouterState state,
@@ -45,20 +46,40 @@ CustomTransitionPage<T> fadeThroughTransitionPage<T>({
 }) {
   return CustomTransitionPage<T>(
     key: state.pageKey,
-    child: child,
+    child: RepaintBoundary(child: child),
     transitionsBuilder: (context, animation, secondaryAnimation, child) {
-      return FadeTransition(
-        opacity: CurvedAnimation(
+      final fadeIn = CurvedAnimation(
+        parent: animation,
+        curve: const Interval(0.0, 0.8, curve: Curves.easeOutCubic),
+      );
+      final fadeOut = CurvedAnimation(
+        parent: secondaryAnimation,
+        curve: const Interval(0.0, 0.4, curve: Curves.easeInCubic),
+      );
+      final scaleIn = Tween<double>(begin: 0.97, end: 1.0).animate(
+        CurvedAnimation(
           parent: animation,
-          curve: Curves.easeInOut,
+          curve: Curves.easeOutCubic,
         ),
-        child: child,
+      );
+
+      return FadeTransition(
+        opacity: fadeIn,
+        child: FadeTransition(
+          opacity: Tween<double>(begin: 1.0, end: 0.0).animate(fadeOut),
+          child: ScaleTransition(
+            scale: scaleIn,
+            child: child,
+          ),
+        ),
       );
     },
-    transitionDuration: const Duration(milliseconds: 240),
+    transitionDuration: const Duration(milliseconds: 220),
+    reverseTransitionDuration: const Duration(milliseconds: 180),
   );
 }
 
+/// 60fps Slide-up transition for modals, full screen dialogs, and detail views
 CustomTransitionPage<T> slideUpTransitionPage<T>({
   required BuildContext context,
   required GoRouterState state,
@@ -66,15 +87,15 @@ CustomTransitionPage<T> slideUpTransitionPage<T>({
 }) {
   return CustomTransitionPage<T>(
     key: state.pageKey,
-    child: child,
+    child: RepaintBoundary(child: child),
     transitionsBuilder: (context, animation, secondaryAnimation, child) {
       final slide = Tween<Offset>(
-        begin: const Offset(0.0, 0.04),
+        begin: const Offset(0.0, 0.06),
         end: Offset.zero,
       ).animate(
         CurvedAnimation(
           parent: animation,
-          curve: const Cubic(0.23, 1.0, 0.32, 1.0), // Smooth premium iOS cubic-bezier
+          curve: const Cubic(0.2, 0.9, 0.3, 1.0), // Butter-smooth iOS spring curve
         ),
       );
       final fade = Tween<double>(
@@ -83,18 +104,84 @@ CustomTransitionPage<T> slideUpTransitionPage<T>({
       ).animate(
         CurvedAnimation(
           parent: animation,
-          curve: Curves.easeInOut,
+          curve: Curves.easeOutCubic,
         ),
       );
-      return FadeTransition(
-        opacity: fade,
-        child: SlideTransition(
-          position: slide,
-          child: child,
+
+      // Subtle parallax push for secondary outgoing route
+      final secondarySlide = Tween<Offset>(
+        begin: Offset.zero,
+        end: const Offset(0.0, -0.02),
+      ).animate(
+        CurvedAnimation(
+          parent: secondaryAnimation,
+          curve: Curves.easeInCubic,
+        ),
+      );
+
+      return SlideTransition(
+        position: secondarySlide,
+        child: FadeTransition(
+          opacity: fade,
+          child: SlideTransition(
+            position: slide,
+            child: child,
+          ),
         ),
       );
     },
-    transitionDuration: const Duration(milliseconds: 320),
+    transitionDuration: const Duration(milliseconds: 280),
+    reverseTransitionDuration: const Duration(milliseconds: 240),
+  );
+}
+
+/// 60fps Horizontal Shared Axis transition for deep nested screens
+CustomTransitionPage<T> slideHorizontalTransitionPage<T>({
+  required BuildContext context,
+  required GoRouterState state,
+  required Widget child,
+}) {
+  return CustomTransitionPage<T>(
+    key: state.pageKey,
+    child: RepaintBoundary(child: child),
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      final slideIn = Tween<Offset>(
+        begin: const Offset(0.08, 0.0),
+        end: Offset.zero,
+      ).animate(
+        CurvedAnimation(
+          parent: animation,
+          curve: const Cubic(0.2, 0.9, 0.3, 1.0),
+        ),
+      );
+      final fadeIn = CurvedAnimation(
+        parent: animation,
+        curve: Curves.easeOutCubic,
+      );
+
+      final slideOut = Tween<Offset>(
+        begin: Offset.zero,
+        end: const Offset(-0.04, 0.0),
+      ).animate(
+        CurvedAnimation(
+          parent: secondaryAnimation,
+          curve: Curves.easeInCubic,
+        ),
+      );
+
+      return SlideTransition(
+        position: slideOut,
+        child: FadeTransition(
+          opacity: fadeIn,
+          child: SlideTransition(
+            position: slideIn,
+            child: child,
+          ),
+        ),
+      );
+    },
+    transitionDuration: const Duration(milliseconds: 260),
+    reverseTransitionDuration: const Duration(milliseconds: 220),
   );
 }
 
@@ -249,7 +336,7 @@ final appRouterProvider = Provider<GoRouter>(
                       parentNavigatorKey: rootNavigatorKey,
                       path: AppRoutes.sleepDetail,
                       name: AppRouteNames.sleepDetail,
-                      pageBuilder: (context, state) => slideUpTransitionPage(
+                      pageBuilder: (context, state) => slideHorizontalTransitionPage(
                         context: context,
                         state: state,
                         child: const SleepDetailScreen(),
@@ -259,7 +346,7 @@ final appRouterProvider = Provider<GoRouter>(
                           parentNavigatorKey: rootNavigatorKey,
                           path: AppRoutes.sleepSchedule,
                           name: AppRouteNames.sleepSchedule,
-                          pageBuilder: (context, state) => slideUpTransitionPage(
+                          pageBuilder: (context, state) => slideHorizontalTransitionPage(
                             context: context,
                             state: state,
                             child: const SleepScheduleScreen(),
@@ -269,7 +356,7 @@ final appRouterProvider = Provider<GoRouter>(
                           parentNavigatorKey: rootNavigatorKey,
                           path: AppRoutes.soundscapes,
                           name: AppRouteNames.soundscapes,
-                          pageBuilder: (context, state) => slideUpTransitionPage(
+                          pageBuilder: (context, state) => slideHorizontalTransitionPage(
                             context: context,
                             state: state,
                             child: const SoundscapesScreen(),
@@ -281,7 +368,7 @@ final appRouterProvider = Provider<GoRouter>(
                       parentNavigatorKey: rootNavigatorKey,
                       path: AppRoutes.cycleDetail,
                       name: AppRouteNames.cycleDetail,
-                      pageBuilder: (context, state) => slideUpTransitionPage(
+                      pageBuilder: (context, state) => slideHorizontalTransitionPage(
                         context: context,
                         state: state,
                         child: const CycleDashboardScreen(),
@@ -297,31 +384,46 @@ final appRouterProvider = Provider<GoRouter>(
                 GoRoute(
                   path: AppRoutes.profile,
                   name: AppRouteNames.profile,
-                  builder: (context, state) => const ProfileScreen(),
+                  pageBuilder: (context, state) => fadeThroughTransitionPage(
+                    context: context,
+                    state: state,
+                    child: const ProfileScreen(),
+                  ),
                   routes: [
                     GoRoute(
                       parentNavigatorKey: rootNavigatorKey,
                       path: AppRoutes.healthSync,
                       name: AppRouteNames.healthSync,
-                      pageBuilder: (context, state) => slideUpTransitionPage(
+                      pageBuilder: (context, state) => slideHorizontalTransitionPage(
                         context: context,
                         state: state,
                         child: const HealthSyncScreen(),
                       ),
                     ),
                     GoRoute(
+                      parentNavigatorKey: rootNavigatorKey,
                       path: AppRoutes.editProfile,
                       name: AppRouteNames.editProfile,
-                      pageBuilder: (context, state) => slideUpTransitionPage(
+                      pageBuilder: (context, state) => slideHorizontalTransitionPage(
                         context: context,
                         state: state,
                         child: const EditProfileScreen(),
                       ),
                     ),
                     GoRoute(
+                      parentNavigatorKey: rootNavigatorKey,
+                      path: AppRoutes.badges,
+                      name: AppRouteNames.badges,
+                      pageBuilder: (context, state) => slideHorizontalTransitionPage(
+                        context: context,
+                        state: state,
+                        child: const BadgesScreen(),
+                      ),
+                    ),
+                    GoRoute(
                       path: AppRoutes.settings,
                       name: AppRouteNames.settings,
-                      pageBuilder: (context, state) => slideUpTransitionPage(
+                      pageBuilder: (context, state) => slideHorizontalTransitionPage(
                         context: context,
                         state: state,
                         child: const SettingsScreen(),
@@ -330,7 +432,7 @@ final appRouterProvider = Provider<GoRouter>(
                         GoRoute(
                           path: AppRoutes.about,
                           name: AppRouteNames.about,
-                          pageBuilder: (context, state) => slideUpTransitionPage(
+                          pageBuilder: (context, state) => slideHorizontalTransitionPage(
                             context: context,
                             state: state,
                             child: const AboutScreen(),
@@ -339,7 +441,7 @@ final appRouterProvider = Provider<GoRouter>(
                         GoRoute(
                           path: AppRoutes.privacyPolicy,
                           name: AppRouteNames.privacyPolicy,
-                          pageBuilder: (context, state) => slideUpTransitionPage(
+                          pageBuilder: (context, state) => slideHorizontalTransitionPage(
                             context: context,
                             state: state,
                             child: const PrivacyPolicyScreen(),
@@ -348,7 +450,7 @@ final appRouterProvider = Provider<GoRouter>(
                         GoRoute(
                           path: AppRoutes.termsOfService,
                           name: AppRouteNames.termsOfService,
-                          pageBuilder: (context, state) => slideUpTransitionPage(
+                          pageBuilder: (context, state) => slideHorizontalTransitionPage(
                             context: context,
                             state: state,
                             child: const TermsOfServiceScreen(),

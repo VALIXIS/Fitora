@@ -5,6 +5,7 @@ import 'package:fitora/core/services/shareable_image_service.dart';
 import 'package:fitora/features/progress/domain/shareable_milestone_models.dart';
 import 'package:fitora/features/gamification/providers/gamification_provider.dart';
 import 'package:fitora/features/gamification/domain/gamification_models.dart';
+import 'package:fitora/features/gamification/screens/badges_screen.dart';
 
 class AchievementsGrid extends ConsumerWidget {
   const AchievementsGrid({super.key});
@@ -20,13 +21,32 @@ class AchievementsGrid extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 12),
-          child: Text(
-            'Achievements',
-            style: tt.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: theme.colorScheme.onSurface,
-            ),
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Achievements',
+                style: tt.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onSurface,
+                ),
+              ),
+              TextButton.icon(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const BadgesScreen()),
+                  );
+                },
+                icon: const Icon(Icons.emoji_events_rounded, size: 16),
+                label: const Text('3D Trophy Shelf'),
+                style: TextButton.styleFrom(
+                  foregroundColor: FitoraColors.mintGreen,
+                  textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  visualDensity: VisualDensity.compact,
+                ),
+              ),
+            ],
           ),
         ),
         GridView.builder(

@@ -175,6 +175,7 @@ class SoundscapesScreen extends ConsumerWidget {
   void _showTimerPicker(BuildContext context, WidgetRef ref) {
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
       backgroundColor: const Color(0xFF121715),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),

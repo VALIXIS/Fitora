@@ -28,6 +28,8 @@ class WellnessNotifier extends StateNotifier<WellnessState> {
         state = WellnessState.fromJson(map);
       }
       _checkNewDay();
+      // Ensure recovery score reflects actual logged state
+      state = state.copyWith(recoveryScore: _calculateRecoveryScore());
     } catch (_) {}
   }
 
@@ -76,6 +78,11 @@ class WellnessNotifier extends StateNotifier<WellnessState> {
         }
       }
 
+      final newScore = _calculateRecoveryScore(
+        hydrationLiters: 0.0,
+        sleepQualityScore: 0,
+      );
+
       state = state.copyWith(
         hydrationLiters: 0.0,
         breathingMinutes: 0,
@@ -84,7 +91,7 @@ class WellnessNotifier extends StateNotifier<WellnessState> {
         hydrationStreak: newHydrationStreak,
         wellnessStreak: newWellnessStreak,
         waterLogHistory: updatedHistory,
-        // Preserve other historical values
+        recoveryScore: newScore,
       );
       _persist();
     }
