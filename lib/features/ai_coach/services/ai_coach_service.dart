@@ -1,7 +1,193 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import '../domain/ai_coach_models.dart';
 
 class AICoachService {
+  /// Generate a personalized morning wellness briefing analyzing yesterday's metrics using Gemini API,
+  /// with an intelligent offline fallback pipeline.
+  Future<DailyBriefing> generateDailyBriefing({
+    required double sleepHours,
+    required int stepsCount,
+    required int restingHeartRate,
+    required int recoveryScore,
+    String? apiKey,
+  }) async {
+    final effectiveApiKey = apiKey ??
+        const String.fromEnvironment('GEMINI_API_KEY', defaultValue: '');
+
+    if (effectiveApiKey.isNotEmpty) {
+      try {
+        final url = Uri.parse(
+          'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$effectiveApiKey',
+        );
+
+        final prompt = '''
+You are the Fitora AI Wellness Coach.
+Analyze the user's health metrics from yesterday and current recovery state:
+- Sleep Duration: ${sleepHours.toStringAsFixed(1)} hours
+- Daily Steps: $stepsCount steps
+- Resting Heart Rate: $restingHeartRate bpm
+- Recovery / Readiness Score: $recoveryScore%
+
+Generate a personalized morning wellness briefing for today with exactly 3 actionable tips.
+Your response MUST be valid raw JSON with NO markdown code fences, using exact schema:
+{
+  "summary": "A warm 2-3 sentence summary analyzing sleep debt, cardiovascular strain, and recovery capability.",
+  "tips": [
+    "First actionable tip with specific advice",
+    "Second actionable tip with specific advice",
+    "Third actionable tip with specific advice"
+  ]
+}
+''';
+
+        final response = await http
+            .post(
+              url,
+              headers: {'Content-Type': 'application/json'},
+              body: jsonEncode({
+                'contents': [
+                  {
+                    'parts': [
+                      {'text': prompt}
+                    ]
+                  }
+                ],
+                'generationConfig': {
+                  'temperature': 0.7,
+                  'responseMimeType': 'application/json',
+                }
+              }),
+            )
+            .timeout(const Duration(seconds: 8));
+
+        if (response.statusCode == 200) {
+          final body = jsonDecode(response.body);
+          final text = body['candidates']?[0]?['content']?['parts']?[0]?['text'] as String?;
+
+          if (text != null && text.trim().isNotEmpty) {
+            String cleanJsonStr = text.trim();
+            if (cleanJsonStr.startsWith('```json')) {
+              cleanJsonStr = cleanJsonStr.replaceFirst('```json', '');
+            }
+            if (cleanJsonStr.startsWith('```')) {
+              cleanJsonStr = cleanJsonStr.replaceFirst('```', '');
+            }
+            if (cleanJsonStr.endsWith('```')) {
+              cleanJsonStr = cleanJsonStr.substring(0, cleanJsonStr.length - 3);
+            }
+            cleanJsonStr = cleanJsonStr.trim();
+
+            final parsed = jsonDecode(cleanJsonStr);
+            final summary = parsed['summary'] as String? ?? '';
+            final tipsRaw = parsed['tips'] as List?;
+            final tips = tipsRaw?.map((e) => e.toString()).toList() ?? [];
+
+            if (summary.isNotEmpty && tips.length >= 3) {
+              return DailyBriefing(
+                summary: summary,
+                tips: tips.take(3).toList(),
+                generatedAt: DateTime.now(),
+                isOfflineFallback: false,
+              );
+            }
+          }
+        }
+      } catch (_) {
+        // Fallback to offline briefing pipeline if API call fails
+      }
+    }
+
+    return _generateOfflineDailyBriefing(
+      sleepHours: sleepHours,
+      stepsCount: stepsCount,
+      restingHeartRate: restingHeartRate,
+      recoveryScore: recoveryScore,
+    );
+  }
+
+  DailyBriefing generateOfflineFallbackBriefing({
+    double sleepHours = 7.2,
+    int stepsCount = 8400,
+    int restingHeartRate = 64,
+    int recoveryScore = 82,
+  }) {
+    return _generateOfflineDailyBriefing(
+      sleepHours: sleepHours,
+      stepsCount: stepsCount,
+      restingHeartRate: restingHeartRate,
+      recoveryScore: recoveryScore,
+    );
+  }
+
+  DailyBriefing _generateOfflineDailyBriefing({
+
+    required double sleepHours,
+    required int stepsCount,
+    required int restingHeartRate,
+    required int recoveryScore,
+  }) {
+    final String summary;
+    if (recoveryScore >= 80) {
+      summary =
+          'Good morning! Yesterday you logged ${sleepHours.toStringAsFixed(1)} hours of sleep and $stepsCount steps with a steady resting HR of ${restingHeartRate > 0 ? restingHeartRate : 62} bpm. Your recovery score is a strong $recoveryScore%. You are in prime shape for peak energy today.';
+    } else if (recoveryScore >= 60) {
+      summary =
+          'Good morning! Yesterday’s rest reached ${sleepHours.toStringAsFixed(1)} hours and $stepsCount steps. Resting HR registered at ${restingHeartRate > 0 ? restingHeartRate : 68} bpm, putting your recovery at a balanced $recoveryScore%. Focus on steady momentum without overexertion.';
+    } else {
+      summary =
+          'Good morning! Sleep logged at ${sleepHours.toStringAsFixed(1)} hours alongside $stepsCount steps. Resting HR reached ${restingHeartRate > 0 ? restingHeartRate : 74} bpm, bringing your recovery score to $recoveryScore%. Today is an active recovery day — listen to your body and rest.';
+    }
+
+    final List<String> tips = [];
+
+    // Tip 1: Sleep / Wind-down
+    if (sleepHours < 7.0) {
+      tips.add(
+        'Pay back sleep debt: Aim for a 20-minute power nap or begin your screen-free wind-down routine 45 minutes earlier tonight.',
+      );
+    } else {
+      tips.add(
+        'Maintain circadian alignment: Keep tonight’s bedtime consistent to lock in your solid ${sleepHours.toStringAsFixed(1)}h sleep quality.',
+      );
+    }
+
+    // Tip 2: Heart rate & stress / hydration
+    if (restingHeartRate > 72) {
+      tips.add(
+        'Lower cardiovascular strain: Sip 500ml of electrolyte water now and try 5 minutes of 4-7-8 box breathing mid-afternoon.',
+      );
+    } else {
+      tips.add(
+        'Optimize cellular hydration: Drink 500ml of cold water upon waking to support metabolic readiness and blood flow.',
+      );
+    }
+
+    // Tip 3: Movement / Training
+    if (recoveryScore >= 80) {
+      tips.add(
+        'Capitalize on high readiness: Schedule your intense full-body strength or HIIT workout earlier in the day when cortisol is peak.',
+      );
+    } else if (recoveryScore >= 60) {
+      tips.add(
+        'Moderate movement: Keep workouts at zone 2 (moderate cardio or light yoga flow) to build stamina without fatigue.',
+      );
+    } else {
+      tips.add(
+        'Active recovery focus: Replace heavy lifts with a gentle 15-minute walk and full-body hamstring & mobility stretches.',
+      );
+    }
+
+    return DailyBriefing(
+      summary: summary,
+      tips: tips,
+      generatedAt: DateTime.now(),
+      isOfflineFallback: true,
+    );
+  }
+
   // Generate a customized coaching response based on wellness context
+
   Future<CoachMessage> generateCoachResponse(
     List<CoachMessage> history,
     String userMessage, {

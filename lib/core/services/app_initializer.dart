@@ -10,10 +10,15 @@ import 'package:permission_handler/permission_handler.dart';
 class AppInitializer {
   static Future<void> initialize() async {
     final s = Stopwatch()..start();
-    await FirebaseInitializer.initialize();
-    AppLogger.info('AppInitializer: Firebase initialized at ${s.elapsedMilliseconds}ms');
     await AppPreferences.initialize();
     AppLogger.info('AppInitializer: AppPreferences initialized at ${s.elapsedMilliseconds}ms');
+    try {
+      await FirebaseInitializer.initialize();
+      AppLogger.info('AppInitializer: Firebase initialized at ${s.elapsedMilliseconds}ms');
+    } catch (e) {
+      AppLogger.error('Firebase initialization error: $e');
+    }
+
     // Run automatic migration from legacy SharedPreferences into SQLite database
     await LocalDatabaseService().migrateFromSharedPreferences(AppPreferences.prefs);
     AppLogger.info('AppInitializer: LocalDatabaseService migration checked at ${s.elapsedMilliseconds}ms');

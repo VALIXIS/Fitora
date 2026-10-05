@@ -28,6 +28,8 @@ import 'package:fitora/features/sleep/screens/sleep_detail_screen.dart';
 import 'package:fitora/features/sleep/screens/sleep_schedule_screen.dart';
 import 'package:fitora/features/sleep/screens/soundscapes_screen.dart';
 import 'package:fitora/features/cycle/screens/cycle_dashboard_screen.dart';
+import 'package:fitora/features/ai_coach/screens/ai_coach_screen.dart';
+
 
 final rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorKeys = [
@@ -201,6 +203,16 @@ final appRouterProvider = Provider<GoRouter>(
             child: const PersonalizationFlowScreen(),
           ),
         ),
+        GoRoute(
+          path: AppRoutes.aiCoach,
+          name: AppRouteNames.aiCoach,
+          pageBuilder: (context, state) => slideUpTransitionPage(
+            context: context,
+            state: state,
+            child: const AICoachScreen(),
+          ),
+        ),
+
 
         StatefulShellRoute.indexedStack(
           builder: (context, state, navigationShell) => AppShell(

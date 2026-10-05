@@ -19,6 +19,7 @@ class AppRoutes {
   static const String sleepSchedule = 'schedule';
   static const String soundscapes = 'soundscapes';
   static const String cycleDetail = 'cycle';
+  static const String aiCoach = '/ai-coach';
 }
 
 class AppRouteNames {
@@ -41,4 +42,6 @@ class AppRouteNames {
   static const String sleepSchedule = 'sleepSchedule';
   static const String soundscapes = 'soundscapes';
   static const String cycleDetail = 'cycleDetail';
+  static const String aiCoach = 'aiCoach';
 }
+
