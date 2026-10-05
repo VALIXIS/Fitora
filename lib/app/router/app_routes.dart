@@ -17,6 +17,8 @@ class AppRoutes {
   
   static const String sleepDetail = 'sleep-detail';
   static const String sleepSchedule = 'schedule';
+  static const String soundscapes = 'soundscapes';
+  static const String cycleDetail = 'cycle';
   static const String aiCoach = '/ai-coach';
   static const String badges = 'badges';
 }
