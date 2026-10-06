@@ -96,3 +96,39 @@ class WeeklySummary {
     );
   }
 }
+
+@immutable
+class DailyBriefing {
+  final String summary;
+  final List<String> tips; // 3 actionable tips
+  final DateTime generatedAt;
+  final bool isOfflineFallback;
+
+  const DailyBriefing({
+    required this.summary,
+    required this.tips,
+    required this.generatedAt,
+    this.isOfflineFallback = false,
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'summary': summary,
+      'tips': tips,
+      'generatedAt': generatedAt.toIso8601String(),
+      'isOfflineFallback': isOfflineFallback,
+    };
+  }
+
+  factory DailyBriefing.fromJson(Map<String, dynamic> json) {
+    return DailyBriefing(
+      summary: json['summary'] as String? ?? '',
+      tips: (json['tips'] as List?)?.map((e) => e.toString()).toList() ?? const [],
+      generatedAt: json['generatedAt'] != null
+          ? DateTime.parse(json['generatedAt'] as String)
+          : DateTime.now(),
+      isOfflineFallback: json['isOfflineFallback'] as bool? ?? false,
+    );
+  }
+}
+

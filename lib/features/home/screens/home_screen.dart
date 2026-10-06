@@ -25,6 +25,8 @@ import 'package:fitora/features/settings/providers/settings_provider.dart';
 import 'package:fitora/core/ads/ad_service.dart';
 import 'package:fitora/shared/widgets/scale_on_press.dart';
 import 'package:fitora/core/services/haptic_service.dart';
+import 'package:fitora/features/ai_coach/widgets/daily_briefing_card.dart';
+
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -321,8 +323,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     const SizedBox(height: FitoraSpacing.sm),
                     const StreakBanner(),
                     const _BatteryWarningCard(),
+                    const SizedBox(height: FitoraSpacing.md),
+                    const DailyBriefingCard(),
+                    const SizedBox(height: FitoraSpacing.lg),
 
                     // Hero Steps Card (Visual Centerpiece)
+
                     _buildHeroStepsCard(context, textTheme, activity),
                     const SizedBox(height: FitoraSpacing.xl),
 

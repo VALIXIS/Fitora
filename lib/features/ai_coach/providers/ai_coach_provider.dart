@@ -13,14 +13,18 @@ class AICoachState {
   final AICoachMood mood;
   final WeeklySummary weeklySummary;
   final List<WellnessTrend> trends;
+  final DailyBriefing? dailyBriefing;
   final bool isLoading;
+  final bool isBriefingLoading;
 
   const AICoachState({
     required this.messages,
     required this.mood,
     required this.weeklySummary,
     required this.trends,
+    this.dailyBriefing,
     this.isLoading = false,
+    this.isBriefingLoading = false,
   });
 
   AICoachState copyWith({
@@ -28,14 +32,18 @@ class AICoachState {
     AICoachMood? mood,
     WeeklySummary? weeklySummary,
     List<WellnessTrend>? trends,
+    DailyBriefing? dailyBriefing,
     bool? isLoading,
+    bool? isBriefingLoading,
   }) {
     return AICoachState(
       messages: messages ?? this.messages,
       mood: mood ?? this.mood,
       weeklySummary: weeklySummary ?? this.weeklySummary,
       trends: trends ?? this.trends,
+      dailyBriefing: dailyBriefing ?? this.dailyBriefing,
       isLoading: isLoading ?? this.isLoading,
+      isBriefingLoading: isBriefingLoading ?? this.isBriefingLoading,
     );
   }
 }
@@ -46,6 +54,30 @@ final aiCoachProvider = StateNotifierProvider<AICoachNotifier, AICoachState>((re
   final health = ref.watch(healthSyncProvider);
   return AICoachNotifier(wellness, engine, health)..init();
 });
+
+final dailyBriefingProvider = FutureProvider.autoDispose<DailyBriefing>((ref) async {
+  final service = AICoachService();
+  try {
+    final wellness = ref.watch(wellnessProvider);
+    final engine = ref.watch(wellnessEngineProvider);
+    final health = ref.watch(healthSyncProvider);
+
+    final double sleepHours = wellness.sleepMinutes > 0 ? wellness.sleepMinutes / 60.0 : 7.2;
+    final int steps = health.cachedData.steps > 0 ? health.cachedData.steps : 8400;
+    final int restingHR = health.cachedData.heartRate > 0 ? health.cachedData.heartRate.round() : 64;
+    final int recoveryScore = engine.readiness.score > 0 ? engine.readiness.score : 82;
+
+    return await service.generateDailyBriefing(
+      sleepHours: sleepHours,
+      stepsCount: steps,
+      restingHeartRate: restingHR,
+      recoveryScore: recoveryScore,
+    );
+  } catch (_) {
+    return service.generateOfflineFallbackBriefing();
+  }
+});
+
 
 class AICoachNotifier extends StateNotifier<AICoachState> {
   final WellnessState _wellness;
@@ -62,6 +94,7 @@ class AICoachNotifier extends StateNotifier<AICoachState> {
         ));
 
   void init() {
+    fetchBriefing();
     if (state.messages.isNotEmpty) return;
 
     // Load trends
@@ -87,7 +120,35 @@ class AICoachNotifier extends StateNotifier<AICoachState> {
     );
   }
 
+  Future<void> fetchBriefing() async {
+    state = state.copyWith(isBriefingLoading: true);
+    final double sleepHours = _wellness.sleepMinutes > 0 ? _wellness.sleepMinutes / 60.0 : 7.2;
+    final int steps = _health.cachedData.steps > 0 ? _health.cachedData.steps : 8400;
+    final int restingHR = _health.cachedData.heartRate > 0 ? _health.cachedData.heartRate.round() : 64;
+    final int recoveryScore = _engine.readiness.score > 0 ? _engine.readiness.score : 82;
+
+    try {
+      final briefing = await _service.generateDailyBriefing(
+        sleepHours: sleepHours,
+        stepsCount: steps,
+        restingHeartRate: restingHR,
+        recoveryScore: recoveryScore,
+      );
+      if (mounted) {
+        state = state.copyWith(
+          dailyBriefing: briefing,
+          isBriefingLoading: false,
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        state = state.copyWith(isBriefingLoading: false);
+      }
+    }
+  }
+
   Future<void> sendMessage(String text) async {
+
     if (text.trim().isEmpty) return;
 
     final userMsg = CoachMessage(
