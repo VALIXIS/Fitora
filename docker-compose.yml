@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  fitora-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: fitora-app
+    ports:
+      - "8088:80"
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3

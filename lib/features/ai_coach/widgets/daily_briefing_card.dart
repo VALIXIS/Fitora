@@ -41,7 +41,7 @@ class DailyBriefingCard extends ConsumerWidget {
       loading: () => stateBriefing != null
           ? _buildCard(context, ref, stateBriefing, tt, theme)
           : _buildLoadingSkeleton(context, theme),
-      error: (_, __) {
+      error: (_, stack) {
         final fallback = stateBriefing ?? AICoachService().generateOfflineFallbackBriefing();
         return _buildCard(context, ref, fallback, tt, theme);
       },

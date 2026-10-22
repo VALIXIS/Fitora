@@ -52,3 +52,17 @@ android/key.properties
 .kotlin/
 *.aab
 android/build/
+
+# Security & Environment Variables
+.env*
+!.env.example
+*.pem
+*.key
+credentials.json
+
+# Diagnostics & Analysis Logs
+analyze_out.txt
+*.log
+coverage/
+lcov.info
+

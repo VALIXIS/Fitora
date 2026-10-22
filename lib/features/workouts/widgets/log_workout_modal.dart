@@ -252,7 +252,7 @@ class _LogWorkoutModalState extends ConsumerState<LogWorkoutModal> {
                       notes: _notesController.text.trim().isNotEmpty ? _notesController.text.trim() : null,
                     );
                     await ref.read(workoutProvider.notifier).addWorkoutLog(log);
-                    if (mounted) {
+                    if (context.mounted) {
                       Navigator.of(context).pop();
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(

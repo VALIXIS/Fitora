@@ -11,6 +11,7 @@ class PedometerService {
   factory PedometerService() => _instance;
   PedometerService._internal();
 
+  // ignore: close_sinks
   StreamController<int>? _stepStreamController;
   int _currentSteps = 0;
   int _baseSteps = -1;
